@@ -6,4 +6,4 @@ Felys is a functional language written in Rust. It supports functions, expressio
 
 ## License
 
-Distributed under the terms of the [MIT License](https://github.com/FelysNeko/Felys-Interpreter/blob/main/LICENSE).
+Distributed under the terms of the [MIT License](https://github.com/felys-lang/felys/blob/main/LICENSE).
