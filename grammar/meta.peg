@@ -1,0 +1,153 @@
+{
+    use crate::ast::*;
+    #[allow(unused)]
+    use crate::utils::*;
+}
+
+peg grammar -> { Grammar }:
+    / import=ACTION? $ callables=(callable=callable $)* [#eof] {
+        Grammar { import, callables }
+    }
+    ;
+
+peg callable -> { Callable }:
+    / deco=deco? PEG name=[NAME] ty=('->' ty=[ACTION])? [':'] rule=[rule] [';'] {
+        Callable::Peg(deco, name, ty, rule)
+    }
+    / deco=deco? LEX name=[NAME] ty=('->' ty=[ACTION])? [':'] rule=[rule] [';'] {
+        Callable::Lex(deco, name, ty, rule)
+    }
+    / deco=deco? REX name=NAME [':'] regex=[union] [';'] {
+        Callable::Rex(deco, name, regex)
+    }
+    ;
+
+peg deco -> { BufVec<Tag, 1> }:
+    / '@' ['('] first=[tag] more=(',' tag=[tag])* [')'] { BufVec::new([first], more) }
+    ;
+
+peg tag -> { Tag }:
+    / 'memo' { Tag::Memo }
+    / 'left' { Tag::Left }
+    / 'ws' { Tag::Whitespace }
+    ;
+
+peg rule -> { Rule }:
+    / '/'? first=[alter] more=('/' alter=[alter])* {
+        Rule { first, more }
+    }
+    ;
+
+peg alter -> { Alter }:
+    / first=[assignment] more=assignment* action=ACTION? {
+        Alter {
+            assignments: BufVec::new([first], more),
+            action,
+        }
+    }
+    ;
+
+peg assignment -> { Assignment }:
+    / name=NAME '=' item=[item] { Assignment::Named(name, item) }
+    / lookahead=lookahead { Assignment::Lookahead(lookahead) }
+    / item=item { Assignment::Anonymous(item) }
+    / '$' { Assignment::Clean }
+    ;
+
+peg lookahead -> { Lookahead }:
+    / '&' atom=[atom] { Lookahead::Positive(atom) }
+    / '!' atom=[atom] { Lookahead::Negative(atom) }
+    ;
+
+peg item -> { Item }:
+    / '[' atom=[atom] [']'] msg=MESSAGE? { Item::Eager(atom, msg) }
+    / atom=atom '?' { Item::Optional(atom) }
+    / atom=atom '*' { Item::Repetition(atom) }
+    / atom=atom { Item::Name(atom) }
+    ;
+
+peg atom -> { Atom }:
+    / '(' rule=[rule] [')'] { Atom::Nested(rule) }
+    / '#' name=[NAME] { Atom::External(name) }
+    / name=NAME { Atom::Name(name) }
+    / expect=EXPECT { Atom::Expect(expect) }
+    ;
+
+peg union -> { Regex }:
+    / lhs=union '|' rhs=[concat] { Regex::Union(lhs.into(), rhs.into()) }
+    / concat=concat { concat }
+    ;
+
+peg concat -> { Regex }:
+    / lhs=concat rhs=repeat { Regex::Concat(lhs.into(), rhs.into()) }
+    / repeat=repeat { repeat }
+    ;
+
+peg repeat -> { Regex }:
+    / inner=repeat '+' { Regex::OnceOrMore(inner.into()) }
+    / inner=repeat '*' { Regex::ZeroOrMore(inner.into()) }
+    / primary=primary { Regex::Primary(primary) }
+    ;
+
+peg primary -> { Primary }:
+    / '(' regex=[union] [')'] { Primary::Parentheses(regex.into()) }
+    / string=STRING { Primary::Literal(string) }
+    / name=NAME { Primary::Name(name) }
+    / set=SET { set }
+    ;
+
+lex SET -> { Primary }:
+    / '[' '^' first=[RANGE] more=RANGE* [']'] { Primary::Exclude(BufVec::new([first], more)) }
+    / '[' first=[RANGE] more=RANGE* [']'] { Primary::Include(BufVec::new([first], more)) }
+    ;
+
+lex EXPECT -> { Expect }:
+    / '\'' first=[SQC] more=SQC* ['\''] { Expect::Once(BufVec::new([first], more)) }
+    / '\"' first=[DQC] more=DQC* ['\"'] { Expect::Keyword(BufVec::new([first], more)) }
+    ;
+
+lex STRING -> { BufVec<usize, 1> }:
+    / '\'' first=[SQC] more=SQC* ['\''] { BufVec::new([first], more) }
+    ;
+
+lex RANGE -> { (usize, usize) }:
+    / start=BC '-' end=[BC] { (start, end) }
+    / ch=BC { (ch, ch) }
+    ;
+
+lex MESSAGE -> { Message }: '(' msg=MSG* [')'] { Message(msg) } ;
+
+lex MSG -> { Nested }:
+    / '(' msg=MSG* [')'] { Nested::Inner(msg) }
+    / msg=PS { Nested::Segment(msg) }
+    ;
+
+lex ACTION -> { Action }: '{' act=ACT* ['}'] { Action(act) } ;
+
+lex ACT -> { Nested }:
+    / '{' act=ACT* ['}'] { Nested::Inner(act) }
+    / act=BS { Nested::Segment(act) }
+    ;
+
+lex PEG: 'peg' !TAIL ;
+lex LEX: 'lex' !TAIL ;
+lex REX: 'rex' !TAIL ;
+
+@(memo)
+rex NAME: [a-zA-Z_] TAIL* ;
+rex TAIL: [a-zA-Z0-9_] ;
+
+rex DQC: UNICODE | ESCAPE | [^\"\\] ;
+rex SQC: UNICODE | ESCAPE | [^\'\\] ;
+rex BC: UNICODE | ESCAPE | [^\]\\] ;
+rex UNICODE: '\\' 'u' '{' [0-9a-f]* '}' ;
+rex ESCAPE: '\\' [\'\"\[\]ntr\\] ;
+
+rex PS: [^()]+ ;
+rex BS: [^{}]+ ;
+
+@(ws)
+rex WS: [\u{20}\n\t\r]+ ;
+
+@(ws)
+rex COMMENT: '//' [^\n]* ;
