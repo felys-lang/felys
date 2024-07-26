@@ -11,9 +11,8 @@ fn main() {
     
     // init the worker with mixin, set to no timeout and English mode
     let mut main = Worker::new(mixin, 0.0, Language::EN);
-    match main.exec(code) {
-        Ok(_) => {},
-        Err(e) => println!("{}", e)
+    if let Err(e) = main.exec(code) {
+        println!("{}", e)
     }
 }
 
