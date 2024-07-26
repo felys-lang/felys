@@ -7,16 +7,7 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d3466923-bb47-42e4-9150-14c28c4e53f1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/tests/integration.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/programs/factorial.ely" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/programs/felys.ely" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/env/object.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/env/object.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/expr/node.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/expr/node.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/flow/stmt.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/flow/stmt.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/playground.rs" beforeDir="false" />
-    </list>
+    <list default="true" id="d3466923-bb47-42e4-9150-14c28c4e53f1" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -124,7 +115,7 @@
       <updated>1721937488880</updated>
       <workItem from="1721937490016" duration="366000" />
       <workItem from="1721937864133" duration="3706000" />
-      <workItem from="1721943072176" duration="5787000" />
+      <workItem from="1721943072176" duration="6145000" />
     </task>
     <servers />
   </component>
