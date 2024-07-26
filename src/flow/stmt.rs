@@ -2,7 +2,7 @@ use std::fmt::{Debug, Formatter};
 use crate::expr::Node;
 
 
-#[derive(Clone)]
+#[derive(PartialEq, Clone)]
 pub enum Statement {
     Cond {
         expr: Node,
@@ -59,7 +59,7 @@ impl Debug for Statement {
 }
 
 
-#[derive(Clone)]
+#[derive(PartialEq, Clone)]
 pub struct Block {
     pub body: Vec<Statement>
 }

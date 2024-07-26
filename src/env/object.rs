@@ -4,7 +4,7 @@ use crate::error::RuntimeError;
 use crate::flow::Block;
 
 
-#[derive(Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Object {
     Number {
         value: f64

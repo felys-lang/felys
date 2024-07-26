@@ -2,7 +2,7 @@ use std::fmt::{Debug, Formatter};
 use crate::lexer::*;
 use crate::flow::Block;
 
-#[derive(Clone)]
+#[derive(PartialEq, Clone)]
 pub enum Node {
     Binary {
         optr: BinoptrType,
