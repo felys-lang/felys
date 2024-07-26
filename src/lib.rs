@@ -1,6 +1,6 @@
 //! > **Interface to customize Felys implementation**
 //!
-//! ## Example
+//! # Examples
 //! Make sure `felys` is added to your `cargo.toml`, and then try it out:
 //! ```rust
 #![doc = include_str!("../examples/basic.rs")]
