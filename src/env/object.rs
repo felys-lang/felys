@@ -3,7 +3,7 @@ use crate::{Context, Output};
 use crate::error::RuntimeError;
 use crate::flow::Block;
 
-
+/// Union type of different data types
 #[derive(PartialEq, Debug, Clone)]
 pub enum Object {
     Number {
