@@ -28,7 +28,7 @@ mod error;
 
 /// Relevant outputs after one execution
 pub struct Summary {
-    /// Total runtime starting from initialization to retuning
+    /// Total runtime starting from initialization to returning
     pub duration: Duration,
     /// A string concatenated from output buffer vector
     pub stdout: String,
