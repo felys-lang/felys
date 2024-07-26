@@ -8,12 +8,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d3466923-bb47-42e4-9150-14c28c4e53f1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/examples/basic.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/env/object.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/env/object.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lexer/cursor/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lexer/cursor/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/integration.rs" beforeDir="false" afterPath="$PROJECT_DIR$/tests/integration.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -123,7 +118,7 @@
       <updated>1721937488880</updated>
       <workItem from="1721937490016" duration="366000" />
       <workItem from="1721937864133" duration="3706000" />
-      <workItem from="1721943072176" duration="15542000" />
+      <workItem from="1721943072176" duration="15929000" />
     </task>
     <servers />
   </component>
