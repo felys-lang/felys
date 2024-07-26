@@ -1,4 +1,4 @@
-//! > **Interface to customize Felys implementation**
+//! Interface to customize Felys implementation
 //!
 //! # Examples
 //! Make sure `felys` is added to your `cargo.toml`, and then try it out:
