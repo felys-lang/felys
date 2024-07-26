@@ -1,15 +1,15 @@
+use std::fmt::{Display, Formatter};
+
+pub use lexing::*;
+pub use runtime::*;
+pub use syntax::*;
+
 mod lexing;
 mod syntax;
 mod runtime;
 
-use std::fmt::{Display, Formatter};
-pub use lexing::*;
-pub use syntax::*;
-pub use runtime::*;
-
-
 pub struct Error {
-    msg: String
+    msg: String,
 }
 
 impl Display for Error {

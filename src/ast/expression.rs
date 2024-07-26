@@ -1,12 +1,12 @@
+use AssignType::*;
+use BinoptrType::*;
+use SymbolType::*;
+
 use crate::ast::{ASTFactory, Eat};
 use crate::error::SyntaxError;
 use crate::expr::Node;
-use crate::lexer::*;
-use BinoptrType::*;
-use SymbolType::*;
-use AssignType::*;
 use crate::flow::Statement;
-
+use crate::lexer::*;
 
 impl ASTFactory {
     pub(super) fn parse_expression(&mut self) -> Result<Node, SyntaxError> {
@@ -23,7 +23,7 @@ impl ASTFactory {
                 left = Node::Assign {
                     optr: t,
                     left: Box::new(left),
-                    right: Box::new(right)
+                    right: Box::new(right),
                 };
             } else {
                 self.tokens.push(token);
@@ -43,7 +43,7 @@ impl ASTFactory {
                 left = Node::Binary {
                     optr: t,
                     left: Box::new(left),
-                    right: Box::new(right)
+                    right: Box::new(right),
                 };
             } else {
                 self.tokens.push(token);
@@ -63,7 +63,7 @@ impl ASTFactory {
                 left = Node::Binary {
                     optr: t,
                     left: Box::new(left),
-                    right: Box::new(right)
+                    right: Box::new(right),
                 };
             } else {
                 self.tokens.push(token);
@@ -83,7 +83,7 @@ impl ASTFactory {
                 left = Node::Binary {
                     optr: t,
                     left: Box::new(left),
-                    right: Box::new(right)
+                    right: Box::new(right),
                 };
             } else {
                 self.tokens.push(token);
@@ -103,7 +103,7 @@ impl ASTFactory {
                 left = Node::Binary {
                     optr: t,
                     left: Box::new(left),
-                    right: Box::new(right)
+                    right: Box::new(right),
                 };
             } else {
                 self.tokens.push(token);
@@ -115,13 +115,13 @@ impl ASTFactory {
 
     fn parse_unary(&mut self) -> Result<Node, SyntaxError> {
         if let Some(token) = self.tokens.pop() {
-            if let TokenType::Una(t ) = token.kind {
+            if let TokenType::Una(t) = token.kind {
                 let inner = self.parse_unary()?;
                 let temp = Node::Unary {
                     optr: t,
                     inner: Box::new(inner),
                 };
-                return Ok(temp)
+                return Ok(temp);
             } else {
                 self.tokens.push(token);
             }
@@ -195,7 +195,7 @@ impl ASTFactory {
                     _ => return Err(SyntaxError::IncompleteCall)
                 }
             } else {
-                return Err(SyntaxError::EndOfTokenSteam)
+                return Err(SyntaxError::EndOfTokenSteam);
             }
         }
         Ok(args)
@@ -219,7 +219,7 @@ impl ASTFactory {
                     _ => return Err(SyntaxError::IncompleteFunc)
                 }
             } else {
-                return Err(SyntaxError::EndOfTokenSteam)
+                return Err(SyntaxError::EndOfTokenSteam);
             }
         }
 
@@ -231,7 +231,7 @@ impl ASTFactory {
                 Statement::Return { expr }.into()
             }
         } else {
-            return Err(SyntaxError::EndOfTokenSteam)
+            return Err(SyntaxError::EndOfTokenSteam);
         };
 
         Ok(Node::Function { args, body: block })

@@ -1,13 +1,14 @@
-mod chn;
-mod eng;
-mod shared;
-
 use std::iter::Peekable;
 use std::str::Chars;
-use crate::lexer::token::*;
+
 use crate::error::LexingError;
 use crate::Language;
 use crate::Language::*;
+use crate::lexer::token::*;
+
+mod chn;
+mod eng;
+mod shared;
 
 pub struct Cursor<'a> {
     pub chars: Peekable<Chars<'a>>,
@@ -22,7 +23,7 @@ impl Cursor<'_> {
             Some(ch) => ch,
             None => return None
         };
-        
+
         let token = match (lang, ch) {
             (_, '0'..='9' | '.') => self.scan_number(),
             (_, '*' | '/' | '%') => self.scan_simple_binoptr(),

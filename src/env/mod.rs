@@ -1,22 +1,22 @@
+use std::collections::HashMap;
+
+pub use crate::env::environ::*;
+pub use crate::env::object::*;
+use crate::error::RuntimeError;
+
 mod object;
 mod environ;
-
-
-use std::collections::HashMap;
-pub use crate::env::object::*;
-pub use crate::env::environ::*;
-use crate::error::RuntimeError;
 
 
 impl Environ<'_> {
     pub fn sandbox(&self, default: HashMap<String, Object>) -> Self {
         Self {
-            builtin: self.builtin, 
+            builtin: self.builtin,
             timer: self.timer,
-            body: vec![Scope::new(default)]
+            body: vec![Scope::new(default)],
         }
     }
-    
+
     pub fn store(&mut self, key: String, value: Object) {
         for scope in self.body.iter_mut() {
             if scope.contains(&key) {
@@ -31,7 +31,7 @@ impl Environ<'_> {
 
     pub fn eval(
         &self, out: &mut Vec<String>,
-        ident: &String, args: Vec<Object>, callable: &bool
+        ident: &String, args: Vec<Object>, callable: &bool,
     ) -> Result<Object, RuntimeError> {
         let result = if *callable {
             self.call_object(out, ident, args)?

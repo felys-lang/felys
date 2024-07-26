@@ -1,5 +1,5 @@
 //! > **Interface to customize Felys implementation**
-//! 
+//!
 //! ## Example
 //! Make sure `felys` is added to your `cargo.toml`, and then try it out:
 //! ```rust
@@ -11,12 +11,12 @@ use std::str::FromStr;
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
+
 use crate::ast::ASTFactory;
 use crate::env::{Environ, Scope};
-use crate::lexer::tokenize;
-use crate::error::{Error, RuntimeError};
 pub use crate::env::Object;
-
+use crate::error::{Error, RuntimeError};
+use crate::lexer::tokenize;
 
 mod lexer;
 mod expr;
@@ -33,7 +33,7 @@ pub struct Summary {
     /// A string concatenated from output buffer vector
     pub stdout: String,
     /// Return value of the whole execution
-    pub code: Object
+    pub code: Object,
 }
 
 
@@ -42,7 +42,7 @@ pub struct Worker {
     global: Scope,
     builtin: Scope,
     timeout: Duration,
-    lang: Language
+    lang: Language,
 }
 
 impl Worker {
@@ -51,12 +51,12 @@ impl Worker {
         // this the built-in values that should never get removed
         let mut base = match lang {
             Language::CN => HashMap::from([
-                ("——爱莉希雅——".into(), Object::String {value: "粉色妖精小姐♪".into()}),
-                ("——作者——".into(), Object::String {value: "银河猫猫侠".into()})
+                ("——爱莉希雅——".into(), Object::String { value: "粉色妖精小姐♪".into() }),
+                ("——作者——".into(), Object::String { value: "银河猫猫侠".into() })
             ]),
             Language::EN => HashMap::from([
-                ("__elysia__".into(), Object::String {value: "爱莉希雅".into()}),
-                ("__author__".into(), Object::String {value: "FelysNeko".into()})
+                ("__elysia__".into(), Object::String { value: "爱莉希雅".into() }),
+                ("__author__".into(), Object::String { value: "FelysNeko".into() })
             ])
         };
         // the user defined built-in values will overwrite default
@@ -65,10 +65,10 @@ impl Worker {
             global: Scope::new(HashMap::new()),
             builtin: Scope::new(base),
             timeout: Duration::from_secs_f64(timeout),
-            lang
+            lang,
         }
     }
-    
+
     /// Execute code and flush the global variable scope
     pub fn exec(&mut self, code: String) -> Result<Summary, Error> {
         let start = Instant::now();
@@ -78,9 +78,9 @@ impl Worker {
         let mut environ = Environ {
             builtin: &self.builtin,
             timer: &timer,
-            body: vec![Scope::new(self.global.body.clone())]
+            body: vec![Scope::new(self.global.body.clone())],
         };
-        
+
         // send a true to the channel when time is up
         // the other side will call .unwrap_or(false)
         let limit = self.timeout;
@@ -92,23 +92,23 @@ impl Worker {
                 tx.send(true)
             }
         });
-        
+
         // lexer will go through the whole program before parsing
         let tokens = tokenize(code, &self.lang)?;
         let mut factory = ASTFactory::new(tokens);
 
         let mut stdout = Vec::new();
         let mut exit = Object::None;
-        
+
         // the ast parsing is done statement by statement instead of all at once
         while let Some(stmt) = factory.produce() {
             if let Some(value) = stmt?.run(&mut environ, &mut stdout)? {
                 // early return occurs
                 exit = value;
-                break
+                break;
             }
         }
-        
+
         // flush the global variable scope, reset if error occurs
         self.global = environ.body.pop()
             .unwrap_or(Scope::new(HashMap::new()));
@@ -116,7 +116,7 @@ impl Worker {
         Ok(Summary {
             duration: start.elapsed(),
             stdout: stdout.join("\n"),
-            code: exit
+            code: exit,
         })
     }
 }
@@ -126,7 +126,7 @@ impl Worker {
 pub struct Context<'a> {
     /// Vector of arguments that the program passed in
     pub args: Vec<Object>,
-    out: &'a mut Vec<String>
+    out: &'a mut Vec<String>,
 }
 
 impl Context<'_> {
@@ -139,7 +139,7 @@ impl Context<'_> {
 
 /// Abstraction of return value from a rust function
 pub struct Output {
-    result: Result<Object, RuntimeError>
+    result: Result<Object, RuntimeError>,
 }
 
 impl Output {
@@ -162,7 +162,7 @@ pub enum Language {
     /// Chinese
     CN,
     /// English
-    EN
+    EN,
 }
 
 impl FromStr for Language {

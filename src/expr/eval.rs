@@ -1,15 +1,15 @@
+use AssignType::*;
+use BinoptrType::*;
+use UnaoptrType::*;
+
 use crate::env::{Environ, Object};
 use crate::error::RuntimeError;
 use crate::expr::Node;
 use crate::lexer::*;
-use BinoptrType::*;
-use UnaoptrType::*;
-use AssignType::*;
-
 
 pub(super) fn eval_identifier(
     env: &mut Environ, out: &mut Vec<String>,
-    ident: &String, args: &[Node], callable: &bool
+    ident: &String, args: &[Node], callable: &bool,
 ) -> Result<Object, RuntimeError> {
     let evaled = args.iter()
         .map(|arg| arg.eval(env, out))
@@ -22,8 +22,10 @@ pub(super) fn eval_literal(optr: &ValueType, value: &String) -> Result<Object, R
     let result = match optr {
         ValueType::Boolean => Object::Boolean { value: value == "true" || value == "真" },
         ValueType::String => Object::String { value: value.clone() },
-        ValueType::Number => Object::Number { value: value.parse()
-            .map_err(|_| RuntimeError::NoF64Convertion { s: value.clone() })?},
+        ValueType::Number => Object::Number {
+            value: value.parse()
+                .map_err(|_| RuntimeError::NoF64Convertion { s: value.clone() })?
+        },
         ValueType::None => Object::None
     };
     Ok(result)
@@ -32,39 +34,39 @@ pub(super) fn eval_literal(optr: &ValueType, value: &String) -> Result<Object, R
 
 pub(super) fn eval_assignment(
     env: &mut Environ, out: &mut Vec<String>,
-    optr: &AssignType, left: &Node, right: &Node
+    optr: &AssignType, left: &Node, right: &Node,
 ) -> Result<Object, RuntimeError> {
     if let Node::Identifier { ident, args: _, callable } = left {
         if *callable {
-            return Err(RuntimeError::CannotAssign)
+            return Err(RuntimeError::CannotAssign);
         }
-        
+
         let result = match optr {
             Asn => {
                 let new = right.eval(env, out)?;
                 env.store(ident.clone(), new.clone());
                 new
-            },
+            }
             Ade => {
                 let new = eval_binary_optr(env, out, &Add, left, right)?;
                 env.store(ident.clone(), new);
                 Object::None
-            },
+            }
             Sue => {
                 let new = eval_binary_optr(env, out, &Sub, left, right)?;
                 env.store(ident.clone(), new);
                 Object::None
-            },
+            }
             Mue => {
                 let new = eval_binary_optr(env, out, &Mul, left, right)?;
                 env.store(ident.clone(), new);
                 Object::None
-            },
+            }
             Die => {
                 let new = eval_binary_optr(env, out, &Div, left, right)?;
                 env.store(ident.clone(), new);
                 Object::None
-            },
+            }
             Moe => {
                 let new = eval_binary_optr(env, out, &Mod, left, right)?;
                 env.store(ident.clone(), new);
@@ -80,7 +82,7 @@ pub(super) fn eval_assignment(
 
 pub(super) fn eval_binary_optr(
     env: &mut Environ, out: &mut Vec<String>,
-    optr: &BinoptrType, left: &Node, right: &Node
+    optr: &BinoptrType, left: &Node, right: &Node,
 ) -> Result<Object, RuntimeError> {
     let lval = left.eval(env, out)?;
     let rval = right.eval(env, out)?;
@@ -161,13 +163,13 @@ pub(super) fn eval_binary_optr(
 
 pub(super) fn eval_unary_optr(
     env: &mut Environ, out: &mut Vec<String>,
-    optr: &UnaoptrType, inner: &Node
+    optr: &UnaoptrType, inner: &Node,
 ) -> Result<Object, RuntimeError> {
     let ival = inner.eval(env, out)?;
     let result = match optr {
         Not => {
             let value = !ival.bool();
-            Object::Boolean {value}
+            Object::Boolean { value }
         }
         Pos => {
             let value = ival.f64()?;

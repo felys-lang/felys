@@ -1,9 +1,9 @@
+use KeywordType::*;
+
 use crate::ast::{ASTFactory, Eat};
 use crate::error::SyntaxError;
 use crate::flow::{Block, Statement};
 use crate::lexer::*;
-use KeywordType::*;
-
 
 impl ASTFactory {
     pub(super) fn parse_statement(&mut self) -> Option<Result<Statement, SyntaxError>> {
@@ -62,7 +62,7 @@ impl ASTFactory {
         self.eat(While)?;
         let expr = self.parse_expression()?;
         let body = self.parse_block()?;
-        Ok(Statement::While {expr, body })
+        Ok(Statement::While { expr, body })
     }
 
     fn parse_return(&mut self) -> Result<Statement, SyntaxError> {

@@ -7,7 +7,7 @@ mod statement;
 
 
 pub struct ASTFactory {
-    pub tokens: Vec<Token>
+    pub tokens: Vec<Token>,
 }
 
 
@@ -15,7 +15,7 @@ impl ASTFactory {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens }
     }
-    
+
     pub fn produce(&mut self) -> Option<Result<Statement, SyntaxError>> {
         self.parse_statement()
     }

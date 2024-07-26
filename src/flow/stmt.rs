@@ -1,13 +1,13 @@
 use std::fmt::{Debug, Formatter};
-use crate::expr::Node;
 
+use crate::expr::Node;
 
 #[derive(PartialEq, Clone)]
 pub enum Statement {
     Cond {
         expr: Node,
         body: Block,
-        alter: Option<Box<Statement>>
+        alter: Option<Box<Statement>>,
     },
 
     Else {
@@ -25,14 +25,14 @@ pub enum Statement {
 
     Simple {
         expr: Node,
-    }
+    },
 }
 
 
 impl Debug for Statement {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Statement::Cond { 
+            Statement::Cond {
                 expr,
                 body,
                 alter
@@ -41,17 +41,17 @@ impl Debug for Statement {
             } else {
                 write!(f, "if {:?} {:?}", expr, body)
             },
-            Statement::Else { 
+            Statement::Else {
                 body
             } => write!(f, "{:?}", body),
-            Statement::While { 
+            Statement::While {
                 expr,
                 body
             } => write!(f, "while {:?} {:?}", expr, body),
-            Statement::Return { 
+            Statement::Return {
                 expr
             } => write!(f, "return {:?}", expr),
-            Statement::Simple { 
+            Statement::Simple {
                 expr
             } => write!(f, "{:?}", expr)
         }
@@ -61,7 +61,7 @@ impl Debug for Statement {
 
 #[derive(PartialEq, Clone)]
 pub struct Block {
-    pub body: Vec<Statement>
+    pub body: Vec<Statement>,
 }
 
 impl Debug for Block {

@@ -1,5 +1,6 @@
-use crate::Error;
 use RuntimeError::*;
+
+use crate::Error;
 
 pub enum RuntimeError {
     Timeout,
@@ -8,7 +9,7 @@ pub enum RuntimeError {
     IdentNotCallable { s: String },
     ArgsMappingFailed { s: String },
     ObjectDoesNotExist { s: String },
-    FromRust { s: String }
+    FromRust { s: String },
 }
 
 impl From<RuntimeError> for Error {

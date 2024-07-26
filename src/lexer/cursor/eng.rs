@@ -1,14 +1,14 @@
 use crate::error::LexingError;
-use crate::lexer::cursor::Cursor;
 use crate::lexer::{BinoptrType, KeywordType, SymbolType, Token, TokenType, ValueType};
+use crate::lexer::cursor::Cursor;
 
 impl Cursor<'_> {
     pub fn scan_eng_string(&mut self) -> Result<Token, LexingError> {
         let sos = self.chars.next().ok_or(LexingError::EndOfCharStream)?;
         if sos != '\'' && sos != '"' {
-            return Err(LexingError::InvalidString { c: sos })
+            return Err(LexingError::InvalidString { c: sos });
         }
-        
+
         let mut value = String::new();
         for ch in self.chars.by_ref() {
             if ch != sos {
@@ -19,7 +19,7 @@ impl Cursor<'_> {
         }
         Err(LexingError::StringNotClosed { s: value })
     }
-    
+
     pub fn scan_eng_ident(&mut self) -> Result<Token, LexingError> {
         let mut value = String::new();
         while let Some(ch) = self.chars.peek() {

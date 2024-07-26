@@ -1,13 +1,14 @@
 use std::fmt::{Debug, Formatter};
-use crate::lexer::*;
+
 use crate::flow::Block;
+use crate::lexer::*;
 
 #[derive(PartialEq, Clone)]
 pub enum Node {
     Binary {
         optr: BinoptrType,
         left: Box<Node>,
-        right: Box<Node>
+        right: Box<Node>,
     },
 
     Unary {
@@ -17,44 +18,44 @@ pub enum Node {
 
     Function {
         args: Vec<String>,
-        body: Block
+        body: Block,
     },
 
     Identifier {
         ident: String,
         args: Vec<Node>,
-        callable: bool
+        callable: bool,
     },
 
     Literal {
         kind: ValueType,
-        value: String
+        value: String,
     },
-    
+
     Assign {
         optr: AssignType,
         left: Box<Node>,
-        right: Box<Node>
-    }
+        right: Box<Node>,
+    },
 }
 
 impl Debug for Node {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Node::Binary { 
-                optr, 
-                left, 
-                right 
+            Node::Binary {
+                optr,
+                left,
+                right
             } => write!(f, "({:?} {:?} {:?})", left, optr, right),
-            Node::Unary { 
+            Node::Unary {
                 optr,
                 inner
             } => write!(f, "({:?} {:?})", optr, inner),
-            Node::Function { 
-                args, 
-                body 
+            Node::Function {
+                args,
+                body
             } => write!(f, "|{}| {{ {:?} }}", args.join(", "), body),
-            Node::Identifier { 
+            Node::Identifier {
                 ident,
                 args,
                 callable
@@ -63,7 +64,7 @@ impl Debug for Node {
                 (true, _) => write!(f, "{}({:?})", ident, args),
                 _ => write!(f, "{}", ident)
             },
-            Node::Literal { 
+            Node::Literal {
                 kind: _,
                 value
             } => write!(f, "{}", value),

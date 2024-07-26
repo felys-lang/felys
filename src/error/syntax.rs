@@ -1,5 +1,6 @@
-use crate::Error;
 use SyntaxError::*;
+
+use crate::Error;
 
 pub enum SyntaxError {
     EndOfTokenSteam,
@@ -8,7 +9,7 @@ pub enum SyntaxError {
     TokenNotPrimary { s: String },
     TokenNotALiteral { s: String },
     InvalidArgs { s: String },
-    EatWrongToken { s: String }
+    EatWrongToken { s: String },
 }
 
 impl From<SyntaxError> for Error {

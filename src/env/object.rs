@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+
 use crate::{Context, Output};
 use crate::error::RuntimeError;
 use crate::flow::Block;
@@ -9,25 +10,25 @@ pub enum Object {
     Number {
         value: f64
     },
-    
+
     String {
         value: String
     },
-    
+
     Boolean {
         value: bool
     },
-    
+
     None,
-    
-    Function { 
+
+    Function {
         args: Vec<String>,
-        body: Block
+        body: Block,
     },
-    
+
     Rust {
         func: fn(&mut Context) -> Output
-    }
+    },
 }
 
 
@@ -39,8 +40,8 @@ impl Display for Object {
             Object::Boolean { value } => write!(f, "{}", value),
             Object::None => write!(f, "none"),
             Object::Function {
-                args, 
-                body 
+                args,
+                body
             } => write!(f, "|{}| {:?}", args.join(", "), body),
             Object::Rust { func } => write!(f, "{:?}", func)
         }

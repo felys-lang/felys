@@ -1,16 +1,16 @@
-mod node;
-mod eval;
-
 pub use node::*;
+
 use crate::env::{Environ, Object};
 use crate::error::RuntimeError;
 use crate::expr::eval::*;
 
+mod node;
+mod eval;
 
 impl Node {
     pub fn eval(
-        &self, env: &mut Environ, out: &mut Vec<String>
-    ) -> Result<Object, RuntimeError>{
+        &self, env: &mut Environ, out: &mut Vec<String>,
+    ) -> Result<Object, RuntimeError> {
         match self {
             Node::Binary {
                 optr,

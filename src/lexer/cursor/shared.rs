@@ -1,6 +1,6 @@
 use crate::error::LexingError;
-use crate::lexer::cursor::Cursor;
 use crate::lexer::{AssignType, BinoptrType, SymbolType, Token, TokenType, UnaoptrType, ValueType};
+use crate::lexer::cursor::Cursor;
 
 impl Cursor<'_> {
     pub fn skip_spaces(&mut self) {
@@ -12,7 +12,7 @@ impl Cursor<'_> {
             }
         }
     }
-    
+
     pub fn scan_number(&mut self) -> Result<Token, LexingError> {
         let mut value = String::new();
         let mut dotted = false;

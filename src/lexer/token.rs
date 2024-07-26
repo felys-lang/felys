@@ -13,7 +13,7 @@ pub enum ValueType {
     Boolean,
     String,
     Number,
-    None
+    None,
 }
 
 
@@ -32,7 +32,7 @@ pub enum BinoptrType {
     Le,
     And,
     Xor,
-    Or
+    Or,
 }
 
 
@@ -43,7 +43,7 @@ pub enum AssignType {
     Mue,
     Die,
     Moe,
-    Asn
+    Asn,
 }
 
 
@@ -51,7 +51,7 @@ pub enum AssignType {
 pub enum UnaoptrType {
     Not,
     Pos,
-    Neg
+    Neg,
 }
 
 
@@ -63,7 +63,7 @@ pub enum SymbolType {
     RParen,
     Semicol,
     Comma,
-    Pipe
+    Pipe,
 }
 
 
@@ -75,7 +75,7 @@ pub enum TokenType {
     Una(UnaoptrType),
     Sym(SymbolType),
     Asn(AssignType),
-    Identifier
+    Identifier,
 }
 
 
