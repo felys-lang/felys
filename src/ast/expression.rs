@@ -199,14 +199,10 @@ impl ASTFactory {
                 _ => return Err(SyntaxError::InvalidArgs { s: token.value })
             }
 
-            if let Some(sym) = self.tokens.pop() {
-                match sym.kind {
-                    TokenType::Sym(Comma) => (),
-                    TokenType::Sym(Pipe) => break,
-                    _ => return Err(SyntaxError::IncompleteFunc)
-                }
-            } else {
-                return Err(SyntaxError::EndOfTokenSteam);
+            if self.eat(Pipe).is_ok() {
+                break
+            } else if self.eat(Comma).is_err() {
+                return Err(SyntaxError::IncompleteFunc)
             }
         }
 
