@@ -27,13 +27,10 @@ impl ASTFactory {
         let mut body = Vec::new();
         while let Some(stmt) = self.parse_statement() {
             body.push(stmt?);
-            if let Some(token) = self.tokens.last() {
-                if token.kind == TokenType::Sym(SymbolType::RBrace) {
-                    break;
-                }
+            if self.eat(SymbolType::RBrace).is_ok() {
+                break;
             }
         }
-        self.eat(SymbolType::RBrace)?;
         Ok(Block::new(body))
     }
 
