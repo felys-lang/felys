@@ -48,7 +48,6 @@ pub struct Worker {
 impl Worker {
     /// Configure and initialize a new worker
     pub fn new(mixin: HashMap<String, Object>, timeout: f64, lang: Language) -> Self {
-        // this the built-in values that should never get removed
         let mut base = match lang {
             Language::CN => HashMap::from([
                 ("——爱莉希雅——".into(), Object::String { value: "粉色妖精小姐♪".into() }),
@@ -59,7 +58,6 @@ impl Worker {
                 ("__author__".into(), Object::String { value: "FelysNeko".into() })
             ])
         };
-        // the user defined built-in values will overwrite default
         base.extend(mixin);
         Self {
             global: Scope::new(HashMap::new()),
@@ -72,48 +70,40 @@ impl Worker {
     /// Execute code and flush the global variable scope
     pub fn exec(&mut self, code: String) -> Result<Summary, Error> {
         let start = Instant::now();
-        let (tx, timer) = mpsc::channel();
-        // build the environment for this execution
-        // the first scope is the temporary global scope which is cloned from the worker
+        let (tx, rx) = mpsc::channel();
         let mut environ = Environ {
             builtin: &self.builtin,
-            timer: &timer,
+            timer: &rx,
             body: vec![Scope::new(self.global.body.clone())],
         };
 
-        // send a true to the channel when time is up
-        // the other side will call .unwrap_or(false)
         let limit = self.timeout;
-        if !self.timeout.is_zero() {
+        if !limit.is_zero() {
             thread::spawn(move || {
                 thread::sleep(limit);
                 tx.send(true)
             });
         }
         let t0 = start.elapsed();
-        
-        // lexer will go through the whole program before parsing
+
         let tokens = tokenize(code, &self.lang)?;
         let mut factory = ASTFactory::new(tokens);
         let t1 = start.elapsed();
 
         let mut stdout = Vec::new();
         let mut exit = Object::None;
-        // the ast parsing is done statement by statement instead of all at once
         while let Some(stmt) = factory.produce() {
             if let Some(value) = stmt?.run(&mut environ, &mut stdout)? {
-                // early return occurs
                 exit = value;
                 break;
             }
         }
 
-        // flush the global variable scope, reset if error occurs
         self.global = environ.body.pop()
             .unwrap_or(Scope::new(HashMap::new()));
 
         Ok(Summary {
-            time: (t0, t1-t0, start.elapsed()-t1),
+            time: (t0, t1 - t0, start.elapsed() - t1),
             stdout: stdout.join("\n"),
             exit,
         })
@@ -142,7 +132,7 @@ pub struct Output {
 }
 
 impl Output {
-    /// Throw an error to interpreter
+    /// Throw an error to the runtime backend
     pub fn error(msg: String) -> Self {
         Self { result: Err(RuntimeError::FromRust { s: msg }) }
     }
@@ -155,7 +145,7 @@ impl From<Object> for Output {
 }
 
 
-/// Available languages
+/// Available coding languages
 #[derive(Clone)]
 pub enum Language {
     /// Chinese
