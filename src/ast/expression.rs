@@ -164,26 +164,26 @@ impl ASTFactory {
         let mut callable = false;
         let args = if self.eat(LParen).is_ok() {
             callable = true;
-            self.parse_arguments()?
+            self.parse_identifier_arguments()?
         } else {
             Vec::new()
         };
         Ok(Node::Identifier { ident, args, callable })
     }
 
-    fn parse_arguments(&mut self) -> Result<Vec<Node>, SyntaxError> {
+    fn parse_identifier_arguments(&mut self) -> Result<Vec<Node>, SyntaxError> {
         let mut args = Vec::new();
         if self.eat(RParen).is_ok() {
-            return Ok(args)
+            return Ok(args);
         }
         loop {
             let expr = self.parse_expression()?;
             args.push(expr);
-            
+
             if self.eat(RParen).is_ok() {
-                break
+                break;
             } else if self.eat(Comma).is_err() {
-                return Err(SyntaxError::IncompleteCall)
+                return Err(SyntaxError::IncompleteCall);
             }
         }
         Ok(args)
@@ -191,21 +191,7 @@ impl ASTFactory {
 
     fn parse_function(&mut self) -> Result<Node, SyntaxError> {
         self.eat(Pipe)?;
-        let mut args = Vec::new();
-        while let Some(token) = self.tokens.pop() {
-            match token.kind {
-                TokenType::Identifier => args.push(token.value),
-                TokenType::Sym(Pipe) => break,
-                _ => return Err(SyntaxError::InvalidArgs { s: token.value })
-            }
-
-            if self.eat(Pipe).is_ok() {
-                break
-            } else if self.eat(Comma).is_err() {
-                return Err(SyntaxError::IncompleteFunc)
-            }
-        }
-
+        let args = self.parse_function_arguments()?;
         let block = if let Some(token) = self.tokens.last() {
             if token.kind == TokenType::Sym(LBrace) {
                 self.parse_block()?
@@ -218,6 +204,27 @@ impl ASTFactory {
         };
 
         Ok(Node::Function { args, body: block })
+    }
+
+    fn parse_function_arguments(&mut self) -> Result<Vec<String>, SyntaxError> {
+        let mut args = Vec::new();
+        if self.eat(Pipe).is_ok() {
+            return Ok(args);
+        }
+        loop {
+            if let Some(token) = self.tokens.pop() {
+                match token.kind {
+                    TokenType::Identifier => args.push(token.value),
+                    _ => return Err(SyntaxError::InvalidArgs { s: token.value })
+                }
+            }
+            if self.eat(Pipe).is_ok() {
+                break;
+            } else if self.eat(Comma).is_err() {
+                return Err(SyntaxError::IncompleteFunc);
+            }
+        }
+        Ok(args)
     }
 
     fn parse_parentheses(&mut self) -> Result<Node, SyntaxError> {
