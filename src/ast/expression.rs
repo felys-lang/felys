@@ -173,23 +173,17 @@ impl ASTFactory {
 
     fn parse_arguments(&mut self) -> Result<Vec<Node>, SyntaxError> {
         let mut args = Vec::new();
-        while let Some(token) = self.tokens.last() {
-            if token.kind != TokenType::Sym(RParen) {
-                let node = self.parse_expression()?;
-                args.push(node);
-            } else {
-                self.eat(RParen)?;
-                break;
-            }
-
-            if let Some(sym) = self.tokens.pop() {
-                match sym.kind {
-                    TokenType::Sym(Comma) => (),
-                    TokenType::Sym(RParen) => break,
-                    _ => return Err(SyntaxError::IncompleteCall)
-                }
-            } else {
-                return Err(SyntaxError::EndOfTokenSteam);
+        if self.eat(RParen).is_ok() {
+            return Ok(args)
+        }
+        loop {
+            let expr = self.parse_expression()?;
+            args.push(expr);
+            
+            if self.eat(RParen).is_ok() {
+                break
+            } else if self.eat(Comma).is_err() {
+                return Err(SyntaxError::IncompleteCall)
             }
         }
         Ok(args)
