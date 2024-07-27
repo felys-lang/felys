@@ -12,7 +12,7 @@ mod tests {
         let mixin = HashMap::new();
         let mut main = Worker::new(mixin, 0.0, Language::EN);
         match main.exec(code) {
-            Ok(s) => s.code,
+            Ok(s) => s.exit,
             Err(e) => panic!("{}", e)
         }
     }

@@ -28,12 +28,12 @@ mod error;
 
 /// Relevant outputs after one execution
 pub struct Summary {
-    /// Total runtime starting from initialization to returning
-    pub duration: Duration,
+    /// Time spent in different steps: (initialization, lexing, runtime)
+    pub time: (Duration, Duration, Duration),
     /// A string concatenated from output buffer vector
     pub stdout: String,
     /// Return value of the whole execution
-    pub code: Object,
+    pub exit: Object,
 }
 
 
@@ -84,22 +84,21 @@ impl Worker {
         // send a true to the channel when time is up
         // the other side will call .unwrap_or(false)
         let limit = self.timeout;
-        thread::spawn(move || {
-            if limit.is_zero() {
-                tx.send(false)
-            } else {
+        if !self.timeout.is_zero() {
+            thread::spawn(move || {
                 thread::sleep(limit);
                 tx.send(true)
-            }
-        });
-
+            });
+        }
+        let t0 = start.elapsed();
+        
         // lexer will go through the whole program before parsing
         let tokens = tokenize(code, &self.lang)?;
         let mut factory = ASTFactory::new(tokens);
+        let t1 = start.elapsed();
 
         let mut stdout = Vec::new();
         let mut exit = Object::None;
-
         // the ast parsing is done statement by statement instead of all at once
         while let Some(stmt) = factory.produce() {
             if let Some(value) = stmt?.run(&mut environ, &mut stdout)? {
@@ -114,9 +113,9 @@ impl Worker {
             .unwrap_or(Scope::new(HashMap::new()));
 
         Ok(Summary {
-            duration: start.elapsed(),
+            time: (t0, t1-t0, start.elapsed()-t1),
             stdout: stdout.join("\n"),
-            code: exit,
+            exit,
         })
     }
 }
