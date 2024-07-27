@@ -162,13 +162,9 @@ impl ASTFactory {
         };
 
         let mut callable = false;
-        let args = if let Some(token) = self.tokens.last() {
-            if token.kind == TokenType::Sym(LParen) {
-                callable = true;
-                self.parse_arguments()?
-            } else {
-                Vec::new()
-            }
+        let args = if self.eat(LParen).is_ok() {
+            callable = true;
+            self.parse_arguments()?
         } else {
             Vec::new()
         };
@@ -176,8 +172,6 @@ impl ASTFactory {
     }
 
     fn parse_arguments(&mut self) -> Result<Vec<Node>, SyntaxError> {
-        self.eat(LParen)?;
-
         let mut args = Vec::new();
         while let Some(token) = self.tokens.last() {
             if token.kind != TokenType::Sym(RParen) {
@@ -203,7 +197,6 @@ impl ASTFactory {
 
     fn parse_function(&mut self) -> Result<Node, SyntaxError> {
         self.eat(Pipe)?;
-
         let mut args = Vec::new();
         while let Some(token) = self.tokens.pop() {
             match token.kind {
