@@ -21,7 +21,7 @@ mod tests {
     fn felys() {
         assert_eq!(
             execute("felys.ely"),
-            Object::String { value: "爱莉希雅".into() }
+            Object::String("爱莉希雅".into())
         );
     }
 
@@ -29,7 +29,6 @@ mod tests {
     fn factorial() {
         assert_eq!(
             execute("factorial.ely"),
-            Object::Number { value: 3628800.0 }
-        );
+            Object::Number(3628800.0));
     }
 }

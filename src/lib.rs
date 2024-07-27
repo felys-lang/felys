@@ -50,12 +50,12 @@ impl Worker {
     pub fn new(mixin: HashMap<String, Object>, timeout: f64, lang: Language) -> Self {
         let mut base = match lang {
             Language::CN => HashMap::from([
-                ("——爱莉希雅——".into(), Object::String { value: "粉色妖精小姐♪".into() }),
-                ("——作者——".into(), Object::String { value: "银河猫猫侠".into() })
+                ("——爱莉希雅——".into(), Object::String("粉色妖精小姐♪".into())),
+                ("——作者——".into(), Object::String("银河猫猫侠".into()))
             ]),
             Language::EN => HashMap::from([
-                ("__elysia__".into(), Object::String { value: "爱莉希雅".into() }),
-                ("__author__".into(), Object::String { value: "FelysNeko".into() })
+                ("__elysia__".into(), Object::String("爱莉希雅".into())),
+                ("__author__".into(), Object::String("FelysNeko".into()))
             ])
         };
         base.extend(mixin);

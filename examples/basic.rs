@@ -7,7 +7,7 @@ fn main() {
 
     // your customized built-in values and rust functions
     let mixin = HashMap::from([
-        ("print".into(), Object::Rust { func: print })
+        ("print".into(), Object::Rust(print))
     ]);
 
     // init the worker with mixin, set to no timeout and English mode
