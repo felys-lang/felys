@@ -12,11 +12,11 @@ pub enum Object {
     Boolean(bool),
     None,
     Rust(fn(&mut Context) -> Output),
-    
+
     #[doc(hidden)]
-    Function { 
-        args: Vec<String>, 
-        body: Block 
+    Function {
+        args: Vec<String>,
+        body: Block,
     },
 }
 
@@ -28,7 +28,7 @@ impl Display for Object {
             Object::String(value) => write!(f, "\"{}\"", value),
             Object::Boolean(value) => write!(f, "{}", value),
             Object::None => write!(f, "none"),
-            Object::Function { args, body } => 
+            Object::Function { args, body } =>
                 write!(f, "|{}| {:?}", args.join(", "), body),
             Object::Rust(func) => write!(f, "{:?}", func)
         }
