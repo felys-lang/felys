@@ -10,10 +10,10 @@ use crate::lexer::*;
 
 impl ASTFactory {
     pub(super) fn parse_expression(&mut self) -> Result<Node, SyntaxError> {
-        self.parse_assignement()
+        self.parse_assignment()
     }
 
-    fn parse_assignement(&mut self) -> Result<Node, SyntaxError> {
+    fn parse_assignment(&mut self) -> Result<Node, SyntaxError> {
         let mut left = self.parse_logical()?;
         while let Some(token) = self.tokens.pop() {
             if let TokenType::Asn(
