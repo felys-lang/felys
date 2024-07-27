@@ -20,7 +20,7 @@ pub(super) fn eval_identifier(
 
 pub(super) fn eval_literal(optr: &ValueType, value: &String) -> Result<Object, RuntimeError> {
     let result = match optr {
-        ValueType::Boolean => Object::Boolean(value == "true" || value == "真" ),
+        ValueType::Boolean => Object::Boolean(value == "true" || value == "真"),
         ValueType::String => Object::String(value.clone()),
         ValueType::Number => Object::Number(
             value.parse()

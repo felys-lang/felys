@@ -39,8 +39,8 @@ impl Node {
                 args,
                 body
             } => Ok(Object::Function {
-                args: args.clone(), 
-                body: body.clone()
+                args: args.clone(),
+                body: body.clone(),
             })
         }
     }
