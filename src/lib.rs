@@ -168,8 +168,8 @@ impl FromStr for Language {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let lang = match s.to_ascii_lowercase().as_str() {
-            "en" | "eng" => Self::EN,
-            "cn" | "chn" => Self::CN,
+            "en" => Self::EN,
+            "cn" => Self::CN,
             _ => return Err("")
         };
         Ok(lang)
