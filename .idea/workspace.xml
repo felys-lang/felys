@@ -7,7 +7,10 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d3466923-bb47-42e4-9150-14c28c4e53f1" name="Changes" comment="" />
+    <list default="true" id="d3466923-bb47-42e4-9150-14c28c4e53f1" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/src/lexer/cursor/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lexer/cursor/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib.rs" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -57,7 +60,7 @@
     "Cargo.Test tests::all.executor": "Run",
     "Cargo.Test tests::felys.executor": "Run",
     "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "nightly",
     "last_opened_file_path": "/Users/jhannykin/Documents/GitHub/felys/tests/programs",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -117,6 +120,7 @@
       <workItem from="1721937490016" duration="366000" />
       <workItem from="1721937864133" duration="3706000" />
       <workItem from="1721943072176" duration="16380000" />
+      <workItem from="1722248029838" duration="662000" />
     </task>
     <servers />
   </component>

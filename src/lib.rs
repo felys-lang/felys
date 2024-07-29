@@ -49,7 +49,7 @@ impl Worker {
     /// Configure and initialize a new worker
     pub fn new(mixin: HashMap<String, Object>, timeout: f64, lang: Language) -> Self {
         let mut base = match lang {
-            Language::CN => HashMap::from([
+            Language::ZH => HashMap::from([
                 ("——爱莉希雅——".into(), Object::String("粉色妖精小姐♪".into())),
                 ("——作者——".into(), Object::String("银河猫猫侠".into()))
             ]),
@@ -149,7 +149,7 @@ impl From<Object> for Output {
 #[derive(Clone)]
 pub enum Language {
     /// Chinese
-    CN,
+    ZH,
     /// English
     EN,
 }
@@ -159,7 +159,7 @@ impl FromStr for Language {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let lang = match s.to_ascii_lowercase().as_str() {
             "en" => Self::EN,
-            "cn" => Self::CN,
+            "cn" => Self::ZH,
             _ => return Err("")
         };
         Ok(lang)
