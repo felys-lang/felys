@@ -28,12 +28,12 @@ mod error;
 
 /// Relevant outputs after one execution
 pub struct Summary {
-    /// Total runtime starting from initialization to returning
-    pub duration: Duration,
+    /// Time spent in different steps: (initialization, lexing, runtime)
+    pub time: (Duration, Duration, Duration),
     /// A string concatenated from output buffer vector
     pub stdout: String,
     /// Return value of the whole execution
-    pub code: Object,
+    pub exit: Object,
 }
 
 
@@ -48,18 +48,16 @@ pub struct Worker {
 impl Worker {
     /// Configure and initialize a new worker
     pub fn new(mixin: HashMap<String, Object>, timeout: f64, lang: Language) -> Self {
-        // this the built-in values that should never get removed
         let mut base = match lang {
-            Language::CN => HashMap::from([
-                ("——爱莉希雅——".into(), Object::String { value: "粉色妖精小姐♪".into() }),
-                ("——作者——".into(), Object::String { value: "银河猫猫侠".into() })
+            Language::ZH => HashMap::from([
+                ("——爱莉希雅——".into(), Object::String("粉色妖精小姐♪".into())),
+                ("——作者——".into(), Object::String("银河猫猫侠".into()))
             ]),
             Language::EN => HashMap::from([
-                ("__elysia__".into(), Object::String { value: "爱莉希雅".into() }),
-                ("__author__".into(), Object::String { value: "FelysNeko".into() })
+                ("__elysia__".into(), Object::String("爱莉希雅".into())),
+                ("__author__".into(), Object::String("FelysNeko".into()))
             ])
         };
-        // the user defined built-in values will overwrite default
         base.extend(mixin);
         Self {
             global: Scope::new(HashMap::new()),
@@ -72,51 +70,42 @@ impl Worker {
     /// Execute code and flush the global variable scope
     pub fn exec(&mut self, code: String) -> Result<Summary, Error> {
         let start = Instant::now();
-        let (tx, timer) = mpsc::channel();
-        // build the environment for this execution
-        // the first scope is the temporary global scope which is cloned from the worker
+        let (tx, rx) = mpsc::channel();
         let mut environ = Environ {
             builtin: &self.builtin,
-            timer: &timer,
+            timer: &rx,
             body: vec![Scope::new(self.global.body.clone())],
         };
 
-        // send a true to the channel when time is up
-        // the other side will call .unwrap_or(false)
         let limit = self.timeout;
-        thread::spawn(move || {
-            if limit.is_zero() {
-                tx.send(false)
-            } else {
+        if !limit.is_zero() {
+            thread::spawn(move || {
                 thread::sleep(limit);
                 tx.send(true)
-            }
-        });
+            });
+        }
+        let t0 = start.elapsed();
 
-        // lexer will go through the whole program before parsing
         let tokens = tokenize(code, &self.lang)?;
         let mut factory = ASTFactory::new(tokens);
+        let t1 = start.elapsed();
 
         let mut stdout = Vec::new();
         let mut exit = Object::None;
-
-        // the ast parsing is done statement by statement instead of all at once
         while let Some(stmt) = factory.produce() {
             if let Some(value) = stmt?.run(&mut environ, &mut stdout)? {
-                // early return occurs
                 exit = value;
                 break;
             }
         }
 
-        // flush the global variable scope, reset if error occurs
         self.global = environ.body.pop()
             .unwrap_or(Scope::new(HashMap::new()));
 
         Ok(Summary {
-            duration: start.elapsed(),
+            time: (t0, t1 - t0, start.elapsed() - t1),
             stdout: stdout.join("\n"),
-            code: exit,
+            exit,
         })
     }
 }
@@ -143,7 +132,7 @@ pub struct Output {
 }
 
 impl Output {
-    /// Throw an error to interpreter
+    /// Throw an error to the runtime backend
     pub fn error(msg: String) -> Self {
         Self { result: Err(RuntimeError::FromRust { s: msg }) }
     }
@@ -156,11 +145,11 @@ impl From<Object> for Output {
 }
 
 
-/// Available languages
+/// Available coding languages
 #[derive(Clone)]
 pub enum Language {
     /// Chinese
-    CN,
+    ZH,
     /// English
     EN,
 }
@@ -169,8 +158,8 @@ impl FromStr for Language {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let lang = match s.to_ascii_lowercase().as_str() {
-            "en" | "eng" => Self::EN,
-            "cn" | "chn" => Self::CN,
+            "en" => Self::EN,
+            "cn" => Self::ZH,
             _ => return Err("")
         };
         Ok(lang)

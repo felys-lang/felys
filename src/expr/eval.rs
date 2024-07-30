@@ -20,12 +20,12 @@ pub(super) fn eval_identifier(
 
 pub(super) fn eval_literal(optr: &ValueType, value: &String) -> Result<Object, RuntimeError> {
     let result = match optr {
-        ValueType::Boolean => Object::Boolean { value: value == "true" || value == "真" },
-        ValueType::String => Object::String { value: value.clone() },
-        ValueType::Number => Object::Number {
-            value: value.parse()
+        ValueType::Boolean => Object::Boolean(value == "true" || value == "真"),
+        ValueType::String => Object::String(value.clone()),
+        ValueType::Number => Object::Number(
+            value.parse()
                 .map_err(|_| RuntimeError::NoF64Convertion { s: value.clone() })?
-        },
+        ),
         ValueType::None => Object::None
     };
     Ok(result)
@@ -89,53 +89,53 @@ pub(super) fn eval_binary_optr(
     let result = match optr {
         Add => {
             let value = lval.f64()? + rval.f64()?;
-            Object::Number { value }
+            Object::Number(value)
         }
         Sub => {
             let value = lval.f64()? - rval.f64()?;
-            Object::Number { value }
+            Object::Number(value)
         }
         Mul => {
             let value = lval.f64()? * rval.f64()?;
-            Object::Number { value }
+            Object::Number(value)
         }
         Div => {
             let value = lval.f64()? / rval.f64()?;
-            Object::Number { value }
+            Object::Number(value)
         }
         Mod => {
             let value = lval.f64()? % rval.f64()?;
-            Object::Number { value }
+            Object::Number(value)
         }
         Eq => {
             let value = lval.f64()? == rval.f64()?;
-            Object::Boolean { value }
+            Object::Boolean(value)
         }
         Ne => {
             let value = lval.f64()? != rval.f64()?;
-            Object::Boolean { value }
+            Object::Boolean(value)
         }
         Gt => {
             let value = lval.f64()? > rval.f64()?;
-            Object::Boolean { value }
+            Object::Boolean(value)
         }
         Lt => {
             let value = lval.f64()? < rval.f64()?;
-            Object::Boolean { value }
+            Object::Boolean(value)
         }
         Ge => {
             let value = lval.f64()? >= rval.f64()?;
-            Object::Boolean { value }
+            Object::Boolean(value)
         }
         Le => {
             let value = lval.f64()? <= rval.f64()?;
-            Object::Boolean { value }
+            Object::Boolean(value)
         }
         And => {
             if lval.bool() && rval.bool() {
                 rval
             } else {
-                Object::Boolean { value: false }
+                Object::Boolean(false)
             }
         }
         Xor => {
@@ -144,7 +144,7 @@ pub(super) fn eval_binary_optr(
             } else if !lval.bool() && rval.bool() {
                 rval
             } else {
-                Object::Boolean { value: false }
+                Object::Boolean(false)
             }
         }
         Or => {
@@ -153,7 +153,7 @@ pub(super) fn eval_binary_optr(
             } else if rval.bool() {
                 rval
             } else {
-                Object::Boolean { value: false }
+                Object::Boolean(false)
             }
         }
     };
@@ -169,15 +169,15 @@ pub(super) fn eval_unary_optr(
     let result = match optr {
         Not => {
             let value = !ival.bool();
-            Object::Boolean { value }
+            Object::Boolean(value)
         }
         Pos => {
             let value = ival.f64()?;
-            Object::Number { value }
+            Object::Number(value)
         }
         Neg => {
             let value = -ival.f64()?;
-            Object::Number { value }
+            Object::Number(value)
         }
     };
     Ok(result)

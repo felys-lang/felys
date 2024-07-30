@@ -29,10 +29,11 @@ trait Eat<T> {
 
 impl Eat<SymbolType> for ASTFactory {
     fn eat(&mut self, t: SymbolType) -> Result<(), SyntaxError> {
-        if let Some(token) = self.tokens.pop() {
+        if let Some(token) = self.tokens.last() {
             if token.kind != TokenType::Sym(t) {
-                Err(SyntaxError::EatWrongToken { s: token.value })
+                Err(SyntaxError::EatWrongToken { s: token.value.clone() })
             } else {
+                self.tokens.pop();
                 Ok(())
             }
         } else {
@@ -44,10 +45,11 @@ impl Eat<SymbolType> for ASTFactory {
 
 impl Eat<KeywordType> for ASTFactory {
     fn eat(&mut self, t: KeywordType) -> Result<(), SyntaxError> {
-        if let Some(token) = self.tokens.pop() {
+        if let Some(token) = self.tokens.last() {
             if token.kind != TokenType::Key(t) {
-                Err(SyntaxError::EatWrongToken { s: token.value })
+                Err(SyntaxError::EatWrongToken { s: token.value.clone() })
             } else {
+                self.tokens.pop();
                 Ok(())
             }
         } else {

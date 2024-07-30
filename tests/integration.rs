@@ -12,7 +12,7 @@ mod tests {
         let mixin = HashMap::new();
         let mut main = Worker::new(mixin, 0.0, Language::EN);
         match main.exec(code) {
-            Ok(s) => s.code,
+            Ok(s) => s.exit,
             Err(e) => panic!("{}", e)
         }
     }
@@ -21,7 +21,7 @@ mod tests {
     fn felys() {
         assert_eq!(
             execute("felys.ely"),
-            Object::String { value: "爱莉希雅".into() }
+            Object::String("爱莉希雅".into())
         );
     }
 
@@ -29,7 +29,15 @@ mod tests {
     fn factorial() {
         assert_eq!(
             execute("factorial.ely"),
-            Object::Number { value: 3628800.0 }
+            Object::Number(3628800.0)
+        );
+    }
+
+    #[test]
+    fn heaviside() {
+        assert_eq!(
+            execute("heaviside.ely"),
+            Object::Number(0.5)
         );
     }
 }

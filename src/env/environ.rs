@@ -52,7 +52,7 @@ impl Environ<'_> {
                 Object::None
             };
             Ok(result)
-        } else if let Object::Rust { func } = object {
+        } else if let Object::Rust(func) = object {
             let mut context = Context { args, out };
             Ok(func(&mut context).result?)
         } else {

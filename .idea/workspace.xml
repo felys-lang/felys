@@ -57,7 +57,7 @@
     "Cargo.Test tests::all.executor": "Run",
     "Cargo.Test tests::felys.executor": "Run",
     "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "nightly",
     "last_opened_file_path": "/Users/jhannykin/Documents/GitHub/felys/tests/programs",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -117,6 +117,7 @@
       <workItem from="1721937490016" duration="366000" />
       <workItem from="1721937864133" duration="3706000" />
       <workItem from="1721943072176" duration="16380000" />
+      <workItem from="1722248029838" duration="1341000" />
     </task>
     <servers />
   </component>

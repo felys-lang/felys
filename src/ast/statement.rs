@@ -9,12 +9,16 @@ impl ASTFactory {
     pub(super) fn parse_statement(&mut self) -> Option<Result<Statement, SyntaxError>> {
         if let Some(keyword) = self.tokens.last() {
             let stmt = match keyword.kind {
-                TokenType::Key(If) => self.parse_cond(false),
+                TokenType::Key(If) => self.parse_cond(),
                 TokenType::Key(While) => self.parse_while(),
                 TokenType::Key(Return) => self.parse_return(),
                 _ => self.parse_simple()
             };
-            Some(stmt)
+            loop {
+                if self.eat(SymbolType::Semicol).is_err() {
+                    return Some(stmt);
+                }
+            }
         } else { None }
     }
 
@@ -23,28 +27,22 @@ impl ASTFactory {
         let mut body = Vec::new();
         while let Some(stmt) = self.parse_statement() {
             body.push(stmt?);
-            if let Some(token) = self.tokens.last() {
-                if token.kind == TokenType::Sym(SymbolType::RBrace) {
-                    break;
-                }
+            if self.eat(SymbolType::RBrace).is_ok() {
+                break;
             }
         }
-        self.eat(SymbolType::RBrace)?;
         Ok(Block::new(body))
     }
 
-    fn parse_cond(&mut self, elif: bool) -> Result<Statement, SyntaxError> {
-        if elif {
-            self.eat(Elif)?;
-        } else {
-            self.eat(If)?;
+    fn parse_cond(&mut self) -> Result<Statement, SyntaxError> {
+        if self.eat(If).is_err() {
+            self.eat(Elif)?
         }
-
         let expr = self.parse_expression()?;
         let body = self.parse_block()?;
         let alter = if let Some(token) = self.tokens.last() {
             match token.kind {
-                TokenType::Key(Elif) => Some(Box::new(self.parse_cond(true)?)),
+                TokenType::Key(Elif) => Some(Box::new(self.parse_cond()?)),
                 TokenType::Key(Else) => Some(Box::new(self.parse_else()?)),
                 _ => None
             }
