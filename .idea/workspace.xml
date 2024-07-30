@@ -46,27 +46,27 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Cargo.Run basic.executor": "Run",
-    "Cargo.Test anything.executor": "Run",
-    "Cargo.Test integration::tests (1).executor": "Run",
-    "Cargo.Test integration::tests.executor": "Run",
-    "Cargo.Test lib::tests.executor": "Run",
-    "Cargo.Test playground.executor": "Run",
-    "Cargo.Test tests::all.executor": "Run",
-    "Cargo.Test tests::felys.executor": "Run",
-    "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "git-widget-placeholder": "nightly",
-    "last_opened_file_path": "/Users/jhannykin/Documents/GitHub/felys/tests/programs",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
-    "settings.editor.selected.configurable": "settings.sync"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Cargo.Run basic.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test anything.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test integration::tests (1).executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test integration::tests.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test lib::tests.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test playground.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test tests::all.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test tests::felys.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;nightly&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/jhannykin/Documents/GitHub/felys/tests/programs&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;settings.sync&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/tests/programs" />
