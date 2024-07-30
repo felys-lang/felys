@@ -29,6 +29,15 @@ mod tests {
     fn factorial() {
         assert_eq!(
             execute("factorial.ely"),
-            Object::Number(3628800.0));
+            Object::Number(3628800.0)
+        );
+    }
+
+    #[test]
+    fn heaviside() {
+        assert_eq!(
+            execute("heaviside.ely"),
+            Object::Number(0.5)
+        );
     }
 }
