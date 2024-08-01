@@ -58,7 +58,7 @@
     "Cargo.Test tests::felys.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "zh-lexer-fix",
     "last_opened_file_path": "/Users/jhannykin/Documents/GitHub/felys/tests/programs",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
