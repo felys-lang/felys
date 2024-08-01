@@ -7,7 +7,17 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d3466923-bb47-42e4-9150-14c28c4e53f1" name="Changes" comment="" />
+    <list default="true" id="d3466923-bb47-42e4-9150-14c28c4e53f1" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/tests/programs/chinese.ely" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/error/lexing.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error/lexing.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/expr/eval.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/expr/eval.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lexer/cursor/chn.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lexer/cursor/zh.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lexer/cursor/eng.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lexer/cursor/en.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lexer/cursor/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lexer/cursor/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lexer/cursor/shared.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lexer/cursor/shared.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/integration.rs" beforeDir="false" afterPath="$PROJECT_DIR$/tests/integration.rs" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -58,7 +68,7 @@
     "Cargo.Test tests::felys.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "zh-lexer-fix",
     "last_opened_file_path": "/Users/jhannykin/Documents/GitHub/felys/tests/programs",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
