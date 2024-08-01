@@ -54,7 +54,7 @@ impl Cursor<'_> {
             "如果" => KeywordType::If.into(),
             "否如" => KeywordType::Elif.into(),
             "否则" => KeywordType::Else.into(),
-            "直到" => KeywordType::While.into(),
+            "循环" => KeywordType::While.into(),
             "返回" => KeywordType::Return.into(),
             "大于" => BinoptrType::Gt.into(),
             "小于" => BinoptrType::Lt.into(),
