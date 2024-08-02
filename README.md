@@ -16,7 +16,7 @@ Felys is a functional programming language written in Rust. It supports function
 
 ## License
 
-Distributed under the terms of the [MIT License](https://github.com/felys-lang/felys/blob/main/LICENSE).
+Distributed under the terms of the [MIT License](LICENSE).
 
 ## Copyright
 
