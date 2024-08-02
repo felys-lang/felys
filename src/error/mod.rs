@@ -8,6 +8,7 @@ mod lexing;
 mod syntax;
 mod runtime;
 
+#[derive(Debug)]
 pub struct Error {
     msg: String,
 }

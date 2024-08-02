@@ -9,6 +9,8 @@
   <component name="ChangeListManager">
     <list default="true" id="d3466923-bb47-42e4-9150-14c28c4e53f1" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/error/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lexer/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/lexer/mod.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,6 +61,7 @@
     "Cargo.Test anything.executor": "Run",
     "Cargo.Test integration::tests (1).executor": "Run",
     "Cargo.Test integration::tests.executor": "Run",
+    "Cargo.Test lexer_unit_test.executor": "Run",
     "Cargo.Test lib::tests.executor": "Run",
     "Cargo.Test playground.executor": "Run",
     "Cargo.Test tests::all.executor": "Run",
@@ -85,7 +88,7 @@
     <option name="runOnTheFly" value="true" />
     <option name="tool" value="Clippy" />
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Cargo.Test lexer_unit_test">
     <configuration name="Test integration::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="test --package felys --test integration tests" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -105,8 +108,26 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Test lexer_unit_test" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="test --package felys --lib lexer::lexer_unit_test" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.Test lexer_unit_test" />
         <item itemvalue="Cargo.Test integration::tests" />
       </list>
     </recent_temporary>
