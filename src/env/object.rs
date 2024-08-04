@@ -25,7 +25,7 @@ impl Display for Object {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Object::Number(value) => write!(f, "{}", value),
-            Object::String(value) => write!(f, "\"{}\"", value),
+            Object::String(value) => write!(f, "{}", value),
             Object::Boolean(value) => write!(f, "{}", value),
             Object::None => write!(f, "none"),
             Object::Function { args, body } =>
