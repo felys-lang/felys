@@ -3,9 +3,9 @@
 </div>
 
 <div align="center">
-  <a href="https://github.com/felys-lang/felys">Quickstart</a> |
-  <a href="https://github.com/felys-lang/felys">Documentation</a> |
-  <a href="https://github.com/felys-lang/felys">Playground</a>
+  <a href="https://felys.dev/">Quickstart</a> |
+  <a href="https://felys.dev/">Documentation</a> |
+  <a href="https://exec.felys.dev/">Playground</a>
 </div>
 
 ## What is the Felys programming Language?
