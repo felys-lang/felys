@@ -1,5 +1,5 @@
 <div align="center">
-  <img alt="The Felys Programming Language" src="https://github.com/felys-lang/.github/blob/main/felys.png" width="50%">
+  <img alt="The Felys Programming Language" src="https://raw.githubusercontent.com/felys-lang/.github/main/felys.png" width="50%">
 </div>
 
 <div align="center">
