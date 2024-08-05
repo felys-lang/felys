@@ -5,6 +5,7 @@ use crate::Error;
 pub enum RuntimeError {
     Timeout,
     CannotAssign,
+    CallStackOverflow,
     NoF64Convertion { s: String },
     IdentNotCallable { s: String },
     ArgsMappingFailed { s: String },
@@ -17,6 +18,7 @@ impl From<RuntimeError> for Error {
         let msg = match value {
             Timeout => "code execution timeout".to_string(),
             CannotAssign => "left hand side is not assignable".to_string(),
+            CallStackOverflow => "call stack overflow".to_string(),
             NoF64Convertion { s } => format!("object `{}` does convert to f64", s),
             IdentNotCallable { s } => format!("identifier `{}` is not callable", s),
             ArgsMappingFailed { s } => format!("calling {} requires different numbers of args", s),

@@ -8,6 +8,7 @@ use crate::error::RuntimeError;
 pub struct Environ<'a> {
     pub builtin: &'a Scope,
     pub timer: &'a Receiver<bool>,
+    pub called: (usize, usize),
     pub body: Vec<Scope>,
 }
 
@@ -45,7 +46,7 @@ impl Environ<'_> {
                 .map(|(k, v)| (k.clone(), v))
                 .collect::<HashMap<String, Object>>();
             default.insert(ident.clone(), object.clone());
-            let mut env = self.sandbox(default);
+            let mut env = self.sandbox(default)?;
             let result = if let Some(value) = body.run(&mut env, out)? {
                 value
             } else {

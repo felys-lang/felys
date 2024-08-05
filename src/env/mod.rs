@@ -9,11 +9,16 @@ mod environ;
 
 
 impl Environ<'_> {
-    pub fn sandbox(&self, default: HashMap<String, Object>) -> Self {
-        Self {
-            builtin: self.builtin,
-            timer: self.timer,
-            body: vec![Scope::new(default)],
+    pub fn sandbox(&self, default: HashMap<String, Object>) -> Result<Self, RuntimeError> {
+        if self.called.0 < self.called.1 {
+            Ok(Self {
+                builtin: self.builtin,
+                timer: self.timer,
+                body: vec![Scope::new(default)],
+                called: (self.called.0+1, self.called.1),
+            })
+        } else {
+            Err(RuntimeError::CallStackOverflow)
         }
     }
 

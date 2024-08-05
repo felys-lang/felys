@@ -21,9 +21,9 @@ pub fn tokenize(c: String, lang: &Language) -> Result<Vec<Token>, Error> {
 }
 
 #[cfg(test)]
-mod lexer_unit_test {
+mod tests {
     use crate::Language::*;
-    use crate::lexer::{AssignType, BinoptrType, KeywordType, SymbolType, tokenize, UnaoptrType, ValueType};
+    use crate::lexer::*;
     
     macro_rules! check {
         ($c: literal, $kind: expr, $lang: ident) => {

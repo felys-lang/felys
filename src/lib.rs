@@ -42,12 +42,13 @@ pub struct Worker {
     global: Scope,
     builtin: Scope,
     timeout: Duration,
+    maxcall: usize,
     lang: Language,
 }
 
 impl Worker {
     /// Configure and initialize a new worker
-    pub fn new(mixin: HashMap<String, Object>, timeout: f64, lang: Language) -> Self {
+    pub fn new(mixin: HashMap<String, Object>, timeout: f64, maxcall: usize, lang: Language) -> Self {
         let mut base = match lang {
             Language::ZH => HashMap::from([
                 ("——爱莉希雅——".into(), Object::String("粉色妖精小姐♪".into())),
@@ -63,6 +64,7 @@ impl Worker {
             global: Scope::new(HashMap::new()),
             builtin: Scope::new(base),
             timeout: Duration::from_secs_f64(timeout),
+            maxcall,
             lang,
         }
     }
@@ -74,6 +76,7 @@ impl Worker {
         let mut environ = Environ {
             builtin: &self.builtin,
             timer: &rx,
+            called: (0, self.maxcall),
             body: vec![Scope::new(self.global.body.clone())],
         };
 

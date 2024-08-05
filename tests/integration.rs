@@ -11,7 +11,7 @@ mod tests {
         let file = ["tests", "programs", filename].iter().collect::<PathBuf>();
         let code = read_to_string(file).unwrap();
         let mixin = HashMap::new();
-        let mut main = Worker::new(mixin, 0.0, lang);
+        let mut main = Worker::new(mixin, 0.0, 100, lang);
         match main.exec(code) {
             Ok(s) => s.exit,
             Err(e) => panic!("{}", e)

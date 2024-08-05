@@ -10,8 +10,11 @@ fn main() {
         ("print".into(), Object::Rust(print))
     ]);
 
-    // init the worker with mixin, set to no timeout and English mode
-    let mut main = Worker::new(mixin, 0.0, Language::EN);
+    // init the worker with mixin
+    // no timeout
+    // max recursive call is 100
+    // English mode
+    let mut main = Worker::new(mixin, 0.0, 100, Language::EN);
     if let Err(e) = main.exec(code) {
         println!("{}", e)
     }
