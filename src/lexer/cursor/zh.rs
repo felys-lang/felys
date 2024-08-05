@@ -40,7 +40,7 @@ impl Cursor<'_> {
     pub fn zh_ident(&mut self, first: char) -> Result<Token, LexingError> {
         let mut value = String::from(first);
         while let Some(ch) = self.chars.peek() {
-            if ('\u{4e00}'..='\u{9fa5}').contains(ch) || *ch == '—' {
+            if matches!(ch, '\u{4e00}'..='\u{9fa5}' | '0'..='9' | '—') {
                 value.push(*ch);
                 self.chars.next();
             } else {

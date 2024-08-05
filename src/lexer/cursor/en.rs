@@ -37,7 +37,7 @@ impl Cursor<'_> {
     pub fn en_ident(&mut self, first: char) -> Result<Token, LexingError> {
         let mut value = String::from(first);
         while let Some(ch) = self.chars.peek() {
-            if ch.is_ascii_alphanumeric() || *ch == '_' {
+            if matches!(ch, 'a'..='z' | 'A'..='Z' | '0'..='9' | '_') {
                 value.push(*ch);
                 self.chars.next();
             } else {
