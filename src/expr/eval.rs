@@ -24,7 +24,7 @@ pub(super) fn eval_literal(optr: &ValueType, value: &String) -> Result<Object, R
         ValueType::String => Object::String(value.clone()),
         ValueType::Number => Object::Number(
             value.parse()
-                .map_err(|_| RuntimeError::NoF64Convertion { s: value.clone() })?
+                .map_err(|_| RuntimeError::NoF64Conversion { s: value.clone() })?
         ),
         ValueType::None => Object::None
     };
