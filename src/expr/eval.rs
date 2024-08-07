@@ -108,11 +108,11 @@ pub(super) fn eval_binary_optr(
             Object::Number(value)
         }
         Eq => {
-            let value = lval.f64()? == rval.f64()?;
+            let value = lval == rval;
             Object::Boolean(value)
         }
         Ne => {
-            let value = lval.f64()? != rval.f64()?;
+            let value = lval != rval;
             Object::Boolean(value)
         }
         Gt => {
