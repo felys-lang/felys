@@ -94,7 +94,7 @@ mod tests {
         check!("如果", KeywordType::If, ZH);
         check!("否如", KeywordType::Elif, ZH);
         check!("否则", KeywordType::Else, ZH);
-        check!("循环", KeywordType::While, ZH);
+        check!("当", KeywordType::While, ZH);
 
         check!("（", SymbolType::LParen, ZH);
         check!("）", SymbolType::RParen, ZH);
