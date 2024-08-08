@@ -137,7 +137,7 @@ pub struct Output {
 impl Output {
     /// Throw an error to the runtime backend
     pub fn error(msg: String) -> Self {
-        Self { result: Err(RuntimeError::FromRust { s: msg }) }
+        Self { result: Err(RuntimeError::FromRust(msg)) }
     }
 }
 

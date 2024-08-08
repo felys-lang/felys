@@ -12,7 +12,7 @@ impl Cursor<'_> {
                 'a'..='z' | 'A'..='Z' | '_' => self.en_ident(first),
                 '>' | '<' | '=' | '!' => self.en_comparative(first),
                 '(' | ')' | '{' | '}' | '|' | ';' | ',' => self.en_symbol(first),
-                other => Err(LexingError::InvalidChar { c: other })
+                other => Err(LexingError::InvalidChar(other))
             };
             Some(token)
         } else {
@@ -29,7 +29,7 @@ impl Cursor<'_> {
             ';' => SymbolType::Semicol.into(),
             '|' => SymbolType::Pipe.into(),
             ',' => SymbolType::Comma.into(),
-            other => return Err(LexingError::InvalidChar { c: other })
+            other => return Err(LexingError::InvalidChar(other))
         };
         Ok(Token::new(tt, first.to_string()))
     }
@@ -70,7 +70,7 @@ impl Cursor<'_> {
                 value.push(ch)
             }
         }
-        Err(LexingError::StringNotClosed { s: value })
+        Err(LexingError::StringNotClosed(value))
     }
 
     pub fn en_comparative(&mut self, first: char) -> Result<Token, LexingError> {
@@ -90,7 +90,7 @@ impl Cursor<'_> {
             "<=" => BinoptrType::Le.into(),
             "==" => BinoptrType::Eq.into(),
             "!=" => BinoptrType::Ne.into(),
-            _ => return Err(LexingError::UnknownBinoptr { s: value })
+            _ => return Err(LexingError::UnknownBinoptr(value))
         };
         Ok(Token::new(tt, value))
     }

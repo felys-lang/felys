@@ -59,7 +59,8 @@ impl Cursor<'_> {
             ("*=", _) => AssignType::Mue.into(),
             ("/=", _) => AssignType::Die.into(),
             ("%=", _) => AssignType::Moe.into(),
-            _ => return Err(LexingError::UnknownBinoptr { s: value })
+            _ => return Err(LexingError::UnknownBinoptr(value))
+        
         };
         Ok(Token::new(tt, value))
     }

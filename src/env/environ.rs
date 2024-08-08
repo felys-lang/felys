@@ -28,7 +28,7 @@ impl Environ<'_> {
         if let Some(object) = self.builtin.body.get(ident) {
             Ok(object)
         } else {
-            Err(RuntimeError::ObjectDoesNotExist { s: ident.clone() })
+            Err(RuntimeError::ObjectDoesNotExist(ident.clone()))
         }
     }
 
@@ -39,7 +39,7 @@ impl Environ<'_> {
         let object = self.get_object(ident)?;
         if let Object::Function { args: names, body } = object {
             if names.len() != args.len() {
-                return Err(RuntimeError::ArgsMappingFailed { s: ident.clone() });
+                return Err(RuntimeError::ArgsMappingFailed(ident.clone()));
             }
             let mut default = names.iter()
                 .zip(args)
@@ -57,7 +57,7 @@ impl Environ<'_> {
             let mut context = Context { args, out };
             Ok(func(&mut context).result?)
         } else {
-            Err(RuntimeError::IdentNotCallable { s: ident.clone() })
+            Err(RuntimeError::IdentNotCallable(ident.clone()))
         }
     }
 }

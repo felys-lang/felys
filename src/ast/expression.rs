@@ -136,7 +136,7 @@ impl ASTFactory {
                 TokenType::Identifier => self.parse_identifier(),
                 TokenType::Sym(LParen) => self.parse_parentheses(),
                 TokenType::Sym(Pipe) => self.parse_function(),
-                _ => Err(SyntaxError::TokenNotPrimary { s: token.value.clone() })
+                _ => Err(SyntaxError::TokenNotPrimary(token.value.clone()))
             }
         } else {
             Err(SyntaxError::EndOfTokenSteam)
@@ -148,7 +148,7 @@ impl ASTFactory {
             if let TokenType::Val(t) = token.kind {
                 Ok(Node::Literal { kind: t, value: token.value })
             } else {
-                Err(SyntaxError::TokenNotALiteral { s: token.value })
+                Err(SyntaxError::TokenNotALiteral(token.value))
             }
         } else {
             Err(SyntaxError::EndOfTokenSteam)
@@ -215,7 +215,7 @@ impl ASTFactory {
             if let Some(token) = self.tokens.pop() {
                 match token.kind {
                     TokenType::Identifier => args.push(token.value),
-                    _ => return Err(SyntaxError::InvalidArgs { s: token.value })
+                    _ => return Err(SyntaxError::InvalidArgs(token.value))
                 }
             }
             if self.eat(Pipe).is_ok() {

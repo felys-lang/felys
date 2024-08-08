@@ -41,7 +41,7 @@ impl Object {
         if let Object::Number(value) = self {
             Ok(*value)
         } else {
-            Err(RuntimeError::NoF64Conversion { s: self.to_string() })
+            Err(RuntimeError::NoF64Conversion(self.to_string()))
         }
     }
 

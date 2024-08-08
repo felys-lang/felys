@@ -11,9 +11,9 @@ impl Cursor<'_> {
                 '‘' | '“' => self.zh_string(first),
                 '\u{4e00}'..='\u{9fa5}' | '—' => self.zh_ident(first),
                 '（' | '）' |
-                '「' | '」' |
+                '「' | '」' | '『' | '』' |
                 '｜' | '；' | '，' | '=' | '！' => self.zh_symbol(first),
-                other => Err(LexingError::InvalidChar { c: other })
+                other => Err(LexingError::InvalidChar(other))
             };
             Some(token)
         } else {
@@ -25,14 +25,14 @@ impl Cursor<'_> {
         let tt = match first {
             '（' => SymbolType::LParen.into(),
             '）' => SymbolType::RParen.into(),
-            '「' => SymbolType::LBrace.into(),
-            '」' => SymbolType::RBrace.into(),
+            '「' | '『' => SymbolType::LBrace.into(),
+            '」' | '』' => SymbolType::RBrace.into(),
             '；' => SymbolType::Semicol.into(),
             '｜' => SymbolType::Pipe.into(),
             '，' => SymbolType::Comma.into(),
             '=' => AssignType::Asn.into(),
             '！' => UnaoptrType::Not.into(),
-            other => return Err(LexingError::InvalidChar { c: other })
+            other => return Err(LexingError::InvalidChar(other))
         };
         Ok(Token::new(tt, first.to_string()))
     }
@@ -85,6 +85,6 @@ impl Cursor<'_> {
                 _ => value.push(ch)
             }
         }
-        Err(LexingError::StringNotClosed { s: value })
+        Err(LexingError::StringNotClosed(value))
     }
 }

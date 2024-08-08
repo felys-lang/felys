@@ -99,7 +99,9 @@ mod tests {
         check!("（", SymbolType::LParen, ZH);
         check!("）", SymbolType::RParen, ZH);
         check!("「", SymbolType::LBrace, ZH);
+        check!("『", SymbolType::LBrace, ZH);
         check!("」", SymbolType::RBrace, ZH);
+        check!("』", SymbolType::RBrace, ZH);
         check!("｜", SymbolType::Pipe, ZH);
         check!("；", SymbolType::Semicol, ZH);
         check!("，", SymbolType::Comma, ZH);
