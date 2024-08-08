@@ -3,7 +3,7 @@
 </div>
 
 <div align="center">
-  <a href="https://felys.dev/">Quickstart</a> |
+  <a href="https://felys.dev/guide/quickstart.html">Quickstart</a> |
   <a href="https://felys.dev/">Documentation</a> |
   <a href="https://exec.felys.dev/">Playground</a>
 </div>
@@ -20,8 +20,8 @@ Distributed under the terms of the [MIT License](https://github.com/felys-lang/f
 
 ## Copyright
 
-- Organization logo © All rights reserved by miHoYo.
-- Other contents © All rights reserved by FelysNeko.
+- © All rights reserved by FelysNeko
+- Signet of Elysia © All rights reserved by miHoYo
 
 ## Legal Statement
 
