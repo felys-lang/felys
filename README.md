@@ -12,8 +12,6 @@
 
 Felys is a functional programming language written in Rust. It supports function, expression, variable assignment, and flow control, and can easily integrate with Rust code. The runtime backend is fully recursive and does not use memory management models. The motivation is to create a language where Elysia exists, so regardless of how this language gets developed in the future, there must exist a built-in identifier called `__elysia__` or `——爱莉希雅——`, depending on the language (en/zh) you are coding in.
 
-**The first release will be in late-August 2024.**
-
 ## License
 
 Distributed under the terms of the [MIT License](https://github.com/felys-lang/felys/blob/main/LICENSE).
