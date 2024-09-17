@@ -5,7 +5,8 @@
 <div align="center">
   <a href="https://felys.dev/guide/quickstart.html">Quickstart</a> |
   <a href="https://felys.dev/">Documentation</a> |
-  <a href="https://exec.felys.dev/">Playground</a>
+  <a href="https://exec.felys.dev/">Playground</a> |
+  <a href="https://github.com/felys-lang/felys-future/">Future</a>
 </div>
 
 ## What is the Felys programming Language?
