@@ -19,7 +19,7 @@ Distributed under the terms of the [MIT License](https://github.com/felys-lang/f
 ## Copyright
 
 - © All rights reserved by FelysNeko
-- Signet of Elysia © All rights reserved by miHoYo
+- Elysia's signet © All rights reserved by miHoYo
 
 ## Legal Statement
 
