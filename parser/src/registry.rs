@@ -26,6 +26,7 @@ pub trait Entry: Base + Helper + Literal + Expression + Control + Statement + Pa
 
 pub trait Helper: Base {
     fn keyword(&mut self, s: &'static str) -> Option<&'static str>;
+    fn eof(&mut self) -> Option<char>;
 }
 
 pub trait Literal: Base {

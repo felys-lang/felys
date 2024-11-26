@@ -18,6 +18,15 @@ impl Helper for Parser<CR> {
         }
         None
     }
+
+    fn eof(&mut self) -> Option<char> {
+        if let Some(res) = self.alter(|x| {
+            x.lookahead(|c| c == '\0')
+        }) {
+            return res;
+        }
+        None
+    }
 }
 
 impl Entry for Parser<CR> {
@@ -27,6 +36,7 @@ impl Entry for Parser<CR> {
             while let Some(stmt) = x.stmt() {
                 body.push(stmt)
             }
+            x.eof()?;
             Some(Program(body))
         }) {
             return res;

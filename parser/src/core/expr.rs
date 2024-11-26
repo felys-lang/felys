@@ -199,13 +199,12 @@ impl Expression for Parser<CR> {
             let callable = x.evaluation()?;
             x.expect("(")?;
             let mut body = Vec::new();
-            match x.expr() {
-                Some(x) => body.push(x),
-                None => return Some(Expr::Call(callable.into(), vec![]))
-            };
-            while x.expect(",").is_some() {
-                let expr = x.expr()?;
-                body.push(expr)
+            if let Some(expr) = x.expr() {
+                body.push(expr);
+                while x.expect(",").is_some() {
+                    let expr = x.expr()?;
+                    body.push(expr)
+                }
             }
             x.expect(")")?;
             Some(Expr::Call(callable.into(), body))
