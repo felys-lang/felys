@@ -6,6 +6,8 @@ pub use crate::memo::Memo;
 pub use crate::pool::Pool;
 pub use crate::stream::Stream;
 
+pub use helper::*;
+
 pub struct Parser<R> {
     pub memo: Memo<R>,
     pub pool: Pool,

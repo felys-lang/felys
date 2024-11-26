@@ -2,6 +2,7 @@ use crate::ctrl::Ctrl;
 use crate::lit::Lit;
 use crate::pat::Ident;
 
+#[derive(Clone)]
 pub enum Expr {
     /// binary operation: `1 + 2`
     Binary(Box<Expr>, BinOp, Box<Expr>),
@@ -23,6 +24,7 @@ pub enum Expr {
     Unary(UnaOp, Box<Expr>),
 }
 
+#[derive(Clone)]
 pub enum BinOp {
     Or,
     And,
@@ -39,6 +41,7 @@ pub enum BinOp {
     Mod,
 }
 
+#[derive(Clone)]
 pub enum UnaOp {
     Not,
     Pos,

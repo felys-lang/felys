@@ -1,5 +1,6 @@
 use crate::expr::Expr;
 
+#[derive(Clone)]
 pub enum Stmt {
     /// single semicolon: `;`
     Empty,
