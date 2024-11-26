@@ -5,7 +5,10 @@ use ast::pat::{Ident, Pat};
 use ast::stmt::Stmt;
 
 #[derive(Clone)]
-pub struct CR;
+pub enum CR {
+    Expr(Option<Expr>),
+    Ctrl(Option<Ctrl>),
+}
 
 
 pub trait Base {
