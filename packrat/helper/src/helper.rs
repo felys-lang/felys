@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use quote::{quote, ToTokens};
+use quote::quote;
 use syn::{parse_macro_input, Fields, ItemEnum, ItemFn, ReturnType};
 
 pub fn memoize_helper(body: TokenStream) -> TokenStream {

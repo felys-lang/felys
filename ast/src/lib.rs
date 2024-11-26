@@ -8,4 +8,5 @@ pub mod stmt;
 
 pub type Symbol = usize;
 
+#[derive(Clone, Debug)]
 pub struct Program(pub Vec<Stmt>);

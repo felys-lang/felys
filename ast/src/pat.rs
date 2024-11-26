@@ -1,7 +1,7 @@
 use crate::lit::Lit;
 use crate::Symbol;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Pat {
     /// don't care: `_`
     Any,

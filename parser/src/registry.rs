@@ -7,8 +7,11 @@ use packrat::Cache;
 
 #[derive(Clone, Cache)]
 pub enum CR {
+    Stmt(Option<Stmt>),
     Expr(Option<Expr>),
     Ctrl(Option<Ctrl>),
+    Pat(Option<Pat>),
+    Lit(Option<Lit>),
 }
 
 
@@ -36,8 +39,8 @@ pub trait Expression: Base {
     fn inversion(&mut self) -> Option<Expr>;
     fn equality(&mut self) -> Option<Expr>;
     fn comparison(&mut self) -> Option<Expr>;
-    fn factor(&mut self) -> Option<Expr>;
     fn term(&mut self) -> Option<Expr>;
+    fn factor(&mut self) -> Option<Expr>;
     fn unary(&mut self) -> Option<Expr>;
     fn evaluation(&mut self) -> Option<Expr>;
     fn primary(&mut self) -> Option<Expr>;

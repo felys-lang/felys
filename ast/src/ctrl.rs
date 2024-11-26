@@ -2,7 +2,7 @@ use crate::expr::Expr;
 use crate::pat::Pat;
 use crate::stmt::Stmt;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Ctrl {
     /// assignment: `x = 42`
     Assign(Pat, AssOp, Expr),
@@ -26,7 +26,7 @@ pub enum Ctrl {
     While(Expr, Box<Ctrl>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum AssOp {
     AddEq,
     SubEq,

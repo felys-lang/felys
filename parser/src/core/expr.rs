@@ -3,10 +3,12 @@ use ast::expr::{BinOp, Expr, UnaOp};
 use packrat::Parser;
 
 impl Expression for Parser<CR> {
+    #[packrat::memoize]
     fn expr(&mut self) -> Option<Expr> {
         self.tuple()
     }
 
+    #[packrat::memoize]
     fn tuple(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             x.expect("(")?;
@@ -26,6 +28,7 @@ impl Expression for Parser<CR> {
         self.disjunction()
     }
 
+    #[packrat::lecursion]
     fn disjunction(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.conjunction()?;
@@ -38,6 +41,7 @@ impl Expression for Parser<CR> {
         self.inversion()
     }
 
+    #[packrat::lecursion]
     fn conjunction(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.conjunction()?;
@@ -50,6 +54,7 @@ impl Expression for Parser<CR> {
         self.inversion()
     }
 
+    #[packrat::memoize]
     fn inversion(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             x.keyword("not")?;
@@ -61,6 +66,7 @@ impl Expression for Parser<CR> {
         self.comparison()
     }
 
+    #[packrat::lecursion]
     fn equality(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.equality()?;
@@ -81,6 +87,7 @@ impl Expression for Parser<CR> {
         self.comparison()
     }
 
+    #[packrat::lecursion]
     fn comparison(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.comparison()?;
@@ -117,39 +124,12 @@ impl Expression for Parser<CR> {
         self.factor()
     }
 
-    fn factor(&mut self) -> Option<Expr> {
-        if let Some(res) = self.alter(|x| {
-            let lhs = x.factor()?;
-            x.expect("*")?;
-            let rhs = x.term()?;
-            Some(Expr::Binary(lhs.into(), BinOp::Mul, rhs.into()))
-        }) {
-            return res;
-        }
-        if let Some(res) = self.alter(|x| {
-            let lhs = x.factor()?;
-            x.expect("/")?;
-            let rhs = x.term()?;
-            Some(Expr::Binary(lhs.into(), BinOp::Div, rhs.into()))
-        }) {
-            return res;
-        }
-        if let Some(res) = self.alter(|x| {
-            let lhs = x.factor()?;
-            x.expect("%")?;
-            let rhs = x.term()?;
-            Some(Expr::Binary(lhs.into(), BinOp::Mod, rhs.into()))
-        }) {
-            return res;
-        }
-        self.term()
-    }
-
+    #[packrat::lecursion]
     fn term(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.term()?;
             x.expect("+")?;
-            let rhs = x.unary()?;
+            let rhs = x.factor()?;
             Some(Expr::Binary(lhs.into(), BinOp::Add, rhs.into()))
         }) {
             return res;
@@ -157,14 +137,44 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.term()?;
             x.expect("-")?;
-            let rhs = x.unary()?;
+            let rhs = x.factor()?;
             Some(Expr::Binary(lhs.into(), BinOp::Sub, rhs.into()))
+        }) {
+            return res;
+        }
+        self.factor()
+    }
+
+    #[packrat::lecursion]
+    fn factor(&mut self) -> Option<Expr> {
+        if let Some(res) = self.alter(|x| {
+            let lhs = x.factor()?;
+            x.expect("*")?;
+            let rhs = x.unary()?;
+            Some(Expr::Binary(lhs.into(), BinOp::Mul, rhs.into()))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            let lhs = x.factor()?;
+            x.expect("/")?;
+            let rhs = x.unary()?;
+            Some(Expr::Binary(lhs.into(), BinOp::Div, rhs.into()))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            let lhs = x.factor()?;
+            x.expect("%")?;
+            let rhs = x.unary()?;
+            Some(Expr::Binary(lhs.into(), BinOp::Mod, rhs.into()))
         }) {
             return res;
         }
         self.unary()
     }
 
+    #[packrat::memoize]
     fn unary(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             x.expect("+")?;
@@ -183,6 +193,7 @@ impl Expression for Parser<CR> {
         self.evaluation()
     }
 
+    #[packrat::lecursion]
     fn evaluation(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let callable = x.evaluation()?;
@@ -212,6 +223,7 @@ impl Expression for Parser<CR> {
         self.primary()
     }
 
+    #[packrat::memoize]
     fn primary(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let body = x.lit()?;

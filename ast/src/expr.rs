@@ -2,7 +2,7 @@ use crate::ctrl::Ctrl;
 use crate::lit::Lit;
 use crate::pat::Ident;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Expr {
     /// binary operation: `1 + 2`
     Binary(Box<Expr>, BinOp, Box<Expr>),
@@ -10,8 +10,10 @@ pub enum Expr {
     Closure(Vec<Ident>, Box<Expr>),
     /// function call: `func(1, 2)`
     Call(Box<Expr>, Vec<Expr>),
-    /// field: `elysia.mei`, `elysia.0`
+    /// field: `elysia.mei`
     Field(Box<Expr>, Ident),
+    /// identifier: `elysia`
+    Ident(Ident),
     /// tuple: `(elysia, 11.11)`
     Tuple(Vec<Expr>),
     /// literals: `"elysia"`, `11.11`, `true`
@@ -24,7 +26,7 @@ pub enum Expr {
     Unary(UnaOp, Box<Expr>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum BinOp {
     Or,
     And,
@@ -41,7 +43,7 @@ pub enum BinOp {
     Mod,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum UnaOp {
     Not,
     Pos,

@@ -1,6 +1,6 @@
 use crate::Symbol;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Lit {
     /// integer: `0xf`, `0o77`, `15`, `0b1111`
     Int(Int),
@@ -12,7 +12,7 @@ pub enum Lit {
     Str(Str),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Int {
     Base16(Symbol),
     Base10(Symbol),
@@ -22,7 +22,7 @@ pub enum Int {
 
 pub type Float = Symbol;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Bool {
     True,
     False,
