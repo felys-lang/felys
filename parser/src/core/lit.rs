@@ -3,6 +3,7 @@ use ast::lit::{Bool, Float, Int, Lit, Str};
 use packrat::Parser;
 
 impl Literal for Parser<CR> {
+    #[packrat::memoize]
     fn lit(&mut self) -> Option<Lit> {
         if let Some(res) = self.alter(|x| {
             let body = x.float()?;
@@ -30,7 +31,7 @@ impl Literal for Parser<CR> {
         }
         None
     }
-
+    
     fn int(&mut self) -> Option<Int> {
         if let Some(res) = self.alter(|x| {
             x.expect("0x")?;

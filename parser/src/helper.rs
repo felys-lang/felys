@@ -1,4 +1,5 @@
-use crate::registry::{Base, Helper, CR};
+use crate::registry::{Base, Entry, Helper, Statement, CR};
+use ast::Program;
 use packrat::Parser;
 
 impl Base for Parser<CR> {
@@ -12,6 +13,21 @@ impl Helper for Parser<CR> {
             x.stream.strict = true;
             x.lookahead(|x| !x.is_ascii_alphanumeric())?;
             Some(s)
+        }) {
+            return res;
+        }
+        None
+    }
+}
+
+impl Entry for Parser<CR> {
+    fn program(&mut self) -> Option<Program> {
+        if let Some(res) = self.alter(|x| {
+            let mut body = Vec::new();
+            while let Some(stmt) = x.stmt() {
+                body.push(stmt)
+            }
+            Some(Program(body))
         }) {
             return res;
         }

@@ -3,6 +3,7 @@ use ast::expr::Expr;
 use ast::lit::{Bool, Float, Int, Lit, Str};
 use ast::pat::{Ident, Pat};
 use ast::stmt::Stmt;
+use ast::Program;
 use packrat::Cache;
 
 #[derive(Clone, Cache)]
@@ -17,6 +18,10 @@ pub enum CR {
 
 pub trait Base {
     type CR;
+}
+
+pub trait Entry: Base + Helper + Literal + Expression + Control + Statement + Pattern {
+    fn program(&mut self) -> Option<Program>;
 }
 
 pub trait Helper: Base {

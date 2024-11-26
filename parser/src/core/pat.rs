@@ -3,6 +3,7 @@ use ast::pat::{Ident, Pat};
 use packrat::Parser;
 
 impl Pattern for Parser<CR> {
+    #[packrat::memoize]
     fn pat(&mut self) -> Option<Pat> {
         if let Some(res) = self.alter(|x| {
             let body = x.ident()?;

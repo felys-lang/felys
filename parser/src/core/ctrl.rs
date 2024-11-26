@@ -3,6 +3,7 @@ use ast::ctrl::{AssOp, Ctrl};
 use packrat::Parser;
 
 impl Control for Parser<CR> {
+    #[packrat::memoize]
     fn ctrl(&mut self) -> Option<Ctrl> {
         if let Some(res) = self.alter(|x| {
             x.assign()
@@ -94,6 +95,7 @@ impl Control for Parser<CR> {
         None
     }
 
+    #[packrat::memoize]
     fn assign(&mut self) -> Option<Ctrl> {
         if let Some(res) = self.alter(|x| {
             let pat = x.pat()?;
