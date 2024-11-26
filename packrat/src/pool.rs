@@ -1,12 +1,17 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 pub struct Pool {
     pub(crate) body: HashMap<Rc<String>, usize>,
     pub(crate) fast: Vec<Rc<String>>,
+    pub(crate) keywords: HashSet<&'static str>,
 }
 
 impl Pool {
+    pub fn keyword(&self, ident: &str) -> bool {
+        self.keywords.contains(ident)
+    }
+
     pub fn id(&mut self, s: String) -> usize {
         if let Some(&id) = self.body.get(&s) {
             id

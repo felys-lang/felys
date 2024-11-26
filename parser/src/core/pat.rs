@@ -48,6 +48,9 @@ impl Pattern for Parser<CR> {
             while let Some(ch) = x.scan(|c| c.is_ascii_alphanumeric() || c == '_') {
                 body.push(ch)
             }
+            if x.pool.keyword(&body) {
+                return None;
+            }
             let symbol = x.pool.id(body);
             Some(symbol)
         }) {

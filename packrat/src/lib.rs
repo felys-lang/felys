@@ -5,6 +5,7 @@ mod pool;
 pub use crate::memo::Memo;
 pub use crate::pool::Pool;
 pub use crate::stream::Stream;
+use std::collections::HashSet;
 
 pub use helper::*;
 
@@ -16,7 +17,7 @@ pub struct Parser<R> {
 }
 
 impl<R> Parser<R> {
-    pub fn new(code: String) -> Self {
+    pub fn new(code: String, keywords: HashSet<&'static str>) -> Self {
         Self {
             memo: Memo {
                 body: Default::default()
@@ -24,6 +25,7 @@ impl<R> Parser<R> {
             pool: Pool {
                 body: Default::default(),
                 fast: vec![],
+                keywords,
             },
             stream: Stream {
                 body: code,
