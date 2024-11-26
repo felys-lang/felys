@@ -3,8 +3,9 @@ use ast::expr::Expr;
 use ast::lit::{Bool, Float, Int, Lit, Str};
 use ast::pat::{Ident, Pat};
 use ast::stmt::Stmt;
+use packrat::Cache;
 
-#[derive(Clone)]
+#[derive(Clone, Cache)]
 pub enum CR {
     Expr(Option<Expr>),
     Ctrl(Option<Ctrl>),

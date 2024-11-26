@@ -20,3 +20,8 @@ pub fn memoize(_: TokenStream, body: TokenStream) -> TokenStream {
 pub fn lecursion(_: TokenStream, body: TokenStream) -> TokenStream {
     lecursion_helper(body)
 }
+
+#[proc_macro_derive(Cache)]
+pub fn cache(body: TokenStream) -> TokenStream {
+    cache_helper(body)
+}

@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
-use quote::quote;
-use syn::{parse_macro_input, ItemFn, ReturnType};
+use quote::{quote, ToTokens};
+use syn::{parse_macro_input, Fields, ItemEnum, ItemFn, ReturnType};
 
 pub fn memoize_helper(body: TokenStream) -> TokenStream {
     let body = parse_macro_input!(body as ItemFn);
@@ -66,4 +66,37 @@ pub fn lecursion_helper(body: TokenStream) -> TokenStream {
             }
         }
     ).into()
+}
+
+pub fn cache_helper(body: TokenStream) -> TokenStream {
+    let body = parse_macro_input!(body as ItemEnum);
+
+    let cr = &body.ident;
+
+    let all = body.variants.iter().map(|variant| {
+        let ident = &variant.ident;
+        let option = match &variant.fields {
+            Fields::Unnamed(x) => x.unnamed.first().unwrap(),
+            _ => panic!()
+        };
+
+        quote!(
+            impl From<#option> for #cr {
+                fn from(value: #option) -> Self {
+                    Self::#ident(value)
+                }
+            }
+            
+            impl From<#cr> for #option {
+                fn from(value: #cr) -> Self {
+                    match value {
+                        #cr::#ident(inner) => inner,
+                        _ => panic!()
+                    }
+                }
+            }
+        )
+    });
+
+    quote!(#(#all)*).into()
 }
