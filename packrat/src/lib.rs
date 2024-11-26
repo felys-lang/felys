@@ -2,9 +2,9 @@ mod memo;
 mod stream;
 mod pool;
 
-use crate::memo::Memo;
-use crate::pool::Pool;
-use crate::stream::Stream;
+pub use crate::memo::Memo;
+pub use crate::pool::Pool;
+pub use crate::stream::Stream;
 
 pub struct Parser<R> {
     pub memo: Memo<R>,
