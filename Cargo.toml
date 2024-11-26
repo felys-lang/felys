@@ -6,3 +6,4 @@ license = "MIT"
 description = "Interface to customize Felys implementation"
 
 [dependencies]
+ast = { path = "ast" }
