@@ -154,6 +154,6 @@ impl Literal for Parser<CR> {
     }
 
     fn str(&mut self) -> Option<Str> {
-        todo!()
+        None
     }
 }

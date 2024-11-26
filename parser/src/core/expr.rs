@@ -31,14 +31,14 @@ impl Expression for Parser<CR> {
     #[packrat::lecursion]
     fn disjunction(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
-            let lhs = x.conjunction()?;
+            let lhs = x.disjunction()?;
             x.keyword("or")?;
-            let rhs = x.inversion()?;
+            let rhs = x.conjunction()?;
             Some(Expr::Binary(lhs.into(), BinOp::Or, rhs.into()))
         }) {
             return res;
         }
-        self.inversion()
+        self.conjunction()
     }
 
     #[packrat::lecursion]
@@ -121,7 +121,7 @@ impl Expression for Parser<CR> {
         }) {
             return res;
         }
-        self.factor()
+        self.term()
     }
 
     #[packrat::lecursion]
@@ -228,6 +228,12 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let body = x.lit()?;
             Some(Expr::Lit(body))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            let body = x.ident()?;
+            Some(Expr::Ident(body))
         }) {
             return res;
         }

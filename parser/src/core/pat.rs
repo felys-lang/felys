@@ -5,6 +5,12 @@ use packrat::Parser;
 impl Pattern for Parser<CR> {
     fn pat(&mut self) -> Option<Pat> {
         if let Some(res) = self.alter(|x| {
+            let body = x.ident()?;
+            Some(Pat::Ident(body))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
             x.expect("(")?;
             let first = x.pat()?;
             x.expect(",")?;
