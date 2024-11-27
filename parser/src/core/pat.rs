@@ -53,7 +53,7 @@ impl Pattern for Parser<CR> {
                 return None;
             }
             let symbol = x.pool.id(body);
-            Some(symbol)
+            Some(symbol.into())
         }) {
             return res;
         }

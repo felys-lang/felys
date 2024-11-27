@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use crate::Symbol;
 
 #[derive(Clone, Debug)]
@@ -10,6 +11,12 @@ pub enum Lit {
     Bool(Bool),
     /// string: `"elysia"`, `f"{1+1} = 2"`, `r"\t\r\n"`
     Str(Str),
+}
+
+impl Display for Lit {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
 }
 
 #[derive(Clone, Debug)]

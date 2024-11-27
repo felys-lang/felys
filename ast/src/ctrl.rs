@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use crate::expr::Expr;
 use crate::pat::Pat;
 use crate::stmt::Stmt;
@@ -24,6 +25,12 @@ pub enum Ctrl {
     Return(Option<Expr>),
     /// while loop: `while expr { block }`
     While(Expr, Box<Ctrl>),
+}
+
+impl Display for Ctrl {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
 }
 
 #[derive(Clone, Debug)]

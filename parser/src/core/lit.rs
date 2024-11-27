@@ -43,7 +43,7 @@ impl Literal for Parser<CR> {
                 body.push(more)
             }
             let symbol = x.pool.id(body);
-            Some(Int::Base16(symbol))
+            Some(Int::Base16(symbol.into()))
         }) {
             return res;
         }
@@ -57,7 +57,7 @@ impl Literal for Parser<CR> {
                 body.push(more)
             }
             let symbol = x.pool.id(body);
-            Some(Int::Base8(symbol))
+            Some(Int::Base8(symbol.into()))
         }) {
             return res;
         }
@@ -71,7 +71,7 @@ impl Literal for Parser<CR> {
                 body.push(more)
             }
             let symbol = x.pool.id(body);
-            Some(Int::Base2(symbol))
+            Some(Int::Base2(symbol.into()))
         }) {
             return res;
         }
@@ -81,7 +81,7 @@ impl Literal for Parser<CR> {
             x.lookahead(|c| !c.is_ascii_digit())?;
             let body = String::from("0");
             let symbol = x.pool.id(body);
-            Some(Int::Base10(symbol))
+            Some(Int::Base10(symbol.into()))
         }) {
             return res;
         }
@@ -93,7 +93,7 @@ impl Literal for Parser<CR> {
                 body.push(more)
             }
             let symbol = x.pool.id(body);
-            Some(Int::Base10(symbol))
+            Some(Int::Base10(symbol.into()))
         }) {
             return res;
         }
@@ -112,7 +112,7 @@ impl Literal for Parser<CR> {
                 body.push(x)
             }
             let symbol = x.pool.id(body);
-            Some(symbol)
+            Some(symbol.into())
         }) {
             return res;
         }
@@ -131,7 +131,7 @@ impl Literal for Parser<CR> {
                 body.push(x)
             }
             let symbol = x.pool.id(body);
-            Some(symbol)
+            Some(symbol.into())
         }) {
             return res;
         }

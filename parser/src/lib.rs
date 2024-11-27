@@ -7,7 +7,7 @@ mod registry;
 mod core;
 mod helper;
 
-const KEYWORDS: [&str; 10] = [
+const KEYWORDS: [&str; 12] = [
     "break",
     "continue",
     "for",
@@ -17,7 +17,9 @@ const KEYWORDS: [&str; 10] = [
     "else",
     "loop",
     "return",
-    "while"
+    "while",
+    "true",
+    "false"
 ];
 
 pub fn parse(code: String) -> Option<(Program, Pool)> {

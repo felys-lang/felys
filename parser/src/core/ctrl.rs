@@ -49,10 +49,16 @@ impl Control for Parser<CR> {
             let expr = x.expr()?;
             x.expect("{")?;
             let mut body = Vec::new();
-            while let Some(pat) = x.pat() {
+            if let Some(pat) = x.pat() {
                 x.expect("=>")?;
                 let expr = x.expr()?;
-                body.push((pat, expr))
+                body.push((pat, expr));
+                while x.expect(",").is_some() {
+                    let pat = x.pat()?;
+                    x.expect("=>")?;
+                    let expr = x.expr()?;
+                    body.push((pat, expr));
+                }
             }
             x.expect("}")?;
             Some(Ctrl::Match(expr, body))
@@ -63,9 +69,10 @@ impl Control for Parser<CR> {
             x.keyword("if")?;
             let expr = x.expr()?;
             let body = x.ctrl()?;
-            let alter = x
-                .expect("else")
-                .and(Some(x.ctrl()?.into()));
+            let mut alter = None;
+            if x.expect("else").is_some() {
+                alter = Some(x.ctrl()?.into())
+            }
             Some(Ctrl::If(expr, body.into(), alter))
         }) {
             return res;
