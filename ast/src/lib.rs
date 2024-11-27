@@ -1,3 +1,4 @@
+use crate::format::Indenter;
 use crate::stmt::Stmt;
 use std::fmt::{Display, Formatter};
 
@@ -6,7 +7,7 @@ pub mod ctrl;
 pub mod pat;
 pub mod lit;
 pub mod stmt;
-
+mod format;
 
 #[derive(Clone, Debug)]
 pub struct Symbol(pub usize);
@@ -35,7 +36,8 @@ pub struct Program(pub Vec<Stmt>);
 impl Display for Program {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for each in &self.0 {
-            writeln!(f, "{}", each)?
+            each.print(0, f)?;
+            writeln!(f)?
         }
         Ok(())
     }

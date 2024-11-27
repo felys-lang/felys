@@ -1,5 +1,6 @@
 use crate::expr::Expr;
-use std::fmt::{Display, Formatter};
+use crate::format::{Indenter, INDENT};
+use std::fmt::Formatter;
 
 #[derive(Clone, Debug)]
 pub enum Stmt {
@@ -11,12 +12,18 @@ pub enum Stmt {
     Semi(Expr),
 }
 
-impl Display for Stmt {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl Indenter for Stmt {
+    fn print(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for _ in 0..indent {
+            write!(f, "{}", INDENT)?;
+        }
         match self {
             Stmt::Empty => write!(f, ";"),
-            Stmt::Expr(x) => writeln!(f, "{}", x),
-            Stmt::Semi(x) => writeln!(f, "{};", x),
+            Stmt::Expr(x) => x.print(indent, f),
+            Stmt::Semi(x) => {
+                x.print(indent, f)?;
+                write!(f, ";")
+            }
         }
     }
 }

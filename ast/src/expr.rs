@@ -1,4 +1,5 @@
 use crate::ctrl::Ctrl;
+use crate::format::Indenter;
 use crate::lit::Lit;
 use crate::pat::Ident;
 use std::fmt::{Display, Formatter};
@@ -27,28 +28,64 @@ pub enum Expr {
     Unary(UnaOp, Box<Expr>),
 }
 
-impl Display for Expr {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl Indenter for Expr {
+    fn print(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Expr::Binary(l, op, r) => write!(f, "{} {} {}", l, op, r),
-            Expr::Closure(_, _) => todo!(),
-            Expr::Call(_, _) => todo!(),
-            Expr::Field(p, m) => write!(f, "{}.{}", p, m),
-            Expr::Ident(x) => write!(f, "{}", x),
-            Expr::Tuple(x) => {
-                write!(f, "(")?;
-                if let Some(first) = x.first() {
+            Expr::Binary(lhs, op, rhs) => {
+                lhs.print(indent, f)?;
+                write!(f, " {} ", op)?;
+                rhs.print(indent, f)
+            }
+            Expr::Closure(param, block) => {
+                write!(f, "|")?;
+                if let Some(first) = param.first() {
                     write!(f, "{}", first)?
                 }
-                for each in x {
+                for each in param.iter().skip(1) {
                     write!(f, ", {}", each)?
+                }
+                write!(f, "| ")?;
+                block.print(indent, f)
+            }
+            Expr::Call(func, param) => {
+                func.print(indent, f)?;
+                write!(f, "(")?;
+                if let Some(first) = param.first() {
+                    first.print(indent, f)?
+                }
+                for each in param.iter().skip(1) {
+                    write!(f, ",")?;
+                    each.print(indent, f)?
                 }
                 write!(f, ")")
             }
-            Expr::Lit(x) => write!(f, "{}", x),
-            Expr::Paren(x) => write!(f, "({})", x),
-            Expr::Ctrl(x) => write!(f, "{}", x),
-            Expr::Unary(op, x) => write!(f, "{}{}", op, x),
+            Expr::Field(root, field) => {
+                root.print(indent, f)?;
+                write!(f, ".{}", field)
+            }
+            Expr::Ident(x) => write!(f, "{}", x),
+            Expr::Tuple(member) => {
+                write!(f, "(")?;
+                if let Some(first) = member.first() {
+                    first.print(indent, f)?
+                }
+                for each in member.iter().skip(1) {
+                    write!(f, ",")?;
+                    each.print(indent, f)?
+                }
+                write!(f, ")")
+            }
+            Expr::Lit(x) => x.print(indent, f),
+            Expr::Paren(expr) => {
+                write!(f, "(")?;
+                expr.print(indent, f)?;
+                write!(f, ")")
+            }
+            Expr::Ctrl(ctrl) => ctrl.print(indent, f),
+            Expr::Unary(op, expr) => {
+                write!(f, " {}", op)?;
+                expr.print(indent, f)
+            }
         }
     }
 }
