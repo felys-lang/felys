@@ -1,8 +1,8 @@
+use crate::ctrl::Ctrl;
 use crate::format::Indenter;
 use crate::lit::Lit;
 use crate::pat::Ident;
 use std::fmt::{Display, Formatter};
-use crate::ctrl::Ctrl;
 
 #[derive(Clone, Debug)]
 pub enum Expr {

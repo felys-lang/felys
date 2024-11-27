@@ -11,12 +11,7 @@ impl Control for Parser<CR> {
             return res;
         }
         if let Some(res) = self.alter(|x| {
-            x.expect("{")?;
-            let mut body = Vec::new();
-            while let Some(stmt) = x.stmt() {
-                body.push(stmt)
-            }
-            x.expect("}")?;
+            let body = x.block()?;
             Some(Ctrl::Block(body))
         }) {
             return res;
@@ -39,8 +34,8 @@ impl Control for Parser<CR> {
             let pat = x.pat()?;
             x.keyword("in")?;
             let expr = x.expr()?;
-            let body = x.ctrl()?;
-            Some(Ctrl::For(pat, expr, body.into()))
+            let body = x.block()?;
+            Some(Ctrl::For(pat, expr, body))
         }) {
             return res;
         }
@@ -68,19 +63,19 @@ impl Control for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             x.keyword("if")?;
             let expr = x.expr()?;
-            let body = x.ctrl()?;
+            let body = x.block()?;
             let mut alter = None;
             if x.expect("else").is_some() {
-                alter = Some(x.ctrl()?.into())
+                alter = Some(x.expr()?)
             }
-            Some(Ctrl::If(expr, body.into(), alter))
+            Some(Ctrl::If(expr, body, alter))
         }) {
             return res;
         }
         if let Some(res) = self.alter(|x| {
             x.keyword("loop")?;
-            let body = x.ctrl()?;
-            Some(Ctrl::Loop(body.into()))
+            let body = x.block()?;
+            Some(Ctrl::Loop(body))
         }) {
             return res;
         }
@@ -94,8 +89,8 @@ impl Control for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             x.keyword("while")?;
             let expr = x.expr()?;
-            let body = x.ctrl()?;
-            Some(Ctrl::While(expr, body.into()))
+            let body = x.block()?;
+            Some(Ctrl::While(expr, body))
         }) {
             return res;
         }

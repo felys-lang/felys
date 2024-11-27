@@ -1,6 +1,6 @@
 use crate::registry::{Control, Expression, Statement, CR};
 use ast::expr::Expr;
-use ast::stmt::Stmt;
+use ast::stmt::{Block, Stmt};
 use packrat::Parser;
 
 impl Statement for Parser<CR> {
@@ -35,6 +35,21 @@ impl Statement for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             x.expect(";")?;
             Some(Stmt::Empty)
+        }) {
+            return res;
+        }
+        None
+    }
+
+    fn block(&mut self) -> Option<Block> {
+        if let Some(res) = self.alter(|x| {
+            x.expect("{")?;
+            let mut body = Vec::new();
+            while let Some(stmt) = x.stmt() {
+                body.push(stmt)
+            }
+            x.expect("}")?;
+            Some(Block(body))
         }) {
             return res;
         }

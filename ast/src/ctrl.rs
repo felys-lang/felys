@@ -1,7 +1,7 @@
 use crate::expr::Expr;
 use crate::format::Indenter;
 use crate::pat::Pat;
-use crate::stmt::Stmt;
+use crate::stmt::Block;
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug)]
@@ -9,23 +9,23 @@ pub enum Ctrl {
     /// assignment: `x = 42`
     Assign(Pat, AssOp, Expr),
     /// code block: `{ elysia }`
-    Block(Vec<Stmt>),
+    Block(Block),
     /// break the loop: `break elysia;`
     Break(Option<Expr>),
     /// skip to the next loop: `continue`
     Continue,
     /// for loop: `for x in array { block }`
-    For(Pat, Expr, Box<Ctrl>),
+    For(Pat, Expr, Block),
     /// match: `match x { Elysia => 1, _ => 0 }`
     Match(Expr, Vec<(Pat, Expr)>),
     /// if statement with optional else: `if expr { block } else { block }`
-    If(Expr, Box<Ctrl>, Option<Box<Ctrl>>),
+    If(Expr, Block, Option<Expr>),
     /// loop with not tests: `loop { block }`
-    Loop(Box<Ctrl>),
+    Loop(Block),
     /// return value: `return elysia`
     Return(Option<Expr>),
     /// while loop: `while expr { block }`
-    While(Expr, Box<Ctrl>),
+    While(Expr, Block),
 }
 
 impl Indenter for Ctrl {
@@ -36,14 +36,7 @@ impl Indenter for Ctrl {
                 write!(f, " {} ", op)?;
                 rhs.print(indent, f)
             }
-            Ctrl::Block(vec) => {
-                writeln!(f, "{{")?;
-                for each in vec {
-                    each.print(indent + 1, f)?;
-                    writeln!(f)?
-                }
-                write!(f, "}}")
-            }
+            Ctrl::Block(block) => block.print(indent, f),
             Ctrl::Break(x) => {
                 write!(f, "break")?;
                 if let Some(expr) = x {

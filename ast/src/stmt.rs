@@ -27,3 +27,17 @@ impl Indenter for Stmt {
         }
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct Block(pub Vec<Stmt>);
+
+impl Indenter for Block {
+    fn print(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{{")?;
+        for each in &self.0 {
+            each.print(indent + 1, f)?;
+            writeln!(f)?
+        }
+        write!(f, "}}")
+    }
+}

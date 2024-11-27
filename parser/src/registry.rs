@@ -2,7 +2,7 @@ use ast::ctrl::Ctrl;
 use ast::expr::Expr;
 use ast::lit::{Bool, Float, Int, Lit, Str};
 use ast::pat::{Ident, Pat};
-use ast::stmt::Stmt;
+use ast::stmt::{Block, Stmt};
 use ast::Program;
 use packrat::Cache;
 
@@ -59,6 +59,7 @@ pub trait Control: Base {
 
 pub trait Statement: Base {
     fn stmt(&mut self) -> Option<Stmt>;
+    fn block(&mut self) -> Option<Block>;
 }
 
 pub trait Pattern: Base {
