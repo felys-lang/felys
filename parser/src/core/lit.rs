@@ -31,7 +31,7 @@ impl Literal for Parser<CR> {
         }
         None
     }
-    
+
     fn int(&mut self) -> Option<Int> {
         if let Some(res) = self.alter(|x| {
             x.expect("0x")?;
@@ -108,7 +108,7 @@ impl Literal for Parser<CR> {
             x.expect(".")?;
             let first = x.scan(|c| c.is_ascii_digit())?;
             let mut body = format!("0.{}", first);
-            while let Some(x) = x.lookahead(|c| c.is_ascii_digit()) {
+            while let Some(x) = x.scan(|c| c.is_ascii_digit()) {
                 body.push(x)
             }
             let symbol = x.pool.id(body);
@@ -120,14 +120,14 @@ impl Literal for Parser<CR> {
             let first = x.scan(|c| c.is_ascii_digit())?;
             x.stream.strict = true;
             let mut body = String::from(first);
-            while let Some(x) = x.lookahead(|c| c.is_ascii_digit()) {
+            while let Some(x) = x.scan(|c| c.is_ascii_digit()) {
                 body.push(x)
             }
             x.expect(".")?;
             body.push('.');
             let first = x.scan(|c| c.is_ascii_digit())?;
             body.push(first);
-            while let Some(x) = x.lookahead(|c| c.is_ascii_digit()) {
+            while let Some(x) = x.scan(|c| c.is_ascii_digit()) {
                 body.push(x)
             }
             let symbol = x.pool.id(body);
