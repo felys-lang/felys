@@ -6,6 +6,12 @@ impl Pattern for Parser<CR> {
     #[packrat::memoize]
     fn pat(&mut self) -> Option<Pat> {
         if let Some(res) = self.alter(|x| {
+            x.keyword("_")?;
+            Some(Pat::Any)
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
             let body = x.ident()?;
             Some(Pat::Ident(body))
         }) {
@@ -29,12 +35,6 @@ impl Pattern for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let body = x.lit()?;
             Some(Pat::Lit(body))
-        }) {
-            return res;
-        }
-        if let Some(res) = self.alter(|x| {
-            x.keyword("_")?;
-            Some(Pat::Any)
         }) {
             return res;
         }
