@@ -26,7 +26,7 @@ impl From<Symbol> for usize {
 
 impl Display for Symbol {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<id = {}>", self.0)
+        write!(f, "#{}", self.0)
     }
 }
 

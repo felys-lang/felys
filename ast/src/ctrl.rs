@@ -35,11 +35,12 @@ impl Indenter for Ctrl {
                 lhs.print(indent, f)?;
                 write!(f, " {} ", op)?;
                 rhs.print(indent, f)
-            },
+            }
             Ctrl::Block(vec) => {
-                write!(f, "{{")?;
+                writeln!(f, "{{")?;
                 for each in vec {
-                    each.print(indent + 1, f)?
+                    each.print(indent + 1, f)?;
+                    writeln!(f)?
                 }
                 write!(f, "}}")
             }
@@ -53,7 +54,14 @@ impl Indenter for Ctrl {
                 }
             }
             Ctrl::Continue => write!(f, "continue"),
-            Ctrl::For(_, _, _) => todo!(),
+            Ctrl::For(pat, expr, block) => {
+                write!(f, "for ")?;
+                pat.print(indent, f)?;
+                write!(f, " in ")?;
+                expr.print(indent, f)?;
+                write!(f, " ")?;
+                block.print(indent, f)
+            }
             Ctrl::Match(_, _) => todo!(),
             Ctrl::If(expr, block, then) => {
                 write!(f, "if ")?;
