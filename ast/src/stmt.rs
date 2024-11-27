@@ -38,6 +38,9 @@ impl Indenter for Block {
             each.print(indent + 1, f)?;
             writeln!(f)?
         }
+        for _ in 0..indent {
+            write!(f, "{}", INDENT)?;
+        }
         write!(f, "}}")
     }
 }

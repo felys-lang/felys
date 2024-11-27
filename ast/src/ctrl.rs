@@ -1,5 +1,5 @@
 use crate::expr::Expr;
-use crate::format::Indenter;
+use crate::format::{Indenter, INDENT};
 use crate::pat::Pat;
 use crate::stmt::Block;
 use std::fmt::{Display, Formatter};
@@ -55,7 +55,31 @@ impl Indenter for Ctrl {
                 write!(f, " ")?;
                 block.print(indent, f)
             }
-            Ctrl::Match(_, _) => todo!(),
+            Ctrl::Match(expr, arms) => {
+                write!(f, "match ")?;
+                expr.print(indent, f)?;
+                writeln!(f, " {{")?;
+                if let Some((pat, expr)) = arms.first() {
+                    for _ in 0..indent + 1 {
+                        write!(f, "{}", INDENT)?;
+                    }
+                    pat.print(indent + 1, f)?;
+                    write!(f, " => ")?;
+                    expr.print(indent + 1, f)?
+                }
+                for (pat, expr) in arms.iter().skip(1) {
+                    write!(f, ",")?;
+                    writeln!(f)?;
+                    for _ in 0..indent + 1 {
+                        write!(f, "{}", INDENT)?;
+                    }
+                    pat.print(indent + 1, f)?;
+                    write!(f, " => ")?;
+                    expr.print(indent + 1, f)?;
+                }
+                writeln!(f)?;
+                write!(f, "}}")
+            }
             Ctrl::If(expr, block, then) => {
                 write!(f, "if ")?;
                 expr.print(indent, f)?;
