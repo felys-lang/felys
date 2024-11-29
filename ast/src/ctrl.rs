@@ -37,9 +37,9 @@ impl Indenter for Ctrl {
                 rhs.print(indent, f)
             }
             Ctrl::Block(block) => block.print(indent, f),
-            Ctrl::Break(x) => {
+            Ctrl::Break(expr) => {
                 write!(f, "break")?;
-                if let Some(expr) = x {
+                if let Some(expr) = expr {
                     write!(f, " ")?;
                     expr.print(indent, f)
                 } else {
@@ -96,9 +96,9 @@ impl Indenter for Ctrl {
                 write!(f, "loop ")?;
                 block.print(indent, f)
             }
-            Ctrl::Return(x) => {
+            Ctrl::Return(expr) => {
                 write!(f, "return")?;
-                if let Some(expr) = x {
+                if let Some(expr) = expr {
                     write!(f, " ")?;
                     expr.print(indent, f)
                 } else {

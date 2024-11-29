@@ -36,24 +36,24 @@ impl Indenter for Expr {
                 write!(f, " {} ", op)?;
                 rhs.print(indent, f)
             }
-            Expr::Closure(param, block) => {
+            Expr::Closure(params, expr) => {
                 write!(f, "|")?;
-                if let Some(first) = param.first() {
+                if let Some(first) = params.first() {
                     write!(f, "{}", first)?
                 }
-                for each in param.iter().skip(1) {
+                for each in params.iter().skip(1) {
                     write!(f, ", {}", each)?
                 }
                 write!(f, "| ")?;
-                block.print(indent, f)
+                expr.print(indent, f)
             }
-            Expr::Call(func, param) => {
-                func.print(indent, f)?;
+            Expr::Call(callee, args) => {
+                callee.print(indent, f)?;
                 write!(f, "(")?;
-                if let Some(first) = param.first() {
+                if let Some(first) = args.first() {
                     first.print(indent, f)?
                 }
-                for each in param.iter().skip(1) {
+                for each in args.iter().skip(1) {
                     write!(f, ",")?;
                     each.print(indent, f)?
                 }
@@ -63,28 +63,28 @@ impl Indenter for Expr {
                 root.print(indent, f)?;
                 write!(f, ".{}", field)
             }
-            Expr::Ident(x) => write!(f, "{}", x),
-            Expr::Tuple(member) => {
+            Expr::Ident(ident) => write!(f, "{}", ident),
+            Expr::Tuple(tuple) => {
                 write!(f, "(")?;
-                if let Some(first) = member.first() {
+                if let Some(first) = tuple.first() {
                     first.print(indent, f)?
                 }
-                for each in member.iter().skip(1) {
+                for each in tuple.iter().skip(1) {
                     write!(f, ", ")?;
                     each.print(indent, f)?
                 }
                 write!(f, ")")
             }
-            Expr::Lit(x) => x.print(indent, f),
+            Expr::Lit(lit) => lit.print(indent, f),
             Expr::Paren(expr) => {
                 write!(f, "(")?;
                 expr.print(indent, f)?;
                 write!(f, ")")
             }
             Expr::Ctrl(ctrl) => ctrl.print(indent, f),
-            Expr::Unary(op, expr) => {
+            Expr::Unary(op, rhs) => {
                 write!(f, " {}", op)?;
-                expr.print(indent, f)
+                rhs.print(indent, f)
             }
         }
     }
