@@ -6,10 +6,7 @@ impl Evaluation for Stmt {
     fn eval(&self, env: &mut Environ) -> Result<Value, Signal> {
         match self {
             Stmt::Empty => Ok(Value::Void),
-            Stmt::Expr(expr) => match expr.eval(env)? {
-                Value::Void => Err(Signal::Error("".to_string())),
-                other => Ok(other)
-            }
+            Stmt::Expr(expr) => expr.eval(env),
             Stmt::Semi(expr) => {
                 expr.eval(env)?;
                 Ok(Value::Void)
