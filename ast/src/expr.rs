@@ -64,9 +64,9 @@ impl Indenter for Expr {
                 write!(f, ".{}", field)
             }
             Expr::Ident(ident) => write!(f, "{}", ident),
-            Expr::Tuple(tuple) => {
+            Expr::Tuple(tup) => {
                 write!(f, "(")?;
-                if let Some(first) = tuple.first() {
+                if let Some(first) = tup.first() {
                     first.print(indent, f)?
                 }
                 for each in tuple.iter().skip(1) {

@@ -1,7 +1,7 @@
 mod value;
 
 use packrat::Pool;
-pub use value::Value;
+pub use value::*;
 
 pub struct Environ {
     pub writer: Writer,
