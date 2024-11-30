@@ -256,7 +256,7 @@ impl Expression for Parser<CR> {
             }
             x.expect("|")?;
             let expr = x.expr()?;
-            Some(Expr::Closure(body, expr.into()))
+            Some(Expr::Func(body, expr.into()))
         }) {
             return res;
         }

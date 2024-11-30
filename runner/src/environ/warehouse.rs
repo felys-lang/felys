@@ -28,4 +28,12 @@ impl Warehouse {
         }
         Err(Signal::Error("".to_string()))
     }
+
+    pub fn stack(&mut self) {
+        self.floors.push(HashMap::new())
+    }
+
+    pub fn unstack(&mut self) {
+        self.floors.pop();
+    }
 }

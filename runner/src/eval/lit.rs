@@ -19,9 +19,9 @@ fn _int(env: &mut Environ, val: &Int) -> Result<Value, Signal> {
         Int::Base10(s) => s,
         Int::Base8(_) => todo!(),
         Int::Base2(_) => todo!(),
-    }.clone();
+    };
     let raw = env.pool
-        .get(symbol.into())
+        .get(symbol.0)
         .ok_or(Signal::Error("".to_string()))?;
     let value = raw.parse()
         .map_err(|_| Signal::Error("".to_string()))?;
@@ -29,9 +29,8 @@ fn _int(env: &mut Environ, val: &Int) -> Result<Value, Signal> {
 }
 
 fn _float(env: &mut Environ, val: &Float) -> Result<Value, Signal> {
-    let symbol = val.clone();
     let raw = env.pool
-        .get(symbol.into())
+        .get(val.0)
         .ok_or(Signal::Error("".to_string()))?;
     let value = raw.parse()
         .map_err(|_| Signal::Error("".to_string()))?;

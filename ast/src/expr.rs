@@ -9,7 +9,7 @@ pub enum Expr {
     /// binary operation: `1 + 2`
     Binary(Box<Expr>, BinOp, Box<Expr>),
     /// closure: `|x| { x+1 }`, `|x| x+1`
-    Closure(Vec<Ident>, Box<Expr>),
+    Func(Vec<Ident>, Box<Expr>),
     /// function call: `func(1, 2)`
     Call(Box<Expr>, Vec<Expr>),
     /// field: `elysia.mei`
@@ -36,7 +36,7 @@ impl Indenter for Expr {
                 write!(f, " {} ", op)?;
                 rhs.print(indent, f)
             }
-            Expr::Closure(params, expr) => {
+            Expr::Func(params, expr) => {
                 write!(f, "|")?;
                 if let Some(first) = params.first() {
                     write!(f, "{}", first)?
@@ -47,8 +47,8 @@ impl Indenter for Expr {
                 write!(f, "| ")?;
                 expr.print(indent, f)
             }
-            Expr::Call(callee, args) => {
-                callee.print(indent, f)?;
+            Expr::Call(func, args) => {
+                func.print(indent, f)?;
                 write!(f, "(")?;
                 if let Some(first) = args.first() {
                     first.print(indent, f)?

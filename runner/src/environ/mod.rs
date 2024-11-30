@@ -2,15 +2,28 @@ mod value;
 mod warehouse;
 
 use packrat::Pool;
+use std::collections::HashMap;
 pub use value::*;
 pub use warehouse::*;
 
-pub struct Environ {
-    pub writer: Writer,
-    pub pool: Pool,
+pub struct Environ<'a> {
+    pub pool: &'a Pool,
     pub warehouse: Warehouse,
 }
 
-pub struct Writer {
-    pub buffer: String,
+
+impl<'a> Environ<'a> {
+    pub fn new(pool: &'a Pool) -> Environ<'a> {
+        Self {
+            pool,
+            warehouse: Warehouse { floors: vec![HashMap::new()] },
+        }
+    }
+
+    pub fn sandbox(&self) -> Self {
+        Self {
+            pool: self.pool,
+            warehouse: Warehouse { floors: vec![HashMap::new()] },
+        }
+    }
 }

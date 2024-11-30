@@ -1,6 +1,7 @@
 use crate::execute::Signal;
 use ast::expr::Expr;
 use ast::pat::Ident;
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone)]
 pub enum Value {
@@ -8,9 +9,23 @@ pub enum Value {
     Float(f64),
     Int(isize),
     Str(String),
-    Closure(Vec<Ident>, Expr),
+    Func(Vec<Ident>, Expr),
     Tuple(Vec<Value>),
     Void,
+}
+
+impl Display for Value {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Bool(val) => write!(f, "{}", val),
+            Value::Float(val) => write!(f, "{}", val),
+            Value::Int(val) => write!(f, "{}", val),
+            Value::Str(val) => write!(f, "{}", val),
+            Value::Func(_, _) => todo!(),
+            Value::Tuple(_) => todo!(),
+            Value::Void => write!(f, "<void>"),
+        }
+    }
 }
 
 pub trait Operator {
@@ -45,11 +60,19 @@ impl Value {
         Ok(result)
     }
 
-    pub fn void(&self) -> Result<(), Signal> {
+    pub fn void(self) -> Result<(), Signal> {
         if let Value::Void = self {
             Ok(())
         } else {
             Err(Signal::Error("expect a `void` type".to_string()))
+        }
+    }
+
+    pub fn func(self) -> Result<(Vec<Ident>, Expr), Signal> {
+        if let Value::Func(params, expr) = self {
+            Ok((params, expr))
+        } else {
+            Err(Signal::Error("expect a `func` type".to_string()))
         }
     }
 }

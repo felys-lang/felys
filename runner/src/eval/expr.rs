@@ -1,14 +1,15 @@
 use crate::environ::{Environ, Operator, Value};
 use crate::execute::{Evaluation, Signal};
 use ast::expr::{BinOp, Expr, UnaOp};
+use ast::pat::Ident;
 
 impl Evaluation for Expr {
     fn eval(&self, env: &mut Environ) -> Result<Value, Signal> {
         match self {
             Expr::Binary(lhs, op, rhs) => _binary(env, lhs, op, rhs),
-            Expr::Closure(params, expr) => todo!(),
-            Expr::Call(callee, args) => todo!(),
-            Expr::Field(_, _) => unimplemented!("feature not supported, though it gets parsed"),
+            Expr::Call(func, args) => _call(env, func, args),
+            Expr::Field(_, _) => unimplemented!("nice try, but parsed != supported"),
+            Expr::Func(params, expr) => _func(env, params, expr),
             Expr::Ident(ident) => env.warehouse.get(ident.0),
             Expr::Tuple(tup) => _tuple(env, tup),
             Expr::Lit(lit) => lit.eval(env),
@@ -17,6 +18,24 @@ impl Evaluation for Expr {
             Expr::Unary(op, rhs) => _unary(env, op, rhs),
         }
     }
+}
+
+fn _call(env: &mut Environ, func: &Expr, args: &[Expr]) -> Result<Value, Signal> {
+    let mut values = Vec::with_capacity(args.len());
+    for expr in args {
+        let value = expr.eval(env)?;
+        values.push(value)
+    }
+    let (params, expr) = func.eval(env)?.func()?;
+    let mut sandbox = env.sandbox();
+    for (param, value) in params.iter().zip(values) {
+        sandbox.warehouse.put(param.0, value)
+    }
+    expr.eval(&mut sandbox)
+}
+
+fn _func(_: &mut Environ, params: &[Ident], expr: &Expr) -> Result<Value, Signal> {
+    Ok(Value::Func(Vec::from(params), expr.clone()))
 }
 
 fn _tuple(env: &mut Environ, tup: &[Expr]) -> Result<Value, Signal> {
