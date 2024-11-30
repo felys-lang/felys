@@ -2,6 +2,7 @@ use crate::execute::Signal;
 use ast::expr::Expr;
 use ast::pat::Ident;
 
+#[derive(Clone)]
 pub enum Value {
     Bool(bool),
     Float(f64),

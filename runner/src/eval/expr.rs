@@ -9,7 +9,7 @@ impl Evaluation for Expr {
             Expr::Closure(params, expr) => todo!(),
             Expr::Call(callee, args) => todo!(),
             Expr::Field(_, _) => unimplemented!("feature not supported, though it gets parsed"),
-            Expr::Ident(ident) => todo!(),
+            Expr::Ident(ident) => env.warehouse.get(ident.0),
             Expr::Tuple(tup) => _tuple(env, tup),
             Expr::Lit(lit) => lit.eval(env),
             Expr::Paren(expr) => expr.eval(env),
