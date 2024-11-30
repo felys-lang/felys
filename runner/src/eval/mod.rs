@@ -2,6 +2,7 @@ mod expr;
 mod lit;
 mod ctrl;
 mod stmt;
+mod pat;
 
 use crate::environ::{Environ, Value};
 use crate::execute::{Evaluation, Signal};
