@@ -1,14 +1,47 @@
 use crate::environ::{Environ, Value};
 use crate::execute::{Evaluation, Signal};
-use ast::lit::Lit;
+use ast::lit::{Bool, Float, Int, Lit};
 
 impl Evaluation for Lit {
     fn eval(&self, env: &mut Environ) -> Result<Value, Signal> {
         match self {
-            Lit::Int(_) => todo!(),
-            Lit::Float(_) => todo!(),
-            Lit::Bool(_) => todo!(),
+            Lit::Int(val) => _int(env, val),
+            Lit::Float(val) => _float(env, val),
+            Lit::Bool(val) => _bool(env, val),
             Lit::Str(_) => todo!(),
         }
     }
+}
+
+fn _int(env: &mut Environ, val: &Int) -> Result<Value, Signal> {
+    let symbol = match val {
+        Int::Base16(_) => todo!(),
+        Int::Base10(s) => s,
+        Int::Base8(_) => todo!(),
+        Int::Base2(_) => todo!(),
+    }.clone();
+    let raw = env.pool
+        .get(symbol.into())
+        .ok_or(Signal::Error("".to_string()))?;
+    let value = raw.parse()
+        .map_err(|_| Signal::Error("".to_string()))?;
+    Ok(Value::Int(value))
+}
+
+fn _float(env: &mut Environ, val: &Float) -> Result<Value, Signal> {
+    let symbol = val.clone();
+    let raw = env.pool
+        .get(symbol.into())
+        .ok_or(Signal::Error("".to_string()))?;
+    let value = raw.parse()
+        .map_err(|_| Signal::Error("".to_string()))?;
+    Ok(Value::Float(value))
+}
+
+fn _bool(_: &mut Environ, val: &Bool) -> Result<Value, Signal> {
+    let value = match val {
+        Bool::True => Value::Bool(true),
+        Bool::False => Value::Bool(false)
+    };
+    Ok(value)
 }

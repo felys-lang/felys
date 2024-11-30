@@ -1,26 +1,25 @@
-use crate::environ::{Environ, Logical, Order, Value};
+use crate::environ::{Environ, Operator, Value};
 use crate::execute::{Evaluation, Signal};
 use ast::expr::{BinOp, Expr, UnaOp};
-use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 
 impl Evaluation for Expr {
     fn eval(&self, env: &mut Environ) -> Result<Value, Signal> {
         match self {
-            Expr::Binary(lhs, op, rhs) => binary(env, lhs, op, rhs),
+            Expr::Binary(lhs, op, rhs) => _binary(env, lhs, op, rhs),
             Expr::Closure(params, expr) => todo!(),
             Expr::Call(callee, args) => todo!(),
-            Expr::Field(_, _) => unimplemented!("feature not supported, even if it gets parsed"),
+            Expr::Field(_, _) => unimplemented!("feature not supported, though it gets parsed"),
             Expr::Ident(ident) => todo!(),
-            Expr::Tuple(tup) => tuple(env, tup),
+            Expr::Tuple(tup) => _tuple(env, tup),
             Expr::Lit(lit) => lit.eval(env),
             Expr::Paren(expr) => expr.eval(env),
             Expr::Ctrl(ctrl) => ctrl.eval(env),
-            Expr::Unary(op, rhs) => unary(env, op, rhs),
+            Expr::Unary(op, rhs) => _unary(env, op, rhs),
         }
     }
 }
 
-fn tuple(env: &mut Environ, tup: &[Expr]) -> Result<Value, Signal> {
+fn _tuple(env: &mut Environ, tup: &[Expr]) -> Result<Value, Signal> {
     let mut result = Vec::with_capacity(tup.len());
     for expr in tup {
         let value = expr.eval(env)?;
@@ -29,7 +28,7 @@ fn tuple(env: &mut Environ, tup: &[Expr]) -> Result<Value, Signal> {
     Ok(Value::Tuple(result))
 }
 
-fn binary(env: &mut Environ, lhs: &Expr, op: &BinOp, rhs: &Expr) -> Result<Value, Signal> {
+fn _binary(env: &mut Environ, lhs: &Expr, op: &BinOp, rhs: &Expr) -> Result<Value, Signal> {
     let l = lhs.eval(env)?;
     let r = rhs.eval(env)?;
     match op {
@@ -37,7 +36,7 @@ fn binary(env: &mut Environ, lhs: &Expr, op: &BinOp, rhs: &Expr) -> Result<Value
         BinOp::And => l.and(r),
         BinOp::Gt => l.gt(r),
         BinOp::Ge => l.ge(r),
-        BinOp::Lt => l.gt(r),
+        BinOp::Lt => l.lt(r),
         BinOp::Le => l.le(r),
         BinOp::Eq => l.eq(r),
         BinOp::Ne => l.ne(r),
@@ -49,11 +48,11 @@ fn binary(env: &mut Environ, lhs: &Expr, op: &BinOp, rhs: &Expr) -> Result<Value
     }
 }
 
-fn unary(env: &mut Environ, op: &UnaOp, rhs: &Expr) -> Result<Value, Signal> {
+fn _unary(env: &mut Environ, op: &UnaOp, rhs: &Expr) -> Result<Value, Signal> {
     let r = rhs.eval(env)?;
     match op {
         UnaOp::Not => r.not(),
-        UnaOp::Pos => Ok(r),
+        UnaOp::Pos => r.pos(),
         UnaOp::Neg => r.neg()
     }
 }

@@ -69,7 +69,7 @@ impl Indenter for Expr {
                 if let Some(first) = tup.first() {
                     first.print(indent, f)?
                 }
-                for each in tuple.iter().skip(1) {
+                for each in tup.iter().skip(1) {
                     write!(f, ", ")?;
                     each.print(indent, f)?
                 }
