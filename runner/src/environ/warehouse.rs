@@ -26,7 +26,7 @@ impl Warehouse {
                 return Ok(value.clone());
             }
         }
-        Err(Signal::Error("".to_string()))
+        Err(Signal::Error("id does not exist"))
     }
 
     pub fn stack(&mut self) {

@@ -63,7 +63,7 @@ impl Expression for Parser<CR> {
         }) {
             return res;
         }
-        self.comparison()
+        self.equality()
     }
 
     #[packrat::lecursion]
@@ -92,7 +92,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.comparison()?;
             x.expect(">")?;
-            let rhs = x.factor()?;
+            let rhs = x.term()?;
             Some(Expr::Binary(lhs.into(), BinOp::Gt, rhs.into()))
         }) {
             return res;
@@ -100,7 +100,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.comparison()?;
             x.expect("<")?;
-            let rhs = x.factor()?;
+            let rhs = x.term()?;
             Some(Expr::Binary(lhs.into(), BinOp::Lt, rhs.into()))
         }) {
             return res;
@@ -108,7 +108,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.comparison()?;
             x.expect(">=")?;
-            let rhs = x.factor()?;
+            let rhs = x.term()?;
             Some(Expr::Binary(lhs.into(), BinOp::Ge, rhs.into()))
         }) {
             return res;
@@ -116,7 +116,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.comparison()?;
             x.expect("<=")?;
-            let rhs = x.factor()?;
+            let rhs = x.term()?;
             Some(Expr::Binary(lhs.into(), BinOp::Le, rhs.into()))
         }) {
             return res;

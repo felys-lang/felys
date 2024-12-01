@@ -22,18 +22,18 @@ fn _int(env: &mut Environ, val: &Int) -> Result<Value, Signal> {
     };
     let raw = env.pool
         .get(symbol.into())
-        .ok_or(Signal::Error("".to_string()))?;
+        .ok_or(Signal::Error("id does not exist"))?;
     let value = raw.parse()
-        .map_err(|_| Signal::Error("".to_string()))?;
+        .map_err(|_| Signal::Error("parsing to `int` failed"))?;
     Ok(Value::Int(value))
 }
 
 fn _float(env: &mut Environ, val: &Float) -> Result<Value, Signal> {
     let raw = env.pool
         .get(val.into())
-        .ok_or(Signal::Error("".to_string()))?;
+        .ok_or(Signal::Error("id does not exist"))?;
     let value = raw.parse()
-        .map_err(|_| Signal::Error("".to_string()))?;
+        .map_err(|_| Signal::Error("parsing to `float` failed"))?;
     Ok(Value::Float(value))
 }
 
@@ -48,6 +48,6 @@ fn _bool(_: &mut Environ, val: &Bool) -> Result<Value, Signal> {
 fn _str(env: &mut Environ, val: &Str) -> Result<Value, Signal> {
     let raw = env.pool
         .get(val.into())
-        .ok_or(Signal::Error("".to_string()))?;
+        .ok_or(Signal::Error("id does not exist"))?;
     Ok(Value::Str(raw))
 }

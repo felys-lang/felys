@@ -75,7 +75,7 @@ impl Value {
             Value::Float(x) => *x != 0.0,
             Value::Int(x) => *x != 0,
             Value::Str(s) => !s.is_empty(),
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("boolean value not available"))?
         };
         Ok(result)
     }
@@ -84,7 +84,7 @@ impl Value {
         if let Value::Void = self {
             Ok(())
         } else {
-            Err(Signal::Error("expect a `void` type".to_string()))
+            Err(Signal::Error("expect a `void` type"))
         }
     }
 
@@ -92,7 +92,7 @@ impl Value {
         if let Value::Func(params, expr) = self {
             Ok((params, expr))
         } else {
-            Err(Signal::Error("expect a `func` type".to_string()))
+            Err(Signal::Error("expect a `func` type"))
         }
     }
 }
@@ -142,21 +142,38 @@ impl Operator for Value {
                 }
                 true
             }
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("operator `==` does not evaluated"))?
         };
         Ok(Value::Bool(value))
     }
 
     fn ne(self, rhs: Self) -> Self::Output {
-        let value = self.eq(rhs)?.bool()?;
-        Ok(Value::Bool(!value))
+        let value = match (self, rhs) {
+            (Self::Int(l), Self::Int(r)) => l != r,
+            (Self::Float(l), Self::Float(r)) => l != r,
+            (Self::Bool(l), Self::Bool(r)) => l != r,
+            (Self::Str(l), Self::Str(r)) => l != r,
+            (Self::Tuple(l), Self::Tuple(r)) => {
+                if l.len() != r.len() {
+                    return Ok(Value::Bool(true));
+                }
+                for (ll, rr) in l.into_iter().zip(r) {
+                    if ll.ne(rr)?.bool()? {
+                        return Ok(Value::Bool(true));
+                    }
+                }
+                false
+            }
+            _ => Err(Signal::Error("operator `!=` does not evaluated"))?
+        };
+        Ok(Value::Bool(value))
     }
 
     fn gt(self, rhs: Self) -> Self::Output {
         let value = match (self, rhs) {
             (Self::Int(l), Self::Int(r)) => l > r,
             (Self::Float(l), Self::Float(r)) => l > r,
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("operator `>` does not evaluated"))?
         };
         Ok(Value::Bool(value))
     }
@@ -165,7 +182,7 @@ impl Operator for Value {
         let value = match (self, rhs) {
             (Self::Int(l), Self::Int(r)) => l >= r,
             (Self::Float(l), Self::Float(r)) => l >= r,
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("operator `>=` does not evaluated"))?
         };
         Ok(Value::Bool(value))
     }
@@ -174,7 +191,7 @@ impl Operator for Value {
         let value = match (self, rhs) {
             (Self::Int(l), Self::Int(r)) => l < r,
             (Self::Float(l), Self::Float(r)) => l < r,
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("operator `<` does not evaluated"))?
         };
         Ok(Value::Bool(value))
     }
@@ -183,7 +200,7 @@ impl Operator for Value {
         let value = match (self, rhs) {
             (Self::Int(l), Self::Int(r)) => l <= r,
             (Self::Float(l), Self::Float(r)) => l <= r,
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("operator `<=` does not evaluated"))?
         };
         Ok(Value::Bool(value))
     }
@@ -192,7 +209,7 @@ impl Operator for Value {
         let value = match (self, rhs) {
             (Self::Int(l), Self::Int(r)) => Value::Int(l.saturating_add(r)),
             (Self::Float(l), Self::Float(r)) => Value::Float(l + r),
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("operator `+` does not evaluated"))?
         };
         Ok(value)
     }
@@ -201,7 +218,7 @@ impl Operator for Value {
         let value = match (self, rhs) {
             (Self::Int(l), Self::Int(r)) => Value::Int(l.saturating_sub(r)),
             (Self::Float(l), Self::Float(r)) => Value::Float(l - r),
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("operator `-` does not evaluated"))?
         };
         Ok(value)
     }
@@ -210,7 +227,7 @@ impl Operator for Value {
         let value = match (self, rhs) {
             (Self::Int(l), Self::Int(r)) => Value::Int(l.saturating_mul(r)),
             (Self::Float(l), Self::Float(r)) => Value::Float(l * r),
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("operator `*` does not evaluated"))?
         };
         Ok(value)
     }
@@ -219,7 +236,7 @@ impl Operator for Value {
         let value = match (self, rhs) {
             (Self::Int(l), Self::Int(r)) => Value::Int(l.saturating_div(r)),
             (Self::Float(l), Self::Float(r)) => Value::Float(l / r),
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("operator `/` does not evaluated"))?
         };
         Ok(value)
     }
@@ -228,7 +245,7 @@ impl Operator for Value {
         let value = match (self, rhs) {
             (Self::Int(l), Self::Int(r)) => Value::Int(l % r),
             (Self::Float(l), Self::Float(r)) => Value::Float(l % r),
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("operator `%` does not evaluated"))?
         };
         Ok(value)
     }
@@ -237,7 +254,7 @@ impl Operator for Value {
         let value = match self {
             Self::Int(_) |
             Self::Float(_) => self,
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("operator `+` does not evaluated"))?
         };
         Ok(value)
     }
@@ -246,7 +263,7 @@ impl Operator for Value {
         let value = match self {
             Self::Int(x) => Value::Int(x.saturating_neg()),
             Self::Float(x) => Value::Float(-x),
-            _ => return Err(Signal::Error("".to_string()))
+            _ => Err(Signal::Error("operator `-` does not evaluated"))?
         };
         Ok(value)
     }

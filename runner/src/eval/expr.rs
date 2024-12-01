@@ -8,7 +8,7 @@ impl Evaluation for Expr {
         match self {
             Expr::Binary(lhs, op, rhs) => _binary(env, lhs, op, rhs),
             Expr::Call(func, args) => _call(env, func, args),
-            Expr::Field(_, _) => unimplemented!("nice try, but parsed != supported"),
+            Expr::Field(_, _) => Err(Signal::Error("nice try, but parsed != supported")),
             Expr::Func(params, expr) => _func(env, params, expr),
             Expr::Ident(ident) => env.warehouse.get(ident.into()),
             Expr::Tuple(tup) => _tuple(env, tup),
@@ -27,6 +27,9 @@ fn _call(env: &mut Environ, func: &Expr, args: &[Expr]) -> Result<Value, Signal>
         values.push(value)
     }
     let (params, expr) = func.eval(env)?.func()?;
+    if params.len() != values.len() {
+        return Err(Signal::Error("incorrect numbers of arguments"));
+    }
     let mut sandbox = env.sandbox();
     for (param, value) in params.iter().zip(values) {
         sandbox.warehouse.put(param.into(), value)
@@ -35,7 +38,7 @@ fn _call(env: &mut Environ, func: &Expr, args: &[Expr]) -> Result<Value, Signal>
     match result {
         Err(Signal::Return(value)) => Ok(value),
         Err(Signal::Break(_)) |
-        Err(Signal::Continue) => Err(Signal::Error("".to_string())),
+        Err(Signal::Continue) => Err(Signal::Error("invalid signal")),
         _ => result
     }
 }

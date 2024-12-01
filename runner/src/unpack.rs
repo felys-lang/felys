@@ -16,8 +16,11 @@ impl Unpack for Pat {
 
 fn _tuple(env: &mut Environ, pairs: &mut Pairs, value: Value, tup: &[Pat]) -> Result<(), Signal> {
     let Value::Tuple(inner) = value else {
-        return Err(Signal::Error("".to_string()))
+        return Err(Signal::Error("only `tuple` can be unpacked"))
     };
+    if tup.len() != inner.len() {
+        return Err(Signal::Error("incorrect numbers of value to unpack"));
+    }
     for (pat, val) in tup.iter().zip(inner) {
         pat.unpack(env, pairs, val)?;
     }
@@ -28,7 +31,7 @@ fn _lit(env: &mut Environ, _: &mut Pairs, value: Value, lit: &Lit) -> Result<(),
     if lit.eval(env)?.eq(value)?.bool()? {
         Ok(())
     } else {
-        Err(Signal::Error("".to_string()))
+        Err(Signal::Error("pattern not matched"))
     }
 }
 
