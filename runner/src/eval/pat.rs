@@ -8,7 +8,7 @@ impl Evaluation for Pat {
             Pat::Any => Err(Signal::Error("".to_string())),
             Pat::Tuple(tup) => _tuple(env, tup),
             Pat::Lit(lit) => lit.eval(env),
-            Pat::Ident(ident) => env.warehouse.get(ident.0)
+            Pat::Ident(ident) => env.warehouse.get(ident.into())
         }
     }
 }

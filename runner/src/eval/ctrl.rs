@@ -34,7 +34,7 @@ fn _assign(env: &mut Environ, pat: &Pat, op: &AssOp, expr: &Expr) -> Result<Valu
     let mut pairs = Vec::new();
     pat.unpack(env, &mut pairs, value)?;
     for (ident, val) in pairs {
-        env.warehouse.put(ident.0, val);
+        env.warehouse.put(ident.into(), val);
     }
     Ok(Value::Void)
 }

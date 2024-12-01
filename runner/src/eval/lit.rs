@@ -21,7 +21,7 @@ fn _int(env: &mut Environ, val: &Int) -> Result<Value, Signal> {
         Int::Base2(_) => todo!(),
     };
     let raw = env.pool
-        .get(symbol.0)
+        .get(symbol.into())
         .ok_or(Signal::Error("".to_string()))?;
     let value = raw.parse()
         .map_err(|_| Signal::Error("".to_string()))?;
@@ -30,7 +30,7 @@ fn _int(env: &mut Environ, val: &Int) -> Result<Value, Signal> {
 
 fn _float(env: &mut Environ, val: &Float) -> Result<Value, Signal> {
     let raw = env.pool
-        .get(val.0)
+        .get(val.into())
         .ok_or(Signal::Error("".to_string()))?;
     let value = raw.parse()
         .map_err(|_| Signal::Error("".to_string()))?;

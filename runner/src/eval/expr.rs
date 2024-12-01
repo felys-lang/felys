@@ -10,7 +10,7 @@ impl Evaluation for Expr {
             Expr::Call(func, args) => _call(env, func, args),
             Expr::Field(_, _) => unimplemented!("nice try, but parsed != supported"),
             Expr::Func(params, expr) => _func(env, params, expr),
-            Expr::Ident(ident) => env.warehouse.get(ident.0),
+            Expr::Ident(ident) => env.warehouse.get(ident.into()),
             Expr::Tuple(tup) => _tuple(env, tup),
             Expr::Lit(lit) => lit.eval(env),
             Expr::Paren(expr) => expr.eval(env),
@@ -29,7 +29,7 @@ fn _call(env: &mut Environ, func: &Expr, args: &[Expr]) -> Result<Value, Signal>
     let (params, expr) = func.eval(env)?.func()?;
     let mut sandbox = env.sandbox();
     for (param, value) in params.iter().zip(values) {
-        sandbox.warehouse.put(param.0, value)
+        sandbox.warehouse.put(param.into(), value)
     }
     expr.eval(&mut sandbox)
 }

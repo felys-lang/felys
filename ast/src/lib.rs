@@ -10,7 +10,7 @@ pub mod stmt;
 mod format;
 
 #[derive(Clone, Debug)]
-pub struct Symbol(pub usize);
+pub struct Symbol(usize);
 
 impl From<usize> for Symbol {
     fn from(value: usize) -> Self {
@@ -20,6 +20,12 @@ impl From<usize> for Symbol {
 
 impl From<Symbol> for usize {
     fn from(value: Symbol) -> Self {
+        value.0
+    }
+}
+
+impl From<&Symbol> for usize {
+    fn from(value: &Symbol) -> Self {
         value.0
     }
 }
