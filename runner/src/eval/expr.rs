@@ -31,7 +31,13 @@ fn _call(env: &mut Environ, func: &Expr, args: &[Expr]) -> Result<Value, Signal>
     for (param, value) in params.iter().zip(values) {
         sandbox.warehouse.put(param.into(), value)
     }
-    expr.eval(&mut sandbox)
+    let result = expr.eval(&mut sandbox);
+    match result {
+        Err(Signal::Return(value)) => Ok(value),
+        Err(Signal::Break(_)) |
+        Err(Signal::Continue) => Err(Signal::Error("".to_string())),
+        _ => result
+    }
 }
 
 fn _func(_: &mut Environ, params: &[Ident], expr: &Expr) -> Result<Value, Signal> {
