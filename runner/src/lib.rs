@@ -11,7 +11,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
-pub fn exec(program: Program, mut pool: Pool, timeout: u64, depth: usize) -> Result<Value, String> {
+pub fn exec(program: Program, mut pool: Pool, timeout: u64, depth: usize) -> Result<Value, &'static str> {
     let (tx, rx) = mpsc::channel();
     let mut env = Environ::new(&mut pool, &rx, depth);
 
@@ -27,6 +27,6 @@ pub fn exec(program: Program, mut pool: Pool, timeout: u64, depth: usize) -> Res
         Ok(_) => Ok(Value::Void),
         Err(Signal::Return(value)) => Ok(value),
         Err(Signal::Error(e)) => Err(e),
-        _ => Err("unknown signal".to_string())
+        _ => Err("invalid signal")
     }
 }
