@@ -1,9 +1,10 @@
 [package]
 name = "felys"
-version = "0.1.10"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
-description = "Interface to customize Felys implementation"
+description = "The Felys Programming Language"
 
 [dependencies]
-ast = { path = "ast" }
+parser = { path = "parser" }
+runner = { path = "runner" }
