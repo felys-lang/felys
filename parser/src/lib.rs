@@ -1,6 +1,6 @@
 use crate::registry::{Entry, CR};
 use ast::Program;
-use packrat::{Parser, Pool};
+use packrat::{Memo, Parser, Pool};
 use std::collections::HashSet;
 
 mod registry;
@@ -22,9 +22,11 @@ const KEYWORDS: [&str; 12] = [
     "false"
 ];
 
-pub fn parse(code: String) -> Option<(Program, Pool)> {
+pub fn parse(code: String) -> Result<(Program, Pool), (Memo<CR>, Pool)> {
     let keywords = HashSet::from(KEYWORDS);
     let mut parser = Parser::<CR>::new(code, keywords);
-    let program = parser.program()?;
-    Some((program, parser.pool))
+    match parser.program() {
+        Some(prog) => Ok((prog, parser.pool)),
+        None => Err((parser.memo, parser.pool))
+    }
 }

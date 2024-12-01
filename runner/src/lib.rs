@@ -1,17 +1,19 @@
 mod execute;
 mod environ;
 mod eval;
+mod unpack;
 
-use crate::environ::{Environ, Warehouse, Writer};
-use crate::execute::Evaluation;
+use crate::environ::{Environ, Value};
+use crate::execute::{Evaluation, Signal};
 use ast::Program;
 use packrat::Pool;
 
-pub fn exec(program: Program, pool: Pool) {
-    let mut env = Environ {
-        writer: Writer { buffer: String::new() },
-        warehouse: Warehouse { floors: Vec::new() },
-        pool,
-    };
-    let _ = program.eval(&mut env);
+pub fn exec(program: Program, pool: Pool) -> Result<Value, String> {
+    let mut env = Environ::new(&pool);
+    match program.eval(&mut env) {
+        Ok(_) => Ok(Value::Void),
+        Err(Signal::Return(value)) => Ok(value),
+        Err(Signal::Error(e)) => Err(e),
+        _ => Err("unknown signal".to_string())
+    }
 }

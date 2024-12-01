@@ -155,6 +155,19 @@ impl Literal for Parser<CR> {
     }
 
     fn str(&mut self) -> Option<Str> {
+        if let Some(res) = self.alter(|x| {
+            x.expect("\"")?;
+            x.stream.strict = true;
+            let mut body = String::new();
+            while let Some(ch) = x.scan(|c| c != '"') {
+                body.push(ch)
+            }
+            x.expect("\"")?;
+            let symbol = x.pool.id(body);
+            Some(symbol.into())
+        }) {
+            return res;
+        }
         None
     }
 }
