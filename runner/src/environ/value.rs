@@ -1,5 +1,6 @@
 use crate::execute::Signal;
 use ast::expr::Expr;
+use ast::format::Indenter;
 use ast::pat::Ident;
 use std::fmt::{Display, Formatter};
 
@@ -21,8 +22,27 @@ impl Display for Value {
             Value::Float(val) => write!(f, "{}", val),
             Value::Int(val) => write!(f, "{}", val),
             Value::Str(val) => write!(f, "{}", val),
-            Value::Func(_, _) => todo!(),
-            Value::Tuple(_) => todo!(),
+            Value::Func(params, expr) => {
+                write!(f, "|")?;
+                if let Some(first) = params.first() {
+                    write!(f, "{}", first)?
+                }
+                for each in params.iter().skip(1) {
+                    write!(f, ", {}", each)?
+                }
+                write!(f, "| ")?;
+                expr.print(0, f)
+            }
+            Value::Tuple(tup) => {
+                write!(f, "(")?;
+                if let Some(first) = tup.first() {
+                    write!(f, "{}", first)?;
+                }
+                for val in tup.iter().skip(1) {
+                    write!(f, ", {}", val)?
+                }
+                write!(f, ")")
+            }
             Value::Void => write!(f, "<void>"),
         }
     }
@@ -106,27 +126,66 @@ impl Operator for Value {
     }
 
     fn eq(self, rhs: Self) -> Self::Output {
-        todo!()
+        let value = match (self, rhs) {
+            (Self::Int(l), Self::Int(r)) => l == r,
+            (Self::Float(l), Self::Float(r)) => l == r,
+            (Self::Bool(l), Self::Bool(r)) => l == r,
+            (Self::Str(l), Self::Str(r)) => l == r,
+            (Self::Tuple(l), Self::Tuple(r)) => {
+                if l.len() != r.len() {
+                    return Ok(Value::Bool(false));
+                }
+                for (ll, rr) in l.into_iter().zip(r) {
+                    if ll.ne(rr)?.bool()? {
+                        return Ok(Value::Bool(false));
+                    }
+                }
+                true
+            }
+            _ => return Err(Signal::Error("".to_string()))
+        };
+        Ok(Value::Bool(value))
     }
 
     fn ne(self, rhs: Self) -> Self::Output {
-        todo!()
+        let value = self.eq(rhs)?.bool()?;
+        Ok(Value::Bool(!value))
     }
 
     fn gt(self, rhs: Self) -> Self::Output {
-        todo!()
+        let value = match (self, rhs) {
+            (Self::Int(l), Self::Int(r)) => l > r,
+            (Self::Float(l), Self::Float(r)) => l > r,
+            _ => return Err(Signal::Error("".to_string()))
+        };
+        Ok(Value::Bool(value))
     }
 
     fn ge(self, rhs: Self) -> Self::Output {
-        todo!()
+        let value = match (self, rhs) {
+            (Self::Int(l), Self::Int(r)) => l >= r,
+            (Self::Float(l), Self::Float(r)) => l >= r,
+            _ => return Err(Signal::Error("".to_string()))
+        };
+        Ok(Value::Bool(value))
     }
 
     fn lt(self, rhs: Self) -> Self::Output {
-        todo!()
+        let value = match (self, rhs) {
+            (Self::Int(l), Self::Int(r)) => l < r,
+            (Self::Float(l), Self::Float(r)) => l < r,
+            _ => return Err(Signal::Error("".to_string()))
+        };
+        Ok(Value::Bool(value))
     }
 
     fn le(self, rhs: Self) -> Self::Output {
-        todo!()
+        let value = match (self, rhs) {
+            (Self::Int(l), Self::Int(r)) => l <= r,
+            (Self::Float(l), Self::Float(r)) => l <= r,
+            _ => return Err(Signal::Error("".to_string()))
+        };
+        Ok(Value::Bool(value))
     }
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -175,7 +234,12 @@ impl Operator for Value {
     }
 
     fn pos(self) -> Self::Output {
-        Ok(self)
+        let value = match self {
+            Self::Int(_) |
+            Self::Float(_) => self,
+            _ => return Err(Signal::Error("".to_string()))
+        };
+        Ok(value)
     }
 
     fn neg(self) -> Self::Output {

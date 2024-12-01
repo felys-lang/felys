@@ -1,6 +1,6 @@
 use crate::environ::{Environ, Value};
 use crate::execute::{Evaluation, Signal};
-use ast::lit::{Bool, Float, Int, Lit};
+use ast::lit::{Bool, Float, Int, Lit, Str};
 
 impl Evaluation for Lit {
     fn eval(&self, env: &mut Environ) -> Result<Value, Signal> {
@@ -8,7 +8,7 @@ impl Evaluation for Lit {
             Lit::Int(val) => _int(env, val),
             Lit::Float(val) => _float(env, val),
             Lit::Bool(val) => _bool(env, val),
-            Lit::Str(_) => todo!(),
+            Lit::Str(val) => _str(env, val),
         }
     }
 }
@@ -43,4 +43,11 @@ fn _bool(_: &mut Environ, val: &Bool) -> Result<Value, Signal> {
         Bool::False => Value::Bool(false)
     };
     Ok(value)
+}
+
+fn _str(env: &mut Environ, val: &Str) -> Result<Value, Signal> {
+    let raw = env.pool
+        .get(val.into())
+        .ok_or(Signal::Error("".to_string()))?;
+    Ok(Value::Str(raw))
 }

@@ -7,7 +7,7 @@ pub mod ctrl;
 pub mod pat;
 pub mod lit;
 pub mod stmt;
-mod format;
+pub mod format;
 
 #[derive(Clone, Debug)]
 pub struct Symbol(usize);
