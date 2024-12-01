@@ -1,8 +1,8 @@
-<div style="text-align: center">
+<div align="center">
   <img alt="The Felys Programming Language" src="https://raw.githubusercontent.com/felys-lang/.github/main/felys.png" width="50%">
 </div>
 
-<div style="text-align: center">
+<div align="center">
   <a href="https://felys.dev/guide/quickstart.html">Quickstart</a> |
   <a href="https://felys.dev/">Documentation</a> |
   <a href="https://exec.felys.dev/">Playground</a>
