@@ -190,7 +190,7 @@ impl Operator for Value {
 
     fn add(self, rhs: Self) -> Self::Output {
         let value = match (self, rhs) {
-            (Self::Int(l), Self::Int(r)) => Value::Int(l + r),
+            (Self::Int(l), Self::Int(r)) => Value::Int(l.saturating_add(r)),
             (Self::Float(l), Self::Float(r)) => Value::Float(l + r),
             _ => return Err(Signal::Error("".to_string()))
         };
@@ -199,7 +199,7 @@ impl Operator for Value {
 
     fn sub(self, rhs: Self) -> Self::Output {
         let value = match (self, rhs) {
-            (Self::Int(l), Self::Int(r)) => Value::Int(l - r),
+            (Self::Int(l), Self::Int(r)) => Value::Int(l.saturating_sub(r)),
             (Self::Float(l), Self::Float(r)) => Value::Float(l - r),
             _ => return Err(Signal::Error("".to_string()))
         };
@@ -208,7 +208,7 @@ impl Operator for Value {
 
     fn mul(self, rhs: Self) -> Self::Output {
         let value = match (self, rhs) {
-            (Self::Int(l), Self::Int(r)) => Value::Int(l * r),
+            (Self::Int(l), Self::Int(r)) => Value::Int(l.saturating_mul(r)),
             (Self::Float(l), Self::Float(r)) => Value::Float(l * r),
             _ => return Err(Signal::Error("".to_string()))
         };
@@ -217,7 +217,7 @@ impl Operator for Value {
 
     fn div(self, rhs: Self) -> Self::Output {
         let value = match (self, rhs) {
-            (Self::Int(l), Self::Int(r)) => Value::Int(l / r),
+            (Self::Int(l), Self::Int(r)) => Value::Int(l.saturating_div(r)),
             (Self::Float(l), Self::Float(r)) => Value::Float(l / r),
             _ => return Err(Signal::Error("".to_string()))
         };
@@ -244,7 +244,7 @@ impl Operator for Value {
 
     fn neg(self) -> Self::Output {
         let value = match self {
-            Self::Int(x) => Value::Int(-x),
+            Self::Int(x) => Value::Int(x.saturating_neg()),
             Self::Float(x) => Value::Float(-x),
             _ => return Err(Signal::Error("".to_string()))
         };

@@ -16,12 +16,15 @@ pub struct Environ<'a> {
 
 
 impl<'a> Environ<'a> {
-    pub fn new(pool: &'a Pool, timer: &'a Receiver<bool>, depth: usize) -> Environ<'a> {
+    pub fn new(pool: &'a mut Pool, timer: &'a Receiver<bool>, depth: usize) -> Environ<'a> {
+        let elysia = "粉色妖精小姐♪".to_string();
+        let symbol = pool.id("__elysia__".to_string());
+        let ground = HashMap::from([(symbol, Value::Str(elysia))]);
         Self {
             pool,
             timer,
             depth: (0, depth),
-            warehouse: Warehouse { floors: vec![HashMap::new()] },
+            warehouse: Warehouse { floors: vec![ground] },
         }
     }
 
