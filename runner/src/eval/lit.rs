@@ -3,7 +3,7 @@ use crate::execute::{Evaluation, Signal};
 use ast::lit::{Bool, Float, Int, Lit, Str};
 
 impl Evaluation for Lit {
-    fn eval(&self, env: &mut Environ) -> Result<Value, Signal> {
+    fn _eval(&self, env: &mut Environ) -> Result<Value, Signal> {
         match self {
             Lit::Int(val) => _int(env, val),
             Lit::Float(val) => _float(env, val),

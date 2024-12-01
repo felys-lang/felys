@@ -9,7 +9,13 @@ pub enum Signal {
 }
 
 pub trait Evaluation {
-    fn eval(&self, env: &mut Environ) -> Result<Value, Signal>;
+    fn _eval(&self, env: &mut Environ) -> Result<Value, Signal>;
+    fn eval(&self, env: &mut Environ) -> Result<Value, Signal> {
+        if env.timer.try_recv().unwrap_or(false) {
+            return Err(Signal::Error("timeout".to_string()));
+        }
+        self._eval(env)
+    }
 }
 
 pub type Pairs = Vec<(Ident, Value)>;

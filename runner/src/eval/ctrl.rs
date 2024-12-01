@@ -6,7 +6,7 @@ use ast::pat::Pat;
 use ast::stmt::Block;
 
 impl Evaluation for Ctrl {
-    fn eval(&self, env: &mut Environ) -> Result<Value, Signal> {
+    fn _eval(&self, env: &mut Environ) -> Result<Value, Signal> {
         match self {
             Ctrl::Assign(pat, op, expr) => _assign(env, pat, op, expr),
             Ctrl::Block(block) => block.eval(env),

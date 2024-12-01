@@ -4,7 +4,7 @@ use ast::expr::{BinOp, Expr, UnaOp};
 use ast::pat::Ident;
 
 impl Evaluation for Expr {
-    fn eval(&self, env: &mut Environ) -> Result<Value, Signal> {
+    fn _eval(&self, env: &mut Environ) -> Result<Value, Signal> {
         match self {
             Expr::Binary(lhs, op, rhs) => _binary(env, lhs, op, rhs),
             Expr::Call(func, args) => _call(env, func, args),
