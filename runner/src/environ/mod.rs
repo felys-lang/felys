@@ -1,6 +1,7 @@
 mod value;
 mod warehouse;
 
+use crate::execute::Signal;
 use packrat::Pool;
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
@@ -28,12 +29,16 @@ impl<'a> Environ<'a> {
         }
     }
 
-    pub fn sandbox(&self) -> Self {
-        Self {
-            pool: self.pool,
-            timer: self.timer,
-            depth: (self.depth.0 + 1, self.depth.1),
-            warehouse: Warehouse { floors: vec![HashMap::new()] },
+    pub fn sandbox(&self) -> Result<Self, Signal> {
+        if self.depth.0 < self.depth.1 {
+            Ok(Self {
+                pool: self.pool,
+                timer: self.timer,
+                depth: (self.depth.0 + 1, self.depth.1),
+                warehouse: Warehouse { floors: vec![HashMap::new()] },
+            })
+        } else {
+            Err(Signal::Error("stack overflow"))
         }
     }
 }

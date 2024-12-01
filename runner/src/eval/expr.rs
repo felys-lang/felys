@@ -30,7 +30,7 @@ fn _call(env: &mut Environ, func: &Expr, args: &[Expr]) -> Result<Value, Signal>
     if params.len() != values.len() {
         return Err(Signal::Error("incorrect numbers of arguments"));
     }
-    let mut sandbox = env.sandbox();
+    let mut sandbox = env.sandbox()?;
     for (param, value) in params.iter().zip(values) {
         sandbox.warehouse.put(param.into(), value)
     }
