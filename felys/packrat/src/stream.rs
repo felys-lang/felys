@@ -7,9 +7,8 @@ pub struct Stream {
 impl Iterator for Stream {
     type Item = char;
     fn next(&mut self) -> Option<Self::Item> {
-        let skipped = self.body.chars().skip(self.cursor);
-        for ch in skipped {
-            self.cursor += 1;
+        for ch in self.body[self.cursor..].chars() {
+            self.cursor += ch.len_utf8();
             if self.strict || !ch.is_whitespace() {
                 return Some(ch);
             }
@@ -23,9 +22,9 @@ impl Stream {
         if self.strict {
             return;
         }
-        for ch in self.body.chars().skip(self.cursor) {
+        for ch in self.body[self.cursor..].chars() {
             if ch.is_whitespace() {
-                self.cursor += 1;
+                self.cursor += ch.len_utf8();
             } else {
                 break;
             }
