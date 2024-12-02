@@ -3,17 +3,18 @@ use crate::format::Indenter;
 use crate::lit::Lit;
 use crate::pat::Ident;
 use std::fmt::{Display, Formatter};
+use std::rc::Rc;
 
 #[derive(Clone, Debug)]
 pub enum Expr {
     /// binary operation: `1 + 2`
-    Binary(Box<Expr>, BinOp, Box<Expr>),
+    Binary(Rc<Expr>, BinOp, Rc<Expr>),
     /// closure: `|x| { x+1 }`, `|x| x+1`
-    Func(Vec<Ident>, Box<Expr>),
+    Func(Vec<Ident>, Rc<Expr>),
     /// function call: `func(1, 2)`
-    Call(Box<Expr>, Vec<Expr>),
+    Call(Rc<Expr>, Vec<Expr>),
     /// field: `elysia.mei`
-    Field(Box<Expr>, Ident),
+    Field(Rc<Expr>, Ident),
     /// identifier: `elysia`
     Ident(Ident),
     /// tuple: `(elysia, 11.11)`
@@ -21,11 +22,11 @@ pub enum Expr {
     /// literals: `"elysia"`, `11.11`, `true`
     Lit(Lit),
     /// explicit precedence: `(1 + 2)`
-    Paren(Box<Expr>),
+    Paren(Rc<Expr>),
     /// flow control in expression: `1 + if true { 1 } else { 2 }`
-    Ctrl(Box<Ctrl>),
+    Ctrl(Rc<Ctrl>),
     /// unary operation: `-1`
-    Unary(UnaOp, Box<Expr>),
+    Unary(UnaOp, Rc<Expr>),
 }
 
 impl Indenter for Expr {
