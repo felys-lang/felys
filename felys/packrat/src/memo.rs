@@ -5,6 +5,10 @@ pub struct Memo<R> {
 }
 
 impl<R: Clone> Memo<R> {
+    pub fn clear(&mut self) {
+        self.body.clear()
+    }
+
     pub fn get(&self, p: usize, m: bool, sig: &'static str) -> Option<(usize, R)> {
         self.body.get(&(p, m, sig)).cloned()
     }

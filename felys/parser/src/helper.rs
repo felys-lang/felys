@@ -34,6 +34,7 @@ impl Entry for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let mut body = Vec::new();
             while let Some(stmt) = x.stmt() {
+                x.memo.clear();
                 body.push(stmt)
             }
             x.eof()?;
