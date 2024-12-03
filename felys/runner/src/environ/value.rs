@@ -209,6 +209,7 @@ impl Operator for Value {
         let value = match (self, rhs) {
             (Self::Int(l), Self::Int(r)) => Value::Int(l.saturating_add(r)),
             (Self::Float(l), Self::Float(r)) => Value::Float(l + r),
+            (Self::Str(l), Self::Str(r)) => Value::Str(l + r.as_str()),
             _ => Err(Signal::Error("operator `+` does not evaluated"))?
         };
         Ok(value)
