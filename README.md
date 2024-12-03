@@ -8,7 +8,7 @@
   <a href="https://exec.felys.dev/">Playground</a>
 </div>
 
-## What is the Felys programming Language?
+## What is the Felys Programming Language?
 
 Felys is a functional programming language written in Rust. The motivation is to create a language where Elysia exists, so regardless of how this project gets developed in the future, there must exist a built-in identifier called `__elysia__`. Although it is just a toy language, the implementation is quite elegant without ugly hacks. Feel free to try it on the online [playground](https://exec.felys.dev/). The ultimate goal is to build a virtual machine based Rust without borrow checker and lifetime checker.
 
