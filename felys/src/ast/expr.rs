@@ -1,12 +1,32 @@
-use crate::ast::ctrl::Ctrl;
-use crate::ast::format::Indenter;
+use crate::ast::format::{Indenter, INDENT};
 use crate::ast::lit::Lit;
-use crate::ast::pat::Ident;
+use crate::ast::pat::{Ident, Pat};
+use crate::ast::stmt::Block;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
 #[derive(Clone, Debug)]
 pub enum Expr {
+    /// assignment: `x = 42`
+    Assign(Pat, AssOp, Rc<Expr>),
+    /// code block: `{ elysia }`
+    Block(Block),
+    /// break the loop: `break elysia;`
+    Break(Option<Rc<Expr>>),
+    /// skip to the next loop: `continue`
+    Continue,
+    /// for loop: `for x in array { block }`
+    For(Pat, Rc<Expr>, Block),
+    /// match: `match x { Elysia => 1, _ => 0 }`
+    Match(Rc<Expr>, Vec<(Pat, Expr)>),
+    /// if statement with optional else: `if expr { block } else { block }`
+    If(Rc<Expr>, Block, Option<Rc<Expr>>),
+    /// loop with not tests: `loop { block }`
+    Loop(Block),
+    /// return value: `return elysia`
+    Return(Option<Rc<Expr>>),
+    /// while loop: `while expr { block }`
+    While(Rc<Expr>, Block),
     /// binary operation: `1 + 2`
     Binary(Rc<Expr>, BinOp, Rc<Expr>),
     /// closure: `|x| { x+1 }`, `|x| x+1`
@@ -23,8 +43,6 @@ pub enum Expr {
     Lit(Lit),
     /// explicit precedence: `(1 + 2)`
     Paren(Rc<Expr>),
-    /// flow control in expression: `1 + if true { 1 } else { 2 }`
-    Ctrl(Rc<Ctrl>),
     /// unary operation: `-1`
     Unary(UnaOp, Rc<Expr>),
 }
@@ -32,6 +50,86 @@ pub enum Expr {
 impl Indenter for Expr {
     fn print(&self, indent: usize, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            Expr::Assign(lhs, op, rhs) => {
+                lhs.print(indent, f)?;
+                write!(f, " {} ", op)?;
+                rhs.print(indent, f)
+            }
+            Expr::Block(block) => block.print(indent, f),
+            Expr::Break(expr) => {
+                write!(f, "break")?;
+                if let Some(expr) = expr {
+                    write!(f, " ")?;
+                    expr.print(indent, f)
+                } else {
+                    Ok(())
+                }
+            }
+            Expr::Continue => write!(f, "continue"),
+            Expr::For(pat, expr, block) => {
+                write!(f, "for ")?;
+                pat.print(indent, f)?;
+                write!(f, " in ")?;
+                expr.print(indent, f)?;
+                write!(f, " ")?;
+                block.print(indent, f)
+            }
+            Expr::Match(expr, arms) => {
+                write!(f, "match ")?;
+                expr.print(indent, f)?;
+                writeln!(f, " {{")?;
+                if let Some((pat, expr)) = arms.first() {
+                    for _ in 0..indent + 1 {
+                        write!(f, "{}", INDENT)?;
+                    }
+                    pat.print(indent + 1, f)?;
+                    write!(f, " => ")?;
+                    expr.print(indent + 1, f)?
+                }
+                for (pat, expr) in arms.iter().skip(1) {
+                    write!(f, ",")?;
+                    writeln!(f)?;
+                    for _ in 0..indent + 1 {
+                        write!(f, "{}", INDENT)?;
+                    }
+                    pat.print(indent + 1, f)?;
+                    write!(f, " => ")?;
+                    expr.print(indent + 1, f)?;
+                }
+                writeln!(f)?;
+                write!(f, "}}")
+            }
+            Expr::If(expr, block, then) => {
+                write!(f, "if ")?;
+                expr.print(indent, f)?;
+                write!(f, " ")?;
+                block.print(indent, f)?;
+                if let Some(then) = then {
+                    write!(f, " else ")?;
+                    then.print(indent, f)
+                } else {
+                    Ok(())
+                }
+            }
+            Expr::Loop(block) => {
+                write!(f, "loop ")?;
+                block.print(indent, f)
+            }
+            Expr::Return(expr) => {
+                write!(f, "return")?;
+                if let Some(expr) = expr {
+                    write!(f, " ")?;
+                    expr.print(indent, f)
+                } else {
+                    Ok(())
+                }
+            }
+            Expr::While(expr, block) => {
+                write!(f, "while ")?;
+                expr.print(indent, f)?;
+                write!(f, " ")?;
+                block.print(indent, f)
+            }
             Expr::Binary(lhs, op, rhs) => {
                 lhs.print(indent, f)?;
                 write!(f, " {} ", op)?;
@@ -82,11 +180,33 @@ impl Indenter for Expr {
                 expr.print(indent, f)?;
                 write!(f, ")")
             }
-            Expr::Ctrl(ctrl) => ctrl.print(indent, f),
             Expr::Unary(op, rhs) => {
                 write!(f, " {}", op)?;
                 rhs.print(indent, f)
             }
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum AssOp {
+    AddEq,
+    SubEq,
+    MulEq,
+    DivEq,
+    ModEq,
+    Eq,
+}
+
+impl Display for AssOp {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AssOp::AddEq => write!(f, "+="),
+            AssOp::SubEq => write!(f, "-="),
+            AssOp::MulEq => write!(f, "*="),
+            AssOp::DivEq => write!(f, "/="),
+            AssOp::ModEq => write!(f, "%="),
+            AssOp::Eq => write!(f, "="),
         }
     }
 }

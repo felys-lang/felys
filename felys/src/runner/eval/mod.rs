@@ -1,6 +1,5 @@
 mod expr;
 mod lit;
-mod ctrl;
 mod stmt;
 mod pat;
 

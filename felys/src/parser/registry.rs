@@ -1,4 +1,3 @@
-use crate::ast::ctrl::Ctrl;
 use crate::ast::expr::Expr;
 use crate::ast::lit::{Bool, Float, Int, Lit, Str};
 use crate::ast::pat::{Ident, Pat};
@@ -10,7 +9,6 @@ use helper::Cache;
 pub enum CR {
     Stmt(Option<Stmt>),
     Expr(Option<Expr>),
-    Ctrl(Option<Ctrl>),
     Pat(Option<Pat>),
     Lit(Option<Lit>),
 }
@@ -20,7 +18,7 @@ pub trait Base {
     type CR;
 }
 
-pub trait Entry: Base + Helper + Literal + Expression + Control + Statement + Pattern {
+pub trait Entry: Base + Helper + Literal + Expression + Statement + Pattern {
     fn program(&mut self) -> Option<Program>;
 }
 
@@ -39,6 +37,7 @@ pub trait Literal: Base {
 
 pub trait Expression: Base {
     fn expr(&mut self) -> Option<Expr>;
+    fn assign(&mut self) -> Option<Expr>;
     fn tuple(&mut self) -> Option<Expr>;
     fn disjunction(&mut self) -> Option<Expr>;
     fn conjunction(&mut self) -> Option<Expr>;
@@ -50,11 +49,6 @@ pub trait Expression: Base {
     fn unary(&mut self) -> Option<Expr>;
     fn evaluation(&mut self) -> Option<Expr>;
     fn primary(&mut self) -> Option<Expr>;
-}
-
-pub trait Control: Base {
-    fn ctrl(&mut self) -> Option<Ctrl>;
-    fn assign(&mut self) -> Option<Ctrl>;
 }
 
 pub trait Statement: Base {

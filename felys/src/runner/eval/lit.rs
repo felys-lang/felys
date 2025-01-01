@@ -15,10 +15,10 @@ impl Evaluation for Lit {
 
 fn _int(env: &mut Environ, val: &Int) -> Result<Value, Signal> {
     let symbol = match val {
-        Int::Base16(_) => todo!(),
+        Int::Base16(s) => s,
         Int::Base10(s) => s,
-        Int::Base8(_) => todo!(),
-        Int::Base2(_) => todo!(),
+        Int::Base8(s) => s,
+        Int::Base2(s) => s,
     };
     let raw = env.pool
         .get(symbol.into())

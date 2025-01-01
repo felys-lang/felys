@@ -1,11 +1,159 @@
-use crate::ast::expr::{BinOp, Expr, UnaOp};
+use crate::ast::expr::{AssOp, BinOp, Expr, UnaOp};
 use crate::packrat::Parser;
-use crate::parser::registry::{Control, Expression, Helper, Literal, Pattern, CR};
+use crate::parser::registry::{Expression, Helper, Literal, Pattern, Statement, CR};
+use std::rc::Rc;
 
 impl Expression for Parser<CR> {
     #[helper::memoize]
     fn expr(&mut self) -> Option<Expr> {
-        self.tuple()
+        if let Some(res) = self.alter(|x| {
+            x.assign()
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            x.tuple()
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            let body = x.block()?;
+            Some(Expr::Block(body))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            x.keyword("break")?;
+            let body = x.expr().map(Rc::new);
+            Some(Expr::Break(body))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            x.keyword("continue")?;
+            Some(Expr::Continue)
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            x.keyword("for")?;
+            let pat = x.pat()?;
+            x.keyword("in")?;
+            let expr = x.expr()?;
+            let body = x.block()?;
+            Some(Expr::For(pat, expr.into(), body))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            x.keyword("match")?;
+            let expr = x.expr()?;
+            x.expect("{")?;
+            let mut body = Vec::new();
+            if let Some(pat) = x.pat() {
+                x.expect("=>")?;
+                let expr = x.expr()?;
+                body.push((pat, expr));
+                while x.expect(",").is_some() {
+                    let pat = x.pat()?;
+                    x.expect("=>")?;
+                    let expr = x.expr()?;
+                    body.push((pat, expr));
+                }
+            }
+            x.expect("}")?;
+            Some(Expr::Match(expr.into(), body))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            x.keyword("if")?;
+            let expr = x.expr()?;
+            let body = x.block()?;
+            let mut alter = None;
+            if x.expect("else").is_some() {
+                alter = Some(x.expr()?.into())
+            }
+            Some(Expr::If(expr.into(), body, alter))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            x.keyword("loop")?;
+            let body = x.block()?;
+            Some(Expr::Loop(body))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            x.keyword("return")?;
+            let body = x.expr().map(Rc::new);
+            Some(Expr::Return(body))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            x.keyword("while")?;
+            let expr = x.expr()?;
+            let body = x.block()?;
+            Some(Expr::While(expr.into(), body))
+        }) {
+            return res;
+        }
+        None
+    }
+
+    #[helper::memoize]
+    fn assign(&mut self) -> Option<Expr> {
+        if let Some(res) = self.alter(|x| {
+            let pat = x.pat()?;
+            x.expect("=")?;
+            let expr = x.expr()?;
+            Some(Expr::Assign(pat, AssOp::Eq, expr.into()))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            let pat = x.pat()?;
+            x.expect("+=")?;
+            let expr = x.expr()?;
+            Some(Expr::Assign(pat, AssOp::AddEq, expr.into()))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            let pat = x.pat()?;
+            x.expect("-=")?;
+            let expr = x.expr()?;
+            Some(Expr::Assign(pat, AssOp::SubEq, expr.into()))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            let pat = x.pat()?;
+            x.expect("*=")?;
+            let expr = x.expr()?;
+            Some(Expr::Assign(pat, AssOp::MulEq, expr.into()))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            let pat = x.pat()?;
+            x.expect("/=")?;
+            let expr = x.expr()?;
+            Some(Expr::Assign(pat, AssOp::DivEq, expr.into()))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            let pat = x.pat()?;
+            x.expect("%=")?;
+            let expr = x.expr()?;
+            Some(Expr::Assign(pat, AssOp::ModEq, expr.into()))
+        }) {
+            return res;
+        }
+        None
     }
 
     #[helper::memoize]
@@ -257,12 +405,6 @@ impl Expression for Parser<CR> {
             x.expect("|")?;
             let expr = x.expr()?;
             Some(Expr::Func(body, expr.into()))
-        }) {
-            return res;
-        }
-        if let Some(res) = self.alter(|x| {
-            let body = x.ctrl()?;
-            Some(Expr::Ctrl(body.into()))
         }) {
             return res;
         }
