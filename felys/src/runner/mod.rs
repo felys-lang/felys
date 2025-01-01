@@ -4,14 +4,14 @@ mod eval;
 mod unpack;
 
 use crate::ast::Program;
-use crate::packrat::Pool;
+use crate::packrat::Intern;
 use crate::runner::environ::{Environ, Value};
 use crate::runner::execute::{Evaluation, Signal};
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
-pub fn exec(program: Program, mut pool: Pool, timeout: u64, depth: usize) -> Result<Value, &'static str> {
+pub fn exec(program: Program, mut pool: Intern, timeout: u64, depth: usize) -> Result<Value, &'static str> {
     let (tx, rx) = mpsc::channel();
     let mut env = Environ::new(&mut pool, &rx, depth);
 

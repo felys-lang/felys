@@ -42,8 +42,8 @@ impl Literal for Parser<CR> {
             while let Some(more) = x.scan(|c| c.is_ascii_hexdigit()) {
                 body.push(more)
             }
-            let symbol = x.pool.id(body);
-            Some(Int::Base16(symbol.into()))
+            let id = x.intern.id(body);
+            Some(Int::Base16(id.into()))
         }) {
             return res;
         }
@@ -56,8 +56,8 @@ impl Literal for Parser<CR> {
             while let Some(more) = x.scan(|c| matches!(c, '0'..='7')) {
                 body.push(more)
             }
-            let symbol = x.pool.id(body);
-            Some(Int::Base8(symbol.into()))
+            let id = x.intern.id(body);
+            Some(Int::Base8(id.into()))
         }) {
             return res;
         }
@@ -70,8 +70,8 @@ impl Literal for Parser<CR> {
             while let Some(more) = x.scan(|c| matches!(c, '0'|'1')) {
                 body.push(more)
             }
-            let symbol = x.pool.id(body);
-            Some(Int::Base2(symbol.into()))
+            let id = x.intern.id(body);
+            Some(Int::Base2(id.into()))
         }) {
             return res;
         }
@@ -80,8 +80,8 @@ impl Literal for Parser<CR> {
             x.cut = true;
             x.lookahead(|c| !c.is_ascii_digit())?;
             let body = String::from("0");
-            let symbol = x.pool.id(body);
-            Some(Int::Base10(symbol.into()))
+            let id = x.intern.id(body);
+            Some(Int::Base10(id.into()))
         }) {
             return res;
         }
@@ -92,8 +92,8 @@ impl Literal for Parser<CR> {
             while let Some(more) = x.scan(|c| c.is_ascii_digit()) {
                 body.push(more)
             }
-            let symbol = x.pool.id(body);
-            Some(Int::Base10(symbol.into()))
+            let id = x.intern.id(body);
+            Some(Int::Base10(id.into()))
         }) {
             return res;
         }
@@ -111,8 +111,8 @@ impl Literal for Parser<CR> {
             while let Some(x) = x.scan(|c| c.is_ascii_digit()) {
                 body.push(x)
             }
-            let symbol = x.pool.id(body);
-            Some(symbol.into())
+            let id = x.intern.id(body);
+            Some(id.into())
         }) {
             return res;
         }
@@ -130,8 +130,8 @@ impl Literal for Parser<CR> {
             while let Some(x) = x.scan(|c| c.is_ascii_digit()) {
                 body.push(x)
             }
-            let symbol = x.pool.id(body);
-            Some(symbol.into())
+            let id = x.intern.id(body);
+            Some(id.into())
         }) {
             return res;
         }
@@ -163,8 +163,8 @@ impl Literal for Parser<CR> {
                 body.push(ch)
             }
             x.expect("\"")?;
-            let symbol = x.pool.id(body);
-            Some(symbol.into())
+            let id = x.intern.id(body);
+            Some(id.into())
         }) {
             return res;
         }

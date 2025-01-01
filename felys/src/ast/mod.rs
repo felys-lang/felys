@@ -10,27 +10,27 @@ use crate::ast::stmt::Stmt;
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug)]
-pub struct Symbol(usize);
+pub struct Id(usize);
 
-impl From<usize> for Symbol {
+impl From<usize> for Id {
     fn from(value: usize) -> Self {
         Self(value)
     }
 }
 
-impl From<Symbol> for usize {
-    fn from(value: Symbol) -> Self {
+impl From<Id> for usize {
+    fn from(value: Id) -> Self {
         value.0
     }
 }
 
-impl From<&Symbol> for usize {
-    fn from(value: &Symbol) -> Self {
+impl From<&Id> for usize {
+    fn from(value: &Id) -> Self {
         value.0
     }
 }
 
-impl Display for Symbol {
+impl Display for Id {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "#{}", self.0)
     }

@@ -1,13 +1,13 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-pub struct Pool {
+pub struct Intern {
     pub body: HashMap<Rc<String>, usize>,
     pub fast: Vec<Rc<String>>,
     pub keywords: HashSet<&'static str>,
 }
 
-impl Pool {
+impl Intern {
     pub fn keyword(&self, ident: &str) -> bool {
         self.keywords.contains(ident)
     }

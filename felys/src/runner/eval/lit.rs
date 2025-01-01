@@ -14,14 +14,14 @@ impl Evaluation for Lit {
 }
 
 fn _int(env: &mut Environ, val: &Int) -> Result<Value, Signal> {
-    let symbol = match val {
+    let id = match val {
         Int::Base16(s) => s,
         Int::Base10(s) => s,
         Int::Base8(s) => s,
         Int::Base2(s) => s,
     };
     let raw = env.pool
-        .get(symbol.into())
+        .get(id.into())
         .ok_or(Signal::Error("id does not exist"))?;
     let value = raw.parse()
         .map_err(|_| Signal::Error("parsing to `int` failed"))?;

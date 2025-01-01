@@ -1,5 +1,5 @@
 pub use crate::packrat::memo::Memo;
-pub use crate::packrat::pool::Pool;
+pub use crate::packrat::pool::Intern;
 pub use crate::packrat::stream::Stream;
 use std::collections::HashSet;
 
@@ -10,7 +10,7 @@ mod pool;
 
 pub struct Parser<R> {
     pub memo: Memo<R>,
-    pub pool: Pool,
+    pub intern: Intern,
     pub stream: Stream,
     pub cut: bool,
 }
@@ -21,7 +21,7 @@ impl<R> Parser<R> {
             memo: Memo {
                 body: Default::default()
             },
-            pool: Pool {
+            intern: Intern {
                 body: Default::default(),
                 fast: vec![],
                 keywords,

@@ -2,7 +2,7 @@ mod value;
 mod warehouse;
 
 
-use crate::packrat::Pool;
+use crate::packrat::Intern;
 use crate::runner::execute::Signal;
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
@@ -10,7 +10,7 @@ pub use value::*;
 pub use warehouse::*;
 
 pub struct Environ<'a> {
-    pub pool: &'a Pool,
+    pub pool: &'a Intern,
     pub timer: &'a Receiver<bool>,
     pub depth: (usize, usize),
     pub warehouse: Warehouse,
@@ -18,10 +18,10 @@ pub struct Environ<'a> {
 
 
 impl<'a> Environ<'a> {
-    pub fn new(pool: &'a mut Pool, timer: &'a Receiver<bool>, depth: usize) -> Environ<'a> {
+    pub fn new(pool: &'a mut Intern, timer: &'a Receiver<bool>, depth: usize) -> Environ<'a> {
         let elysia = "粉色妖精小姐♪".to_string();
-        let symbol = pool.id("__elysia__".to_string());
-        let ground = HashMap::from([(symbol, Value::Str(elysia))]);
+        let id = pool.id("__elysia__".to_string());
+        let ground = HashMap::from([(id, Value::Str(elysia))]);
         Self {
             pool,
             timer,

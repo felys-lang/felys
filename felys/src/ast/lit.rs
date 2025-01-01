@@ -1,5 +1,5 @@
 use crate::ast::format::Indenter;
-use crate::ast::Symbol;
+use crate::ast::Id;
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug)]
@@ -27,10 +27,10 @@ impl Indenter for Lit {
 
 #[derive(Clone, Debug)]
 pub enum Int {
-    Base16(Symbol),
-    Base10(Symbol),
-    Base8(Symbol),
-    Base2(Symbol),
+    Base16(Id),
+    Base10(Id),
+    Base8(Id),
+    Base2(Id),
 }
 
 impl Display for Int {
@@ -44,7 +44,7 @@ impl Display for Int {
     }
 }
 
-pub type Float = Symbol;
+pub type Float = Id;
 
 #[derive(Clone, Debug)]
 pub enum Bool {
@@ -61,4 +61,4 @@ impl Display for Bool {
     }
 }
 
-pub type Str = Symbol;
+pub type Str = Id;

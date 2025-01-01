@@ -1,6 +1,6 @@
 use crate::ast::format::Indenter;
 use crate::ast::lit::Lit;
-use crate::ast::Symbol;
+use crate::ast::Id;
 use std::fmt::Formatter;
 
 #[derive(Clone, Debug)]
@@ -36,4 +36,4 @@ impl Indenter for Pat {
     }
 }
 
-pub type Ident = Symbol;
+pub type Ident = Id;
