@@ -17,7 +17,7 @@ pub enum Expr {
     Continue,
     /// for loop: `for x in array { block }`
     For(Pat, Rc<Expr>, Block),
-    /// match: `match x { Elysia => 1, _ => 0 }`
+    /// match: `match x { Mei => 1, Kiana => 0 }`
     Match(Rc<Expr>, Vec<(Pat, Expr)>),
     /// if statement with optional else: `if expr { block } else { block }`
     If(Rc<Expr>, Block, Option<Rc<Expr>>),
