@@ -11,9 +11,8 @@ fn main() {
     for payload in PAYLOADS {
         let code = payload.repeat(1000);
         let start = Instant::now();
-        let (_, _) = match parse(code) {
-            Ok(x) => x,
-            Err(_) => panic!("parsing failed")
+        if let Err(e) = parse(code) {
+            println!("{}", e)
         };
         println!("{:?}", start.elapsed());
     }
