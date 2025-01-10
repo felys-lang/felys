@@ -1,11 +1,11 @@
 pub use crate::packrat::memo::Memo;
-pub use crate::packrat::pool::Intern;
+pub use crate::packrat::intern::Intern;
 pub use crate::packrat::stream::Stream;
 use std::collections::HashSet;
 
 mod memo;
 mod stream;
-mod pool;
+mod intern;
 
 
 pub struct Parser<R> {

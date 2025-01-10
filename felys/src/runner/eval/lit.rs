@@ -20,7 +20,7 @@ fn _int(env: &mut Environ, val: &Int) -> Result<Value, Signal> {
         Int::Base8(s) => s,
         Int::Base2(s) => s,
     };
-    let raw = env.pool
+    let raw = env.intern
         .get(id.into())
         .ok_or(Signal::Error("id does not exist"))?;
     let value = raw.parse()
@@ -29,7 +29,7 @@ fn _int(env: &mut Environ, val: &Int) -> Result<Value, Signal> {
 }
 
 fn _float(env: &mut Environ, val: &Float) -> Result<Value, Signal> {
-    let raw = env.pool
+    let raw = env.intern
         .get(val.into())
         .ok_or(Signal::Error("id does not exist"))?;
     let value = raw.parse()
@@ -46,7 +46,7 @@ fn _bool(_: &mut Environ, val: &Bool) -> Result<Value, Signal> {
 }
 
 fn _str(env: &mut Environ, val: &Str) -> Result<Value, Signal> {
-    let raw = env.pool
+    let raw = env.intern
         .get(val.into())
         .ok_or(Signal::Error("id does not exist"))?;
     Ok(Value::Str(raw))
