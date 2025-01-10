@@ -12,7 +12,7 @@ pub struct Parser<R> {
     pub memo: Memo<R>,
     pub intern: Intern,
     pub stream: Stream,
-    pub cut: bool,
+    pub error: Option<(usize, &'static str)>
 }
 
 impl<R> Parser<R> {
@@ -31,7 +31,7 @@ impl<R> Parser<R> {
                 strict: false,
                 cursor: 0,
             },
-            cut: false,
+            error: None
         }
     }
 
@@ -39,23 +39,31 @@ impl<R> Parser<R> {
     where
         F: Fn(&mut Parser<R>) -> Option<T>,
     {
+        if self.error.is_some() {
+            return Some(None)
+        }
+        
         let mode = self.stream.strict;
         let pos = self.stream.cursor;
 
         let result = f(self);
-        let cut = self.cut;
-
-        self.cut = false;
+        
         self.stream.strict = mode;
         if result.is_none() {
             self.stream.cursor = pos;
         }
 
-        if cut || result.is_some() {
+        if result.is_some() {
+            self.error = None;
             Some(result)
         } else {
             None
         }
+    }
+
+    pub fn err(&mut self, msg: &'static str) -> &mut Self {
+        self.error = Some((self.stream.cursor, msg));
+        self
     }
 
     pub fn expect(&mut self, s: &'static str) -> Option<&'static str> {

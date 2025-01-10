@@ -36,8 +36,7 @@ impl Literal for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             x.expect("0x")?;
             x.stream.strict = true;
-            x.cut = true;
-            let first = x.scan(|c| c.is_ascii_hexdigit())?;
+            let first = x.err("incomplete hexadecimal").scan(|c| c.is_ascii_hexdigit())?;
             let mut body = String::from(first);
             while let Some(more) = x.scan(|c| c.is_ascii_hexdigit()) {
                 body.push(more)
@@ -50,8 +49,7 @@ impl Literal for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             x.expect("0o")?;
             x.stream.strict = true;
-            x.cut = true;
-            let first = x.scan(|c| matches!(c, '0'..='7'))?;
+            let first = x.err("incomplete octal").scan(|c| matches!(c, '0'..='7'))?;
             let mut body = String::from(first);
             while let Some(more) = x.scan(|c| matches!(c, '0'..='7')) {
                 body.push(more)
@@ -64,8 +62,7 @@ impl Literal for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             x.expect("0b")?;
             x.stream.strict = true;
-            x.cut = true;
-            let first = x.scan(|c| matches!(c, '0'|'1'))?;
+            let first = x.err("incomplete binary").scan(|c| matches!(c, '0'|'1'))?;
             let mut body = String::from(first);
             while let Some(more) = x.scan(|c| matches!(c, '0'|'1')) {
                 body.push(more)
@@ -77,8 +74,8 @@ impl Literal for Parser<CR> {
         }
         if let Some(res) = self.alter(|x| {
             x.expect("0")?;
-            x.cut = true;
-            x.lookahead(|c| !c.is_ascii_digit())?;
+            x.stream.strict = true;
+            x.err("decimal start with zero").lookahead(|c| !c.is_ascii_digit())?;
             let body = String::from("0");
             let id = x.intern.id(body);
             Some(Int::Base10(id.into()))
@@ -104,9 +101,8 @@ impl Literal for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             x.expect("0")?;
             x.stream.strict = true;
-            x.cut = true;
             x.expect(".")?;
-            let first = x.scan(|c| c.is_ascii_digit())?;
+            let first = x.err("incomplete float").scan(|c| c.is_ascii_digit())?;
             let mut body = format!("0.{}", first);
             while let Some(x) = x.scan(|c| c.is_ascii_digit()) {
                 body.push(x)
@@ -125,7 +121,7 @@ impl Literal for Parser<CR> {
             }
             x.expect(".")?;
             body.push('.');
-            let first = x.scan(|c| c.is_ascii_digit())?;
+            let first = x.err("incomplete float").scan(|c| c.is_ascii_digit())?;
             body.push(first);
             while let Some(x) = x.scan(|c| c.is_ascii_digit()) {
                 body.push(x)
@@ -162,7 +158,7 @@ impl Literal for Parser<CR> {
             while let Some(ch) = x.scan(|c| c != '"') {
                 body.push(ch)
             }
-            x.expect("\"")?;
+            x.err("string not unclosed").expect("\"")?;
             let id = x.intern.id(body);
             Some(id.into())
         }) {

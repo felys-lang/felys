@@ -25,8 +25,9 @@ const KEYWORDS: [&str; 12] = [
 pub fn parse(code: String) -> Result<(Program, Intern), &'static str> {
     let keywords = HashSet::from(KEYWORDS);
     let mut parser = Parser::<CR>::new(code, keywords);
-    match parser.program() {
-        Some(prog) => Ok((prog, parser.intern)),
-        None => Err("syntax error")
+    if let Some(prog) = parser.program() {
+        Ok((prog, parser.intern))
+    } else {
+        Err(parser.error.unwrap_or((0, "uncaught mistake")).1)
     }
 }
