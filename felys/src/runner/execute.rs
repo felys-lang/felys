@@ -1,5 +1,5 @@
-use crate::runner::environ::{Environ, Value};
 use crate::ast::pat::Ident;
+use crate::runner::environ::{Environ, Value};
 
 pub enum Signal {
     Error(&'static str),

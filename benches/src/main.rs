@@ -12,7 +12,7 @@ fn main() {
         let code = payload.repeat(1000);
         let start = Instant::now();
         if let Err(e) = parse(code) {
-            println!("{}", e)
+            println!("syntax error: {}", e)
         };
         println!("{:?}", start.elapsed());
     }

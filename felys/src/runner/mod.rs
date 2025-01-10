@@ -3,11 +3,11 @@ mod environ;
 mod eval;
 mod unpack;
 
-use std::collections::HashMap;
 use crate::ast::Program;
 use crate::packrat::Intern;
 use crate::runner::environ::{Environ, Value, Warehouse};
 use crate::runner::execute::{Evaluation, Signal};
+use std::collections::HashMap;
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;

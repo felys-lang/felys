@@ -1,7 +1,7 @@
-use crate::runner::execute::Signal;
 use crate::ast::expr::Expr;
 use crate::ast::format::Indenter;
 use crate::ast::pat::Ident;
+use crate::runner::execute::Signal;
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone)]

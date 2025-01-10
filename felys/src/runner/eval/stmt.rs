@@ -1,6 +1,6 @@
+use crate::ast::stmt::{Block, Stmt};
 use crate::runner::environ::{Environ, Value};
 use crate::runner::execute::{Evaluation, Signal};
-use crate::ast::stmt::{Block, Stmt};
 
 impl Evaluation for Stmt {
     fn _eval(&self, env: &mut Environ) -> Result<Value, Signal> {

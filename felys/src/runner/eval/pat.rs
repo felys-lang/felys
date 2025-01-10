@@ -1,6 +1,6 @@
+use crate::ast::pat::Pat;
 use crate::runner::environ::{Environ, Value};
 use crate::runner::execute::{Evaluation, Signal};
-use crate::ast::pat::Pat;
 
 impl Evaluation for Pat {
     fn _eval(&self, env: &mut Environ) -> Result<Value, Signal> {

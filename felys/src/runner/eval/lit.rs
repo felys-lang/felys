@@ -1,6 +1,6 @@
+use crate::ast::lit::{Bool, Float, Int, Lit, Str};
 use crate::runner::environ::{Environ, Value};
 use crate::runner::execute::{Evaluation, Signal};
-use crate::ast::lit::{Bool, Float, Int, Lit, Str};
 
 impl Evaluation for Lit {
     fn _eval(&self, env: &mut Environ) -> Result<Value, Signal> {
