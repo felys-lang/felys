@@ -41,7 +41,9 @@ impl<R> Parser<R> {
     {
         let mode = self.stream.strict;
         let pos = self.stream.cursor;
+        let err = self.error;
 
+        self.error = None;
         let result = f(self);
 
         self.stream.strict = mode;
@@ -55,6 +57,7 @@ impl<R> Parser<R> {
             self.error = None;
             Some(result)
         } else {
+            self.error = err;
             None
         }
     }
