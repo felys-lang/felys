@@ -51,11 +51,11 @@ impl<R> Parser<R> {
             self.stream.cursor = pos;
         }
 
-        if self.error.is_some() {
-            Some(None)
-        } else if result.is_some() {
+        if result.is_some() {
             self.error = None;
             Some(result)
+        } else if self.error.is_some() {
+            Some(None)
         } else {
             self.error = err;
             None
