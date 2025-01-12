@@ -13,7 +13,8 @@ fn main() {
         let start = Instant::now();
         if let Err(e) = parse(code) {
             println!("syntax error: {}", e)
-        };
-        println!("{:?}", start.elapsed());
+        } else {
+            println!("{:?}", start.elapsed());
+        }
     }
 }
