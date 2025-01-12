@@ -34,7 +34,7 @@ impl Statement for Parser<CR> {
             while let Some(stmt) = x.stmt() {
                 body.push(stmt)
             }
-            x.expect("}")?;
+            x.e("scope not closed").expect("}")?;
             Some(Block(body))
         }) {
             return res;

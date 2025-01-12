@@ -68,11 +68,11 @@ impl Expression for Parser<CR> {
         }
         if let Some(res) = self.alter(|x| {
             x.keyword("if")?;
-            let expr = x.expr()?;
-            let body = x.block()?;
+            let expr = x.e("expect `if` condition").expr()?;
+            let body = x.e("expect `if` body").block()?;
             let mut alter = None;
             if x.expect("else").is_some() {
-                alter = Some(x.expr()?.into())
+                alter = Some(x.e("expect `else` expression").expr()?.into())
             }
             Some(Expr::If(expr.into(), body, alter))
         }) {
@@ -80,7 +80,7 @@ impl Expression for Parser<CR> {
         }
         if let Some(res) = self.alter(|x| {
             x.keyword("loop")?;
-            let body = x.block()?;
+            let body = x.e("expect `loop` body").block()?;
             Some(Expr::Loop(body))
         }) {
             return res;
@@ -94,8 +94,8 @@ impl Expression for Parser<CR> {
         }
         if let Some(res) = self.alter(|x| {
             x.keyword("while")?;
-            let expr = x.expr()?;
-            let body = x.block()?;
+            let expr = x.e("expect `while` condition").expr()?;
+            let body = x.e("expect `while` body").block()?;
             Some(Expr::While(expr.into(), body))
         }) {
             return res;
@@ -108,7 +108,8 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let pat = x.pat()?;
             x.expect("=")?;
-            let expr = x.expr()?;
+            x.lookahead(|c| c != '=')?;
+            let expr = x.e("invalid `=` operator").expr()?;
             Some(Expr::Assign(pat, AssOp::Eq, expr.into()))
         }) {
             return res;
@@ -116,7 +117,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let pat = x.pat()?;
             x.expect("+=")?;
-            let expr = x.expr()?;
+            let expr = x.e("invalid `+=` operator").expr()?;
             Some(Expr::Assign(pat, AssOp::AddEq, expr.into()))
         }) {
             return res;
@@ -124,7 +125,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let pat = x.pat()?;
             x.expect("-=")?;
-            let expr = x.expr()?;
+            let expr = x.e("invalid `-=` operator").expr()?;
             Some(Expr::Assign(pat, AssOp::SubEq, expr.into()))
         }) {
             return res;
@@ -132,7 +133,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let pat = x.pat()?;
             x.expect("*=")?;
-            let expr = x.expr()?;
+            let expr = x.e("invalid `*=` operator").expr()?;
             Some(Expr::Assign(pat, AssOp::MulEq, expr.into()))
         }) {
             return res;
@@ -140,7 +141,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let pat = x.pat()?;
             x.expect("/=")?;
-            let expr = x.expr()?;
+            let expr = x.e("invalid `/=` operator").expr()?;
             Some(Expr::Assign(pat, AssOp::DivEq, expr.into()))
         }) {
             return res;
@@ -148,7 +149,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let pat = x.pat()?;
             x.expect("%=")?;
-            let expr = x.expr()?;
+            let expr = x.e("invalid `%=` operator").expr()?;
             Some(Expr::Assign(pat, AssOp::ModEq, expr.into()))
         }) {
             return res;
@@ -160,15 +161,15 @@ impl Expression for Parser<CR> {
     fn tuple(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             x.expect("(")?;
-            let first = x.tuple()?;
+            let first = x.expr()?;
             x.expect(",")?;
-            let second = x.tuple()?;
+            let second = x.e("expect tuple element").expr()?;
             let mut body = vec![first, second];
             while x.expect(",").is_some() {
-                let expr = x.expr()?;
+                let expr = x.e("expect tuple element").expr()?;
                 body.push(expr)
             }
-            x.expect(")")?;
+            x.e("tuple not closed").expect(")")?;
             Some(Expr::Tuple(body))
         }) {
             return res;
@@ -181,7 +182,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.disjunction()?;
             x.keyword("or")?;
-            let rhs = x.conjunction()?;
+            let rhs = x.e("invalid `or` operator").conjunction()?;
             Some(Expr::Binary(lhs.into(), BinOp::Or, rhs.into()))
         }) {
             return res;
@@ -194,7 +195,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.conjunction()?;
             x.keyword("and")?;
-            let rhs = x.inversion()?;
+            let rhs = x.e("invalid `and` operator").inversion()?;
             Some(Expr::Binary(lhs.into(), BinOp::And, rhs.into()))
         }) {
             return res;
@@ -206,7 +207,7 @@ impl Expression for Parser<CR> {
     fn inversion(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             x.keyword("not")?;
-            let rhs = x.inversion()?;
+            let rhs = x.e("invalid `not` operator").inversion()?;
             Some(Expr::Unary(UnaOp::Not, rhs.into()))
         }) {
             return res;
@@ -219,7 +220,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.equality()?;
             x.expect("==")?;
-            let rhs = x.comparison()?;
+            let rhs = x.e("invalid `==` operator").comparison()?;
             Some(Expr::Binary(lhs.into(), BinOp::Eq, rhs.into()))
         }) {
             return res;
@@ -227,7 +228,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.equality()?;
             x.expect("!=")?;
-            let rhs = x.comparison()?;
+            let rhs = x.e("invalid `!=` operator").comparison()?;
             Some(Expr::Binary(lhs.into(), BinOp::Ne, rhs.into()))
         }) {
             return res;
@@ -239,24 +240,8 @@ impl Expression for Parser<CR> {
     fn comparison(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.comparison()?;
-            x.expect(">")?;
-            let rhs = x.term()?;
-            Some(Expr::Binary(lhs.into(), BinOp::Gt, rhs.into()))
-        }) {
-            return res;
-        }
-        if let Some(res) = self.alter(|x| {
-            let lhs = x.comparison()?;
-            x.expect("<")?;
-            let rhs = x.term()?;
-            Some(Expr::Binary(lhs.into(), BinOp::Lt, rhs.into()))
-        }) {
-            return res;
-        }
-        if let Some(res) = self.alter(|x| {
-            let lhs = x.comparison()?;
             x.expect(">=")?;
-            let rhs = x.term()?;
+            let rhs = x.e("invalid `>=` operator").term()?;
             Some(Expr::Binary(lhs.into(), BinOp::Ge, rhs.into()))
         }) {
             return res;
@@ -264,8 +249,24 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.comparison()?;
             x.expect("<=")?;
-            let rhs = x.term()?;
+            let rhs = x.e("invalid `<=` operator").term()?;
             Some(Expr::Binary(lhs.into(), BinOp::Le, rhs.into()))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            let lhs = x.comparison()?;
+            x.expect(">")?;
+            let rhs = x.e("invalid `>` operator").term()?;
+            Some(Expr::Binary(lhs.into(), BinOp::Gt, rhs.into()))
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            let lhs = x.comparison()?;
+            x.expect("<")?;
+            let rhs = x.e("invalid `<` operator").term()?;
+            Some(Expr::Binary(lhs.into(), BinOp::Lt, rhs.into()))
         }) {
             return res;
         }
@@ -277,7 +278,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.term()?;
             x.expect("+")?;
-            let rhs = x.factor()?;
+            let rhs = x.e("invalid `+` operator").factor()?;
             Some(Expr::Binary(lhs.into(), BinOp::Add, rhs.into()))
         }) {
             return res;
@@ -285,7 +286,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.term()?;
             x.expect("-")?;
-            let rhs = x.factor()?;
+            let rhs = x.e("invalid `-` operator").factor()?;
             Some(Expr::Binary(lhs.into(), BinOp::Sub, rhs.into()))
         }) {
             return res;
@@ -298,7 +299,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.factor()?;
             x.expect("*")?;
-            let rhs = x.unary()?;
+            let rhs = x.e("invalid `*` operator").unary()?;
             Some(Expr::Binary(lhs.into(), BinOp::Mul, rhs.into()))
         }) {
             return res;
@@ -306,7 +307,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.factor()?;
             x.expect("/")?;
-            let rhs = x.unary()?;
+            let rhs = x.e("invalid `/` operator").unary()?;
             Some(Expr::Binary(lhs.into(), BinOp::Div, rhs.into()))
         }) {
             return res;
@@ -314,7 +315,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.factor()?;
             x.expect("%")?;
-            let rhs = x.unary()?;
+            let rhs = x.e("invalid `%` operator").unary()?;
             Some(Expr::Binary(lhs.into(), BinOp::Mod, rhs.into()))
         }) {
             return res;
@@ -326,14 +327,14 @@ impl Expression for Parser<CR> {
     fn unary(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             x.expect("+")?;
-            let rhs = x.unary()?;
+            let rhs = x.e("invalid `+` operator").unary()?;
             Some(Expr::Unary(UnaOp::Pos, rhs.into()))
         }) {
             return res;
         }
         if let Some(res) = self.alter(|x| {
             x.expect("-")?;
-            let rhs = x.unary()?;
+            let rhs = x.e("invalid `-` operator").unary()?;
             Some(Expr::Unary(UnaOp::Neg, rhs.into()))
         }) {
             return res;
@@ -350,11 +351,11 @@ impl Expression for Parser<CR> {
             if let Some(expr) = x.expr() {
                 body.push(expr);
                 while x.expect(",").is_some() {
-                    let expr = x.expr()?;
+                    let expr = x.e("expect argument").expr()?;
                     body.push(expr)
                 }
             }
-            x.expect(")")?;
+            x.e("function call not closed").expect(")")?;
             Some(Expr::Call(callable.into(), body))
         }) {
             return res;
@@ -362,7 +363,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             let parent = x.evaluation()?;
             x.expect(".")?;
-            let member = x.ident()?;
+            let member = x.e("invalid `.` operator").ident()?;
             Some(Expr::Field(parent.into(), member))
         }) {
             return res;
@@ -387,7 +388,7 @@ impl Expression for Parser<CR> {
         if let Some(res) = self.alter(|x| {
             x.expect("(")?;
             let body = x.expr()?;
-            x.expect(")")?;
+            x.e("parentheses not closed").expect(")")?;
             Some(Expr::Paren(body.into()))
         }) {
             return res;
@@ -398,12 +399,12 @@ impl Expression for Parser<CR> {
             if let Some(param) = x.ident() {
                 body.push(param);
                 while x.expect(",").is_some() {
-                    let param = x.ident()?;
+                    let param = x.e("expect parameter").ident()?;
                     body.push(param)
                 }
             }
-            x.expect("|")?;
-            let expr = x.expr()?;
+            x.e("closure not closed").expect("|")?;
+            let expr = x.e("expect closure body").expr()?;
             Some(Expr::Func(body, expr.into()))
         }) {
             return res;

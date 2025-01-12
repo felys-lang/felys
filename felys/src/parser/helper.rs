@@ -37,7 +37,7 @@ impl Entry for Parser<CR> {
                 x.memo.clear();
                 body.push(stmt)
             }
-            x.eof()?;
+            x.e("not parsed to the end").eof()?;
             Some(Program(body))
         }) {
             return res;
