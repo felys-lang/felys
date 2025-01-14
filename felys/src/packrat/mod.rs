@@ -13,6 +13,7 @@ pub struct Parser<R> {
     pub intern: Intern,
     pub stream: Stream,
     pub error: Option<&'static str>,
+    unwinding: bool,
 }
 
 impl<R> Parser<R> {
@@ -32,6 +33,7 @@ impl<R> Parser<R> {
                 cursor: 0,
             },
             error: None,
+            unwinding: false,
         }
     }
 
@@ -39,6 +41,10 @@ impl<R> Parser<R> {
     where
         F: Fn(&mut Parser<R>) -> Option<T>,
     {
+        if self.unwinding {
+            return Some(None);
+        }
+
         let mode = self.stream.strict;
         let pos = self.stream.cursor;
         let err = self.error;
@@ -51,10 +57,13 @@ impl<R> Parser<R> {
             self.stream.cursor = pos;
         }
 
-        if result.is_some() {
+        if self.unwinding {
+            Some(None)
+        } else if result.is_some() {
             self.error = None;
             Some(result)
         } else if self.error.is_some() {
+            self.unwinding = true;
             Some(None)
         } else {
             self.error = err;

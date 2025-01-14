@@ -7,7 +7,7 @@ mod registry;
 mod core;
 mod helper;
 
-const KEYWORDS: [&str; 12] = [
+const KEYWORDS: [&str; 15] = [
     "break",
     "continue",
     "for",
@@ -19,7 +19,10 @@ const KEYWORDS: [&str; 12] = [
     "return",
     "while",
     "true",
-    "false"
+    "false",
+    "and",
+    "or",
+    "not"
 ];
 
 pub fn parse(code: String) -> Result<(Program, Intern), &'static str> {
@@ -30,6 +33,6 @@ pub fn parse(code: String) -> Result<(Program, Intern), &'static str> {
     } else if let Some(msg) = parser.error {
         Err(msg)
     } else {
-        Err("unknown")
+        Err("uncaught")
     }
 }
