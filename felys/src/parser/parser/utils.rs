@@ -15,10 +15,7 @@ impl Parser {
     }
 
     pub fn eof(&mut self) -> Option<char> {
-        if let Some(res) = self.alter(|x| x.lookahead(|c| c == '\0')) {
-            return res;
-        }
-        None
+        self.lookahead(|c| c == '\0')
     }
 
     pub fn program(&mut self) -> Option<Program> {
