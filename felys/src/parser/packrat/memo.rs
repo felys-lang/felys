@@ -1,6 +1,7 @@
 use crate::parser::registry::{Cache, Rule};
 use std::collections::HashMap;
 
+#[derive(Default)]
 pub struct Memo {
     data: HashMap<(usize, bool, Rule), (usize, Cache)>,
 }

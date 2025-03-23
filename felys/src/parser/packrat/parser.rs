@@ -3,12 +3,20 @@ use crate::parser::packrat::memo::Memo;
 use crate::parser::packrat::stream::Stream;
 
 pub struct Parser {
-    memo: Memo,
-    stream: Stream,
-    intern: Intern,
+    pub memo: Memo,
+    pub stream: Stream,
+    pub intern: Intern,
 }
 
 impl Parser {
+    pub fn new(code: String) -> Self {
+        Self {
+            memo: Memo::default(),
+            stream: Stream::new(code),
+            intern: Intern::default(),
+        }
+    }
+
     pub fn alter<T, F>(&mut self, f: F) -> Option<Option<T>>
     where
         F: Fn(&mut Parser) -> Option<T>,

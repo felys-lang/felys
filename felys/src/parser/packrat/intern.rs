@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+#[derive(Default)]
 pub struct Intern {
     data: HashMap<Rc<String>, usize>,
     fast: Vec<Rc<String>>,
