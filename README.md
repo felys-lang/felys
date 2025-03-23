@@ -14,7 +14,7 @@ Felys is a programming language written in Rust. The motivation is to create a l
 
 ## Highlights
 
-There is a beautifully written packrat [parser](felys/parser) that supports left recursion, while maintaining an acceptable performance. It could be further optimized in memoization and memory management.
+There is a beautifully written packrat [parser](felys/src/parser) that supports left recursion, while maintaining an acceptable performance. It could be further optimized in memoization and memory management.
 
 The [grammar](felys/ast) is similar to Rust, i.e. most traditionally defined statements are actually expressions in this language. As long as programmers understand the underlying principle, it is easy to write clean and readable code. This will also make the future semantic analyzer extremely powerful.
 
