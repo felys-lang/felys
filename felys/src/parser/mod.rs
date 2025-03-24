@@ -1,5 +1,5 @@
 mod packrat;
-mod parser;
+mod core;
 mod registry;
 
 pub use packrat::Parser;
