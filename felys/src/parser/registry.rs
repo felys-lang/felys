@@ -1,5 +1,9 @@
-#[derive(Eq, PartialEq, Hash)]
-pub enum Rule {}
+use crate::ast::expr::Expr;
+use crate::ast::stmt::Stmt;
+use felysian::Cachable;
 
-#[derive(Clone)]
-pub enum Cache {}
+#[derive(Clone, Cachable)]
+pub enum Cache {
+    Expr(Option<Expr>),
+    Stmt(Option<Stmt>),
+}

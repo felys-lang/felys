@@ -38,7 +38,7 @@ impl Stream {
 
         let remaining = &self.data[self.cursor..];
         let mut chars = remaining.char_indices();
-        
+
         match chars.find(|(_, c)| !c.is_whitespace()) {
             Some((idx, _)) => self.cursor += idx,
             None => self.cursor += remaining.len(),

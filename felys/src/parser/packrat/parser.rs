@@ -21,14 +21,14 @@ impl Parser {
     where
         F: Fn(&mut Parser) -> Option<T>,
     {
-        let mode = self.stream.strict;
-        let pos = self.stream.cursor;
+        let cur = self.stream.cursor;
+        let s = self.stream.strict;
 
         let result = f(self);
 
-        self.stream.strict = mode;
+        self.stream.strict = s;
         if result.is_none() {
-            self.stream.cursor = pos;
+            self.stream.cursor = cur;
         }
 
         if result.is_some() { Some(result) } else { None }
