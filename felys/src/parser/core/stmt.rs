@@ -1,9 +1,8 @@
 use crate::ast::stmt::{Block, Stmt};
 use crate::parser::packrat::Parser;
-use felysian::memoize;
 
 impl Parser {
-    #[memoize]
+    #[felysian::memoize]
     pub fn stmt(&mut self) -> Option<Stmt> {
         if let Some(res) = self.alter(|x| {
             let expr = x.expr()?;

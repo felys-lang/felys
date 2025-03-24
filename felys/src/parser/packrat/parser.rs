@@ -1,11 +1,13 @@
 use crate::parser::packrat::intern::Intern;
 use crate::parser::packrat::memo::Memo;
 use crate::parser::packrat::stream::Stream;
+use std::collections::HashSet;
 
 pub struct Parser {
     pub memo: Memo,
     pub stream: Stream,
     pub intern: Intern,
+    pub keywords: HashSet<&'static str>,
 }
 
 impl Parser {
@@ -14,6 +16,7 @@ impl Parser {
             memo: Memo::default(),
             stream: Stream::new(code),
             intern: Intern::default(),
+            keywords: HashSet::from(["true", "false"]),
         }
     }
 
