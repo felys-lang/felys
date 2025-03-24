@@ -7,6 +7,10 @@ pub struct Memo {
 }
 
 impl Memo {
+    pub fn clear(&mut self) {
+        self.data.clear();
+    }
+    
     pub fn get(&self, cur: usize, s: bool, sig: &'static str) -> Option<(usize, Cache)> {
         self.data.get(&(cur, s, sig)).cloned()
     }

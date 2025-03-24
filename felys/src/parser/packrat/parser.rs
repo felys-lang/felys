@@ -11,12 +11,12 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(code: String) -> Self {
+    pub fn new<const N: usize>(code: String, kws: [&'static str; N]) -> Self {
         Self {
             memo: Memo::default(),
             stream: Stream::new(code),
             intern: Intern::default(),
-            keywords: HashSet::from(["true", "false"]),
+            keywords: HashSet::from(kws),
         }
     }
 
