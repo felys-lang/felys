@@ -6,4 +6,4 @@ license = "MIT"
 description = "Interface for the Felys programming language"
 
 [dependencies]
-felysian = { path = "felysian" }
+felysian = { version = "0.1" }
