@@ -47,6 +47,7 @@ impl Parser {
         }
         None
     }
+    
     pub fn scan(&mut self, filter: fn(char) -> bool) -> Option<char> {
         let cur = self.stream.cursor;
         let saw = self.stream.next()?;
