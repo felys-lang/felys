@@ -10,13 +10,15 @@
 
 ## What is the Felys Programming Language?
 
-Felys is a programming language written in Rust. The motivation is to create a language where Elysia exists, so regardless of how this project gets developed in the future, there must exist a built-in identifier called `__elysia__`. Although it is just a toy language, the implementation is quite elegant without ugly hacks. Feel free to try it on the online [playground](https://exec.felys.dev/). The ultimate goal is to build a virtual machine based Rust without borrow checker and lifetime checker.
+Felys is a programming language written in Rust. The motivation is to create a language where Elysia exists, so regardless of how this project evolves in the future, there must exist a built-in identifier named `__elysia__`. Feel free to try it using the online [playground](https://exec.felys.dev/).
 
-## Highlights
+## Highlights and Stories
 
-There is a beautifully written packrat [parser](felys/parser) that supports left recursion, while maintaining an acceptable performance. It could be further optimized in memoization and memory management.
+There is a clean [packrat](https://pdos.csail.mit.edu/~baford/packrat/thesis/thesis.pdf) parser implementation that supports left recursion and unifies tokenization and parsing. The performance is actually not bad as everything is built on standard library.
 
-The [grammar](felys/ast) is similar to Rust, i.e. most traditionally defined statements are actually expressions in this language. As long as programmers understand the underlying principle, it is easy to write clean and readable code. This will also make the future semantic analyzer extremely powerful.
+I witnessed the story of [Elysia](https://www.youtube.com/watch?v=IZg6Qqx_o9U) in my second last year in high school and graduated with [Kiana](https://www.youtube.com/watch?v=X7j8VFU6SIg) the next year. These are pretty much the only delightful part I would recall from that period. After coming to the college, life gets better, but I can no longer put myself into anything beyond studying or working. Thus, I created this project to make the sweetest memory immortal. 
+
+人只会记住美好的事情，而关于高中的那些年，我忘的好像只剩下爱莉希雅了……
 
 ## License
 
