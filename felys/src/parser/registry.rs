@@ -1,6 +1,6 @@
 use crate::ast::expr::Expr;
 use crate::ast::stmt::Stmt;
-use felysian::Cachable;
+use felysium::Cachable;
 use crate::ast::lit::Lit;
 use crate::ast::pat::Pat;
 

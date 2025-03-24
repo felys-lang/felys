@@ -2,7 +2,7 @@ use crate::ast::lit::{Bool, Float, Int, Lit, Str};
 use crate::parser::Parser;
 
 impl Parser {
-    #[felysian::memoize]
+    #[felysium::memoize]
     pub fn lit(&mut self) -> Option<Lit> {
         if let Some(res) = self.alter(|x| {
             let body = x.float()?;

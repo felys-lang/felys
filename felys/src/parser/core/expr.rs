@@ -3,7 +3,7 @@ use crate::parser::Parser;
 use std::rc::Rc;
 
 impl Parser {
-    #[felysian::memoize]
+    #[felysium::memoize]
     pub fn expr(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| x.assign()) {
             return res;
@@ -98,7 +98,7 @@ impl Parser {
         None
     }
 
-    #[felysian::memoize]
+    #[felysium::memoize]
     pub fn assign(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let pat = x.pat()?;
@@ -152,7 +152,7 @@ impl Parser {
         None
     }
 
-    #[felysian::memoize]
+    #[felysium::memoize]
     pub fn tuple(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             x.expect("(")?;
@@ -172,7 +172,7 @@ impl Parser {
         self.disjunction()
     }
 
-    #[felysian::lecursion]
+    #[felysium::lecursion]
     pub fn disjunction(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.disjunction()?;
@@ -185,7 +185,7 @@ impl Parser {
         self.conjunction()
     }
 
-    #[felysian::lecursion]
+    #[felysium::lecursion]
     pub fn conjunction(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.conjunction()?;
@@ -198,7 +198,7 @@ impl Parser {
         self.inversion()
     }
 
-    #[felysian::memoize]
+    #[felysium::memoize]
     pub fn inversion(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             x.keyword("not")?;
@@ -210,7 +210,7 @@ impl Parser {
         self.equality()
     }
 
-    #[felysian::lecursion]
+    #[felysium::lecursion]
     pub fn equality(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.equality()?;
@@ -231,7 +231,7 @@ impl Parser {
         self.comparison()
     }
 
-    #[felysian::lecursion]
+    #[felysium::lecursion]
     pub fn comparison(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.comparison()?;
@@ -268,7 +268,7 @@ impl Parser {
         self.term()
     }
 
-    #[felysian::lecursion]
+    #[felysium::lecursion]
     pub fn term(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.term()?;
@@ -289,7 +289,7 @@ impl Parser {
         self.factor()
     }
 
-    #[felysian::lecursion]
+    #[felysium::lecursion]
     pub fn factor(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let lhs = x.factor()?;
@@ -318,7 +318,7 @@ impl Parser {
         self.unary()
     }
 
-    #[felysian::memoize]
+    #[felysium::memoize]
     pub fn unary(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             x.expect("+")?;
@@ -337,7 +337,7 @@ impl Parser {
         self.evaluation()
     }
 
-    #[felysian::lecursion]
+    #[felysium::lecursion]
     pub fn evaluation(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let callable = x.evaluation()?;
@@ -366,7 +366,7 @@ impl Parser {
         self.primary()
     }
 
-    #[felysian::memoize]
+    #[felysium::memoize]
     pub fn primary(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
             let body = x.lit()?;

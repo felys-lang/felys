@@ -2,7 +2,7 @@ use crate::ast::pat::{Ident, Pat};
 use crate::parser::Parser;
 
 impl Parser {
-    #[felysian::memoize]
+    #[felysium::memoize]
     pub fn pat(&mut self) -> Option<Pat> {
         if let Some(res) = self.alter(|x| {
             x.keyword("_")?;
