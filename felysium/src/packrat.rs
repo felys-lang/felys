@@ -17,17 +17,16 @@ pub fn memoize_helper(body: TokenStream) -> TokenStream {
     quote!(
         #vis #sig {
             let cur = self.stream.cursor;
+            let id = Self::#id as usize;
             let s = self.stream.strict;
-            let id = stringify!(#id);
-            if let Some(memo) = self.memo.get(cur, s, id) {
-                let (end, res) = memo;
+            if let Some((end, cache)) = self.memo.get(cur, id, s) {
                 self.stream.cursor = end;
-                return res.into()
+                return cache.into();
             }
             let result = || -> #output #block();
             let end = self.stream.cursor;
-            let res = result.clone().into();
-            self.memo.insert(cur, s, id, end, res);
+            let cache = result.clone().into();
+            self.memo.insert(cur, id, s, end, cache);
             result
         }
     )
@@ -49,35 +48,32 @@ pub fn lecursion_helper(body: TokenStream) -> TokenStream {
     quote!(
         #vis #sig {
             let cur = self.stream.cursor;
+            let id = Self::#id as usize;
             let s = self.stream.strict;
-            let id = stringify!(#id);
-            if let Some(memo) = self.memo.get(cur, s, id) {
-                let (end, res) = memo;
+            if let Some((end, cache)) = self.memo.get(cur, id, s) {
                 self.stream.cursor = end;
-                return res.into()
+                return cache.into()
             }
             let result = || -> #output {
                 let cur = self.stream.cursor;
-                let mut res = None;
+                let mut cache = None;
                 let mut end = cur;
                 loop {
-                    let s = self.stream.strict;
-                    let id = stringify!(#id);
-                    self.memo.insert(cur, s, id, end, res.clone().into());
+                    self.memo.insert(cur, id, s, end, cache.clone().into());
                     let result = || -> #output #block();
                     if end < self.stream.cursor {
-                        res = result.into();
+                        cache = result.into();
                         end = self.stream.cursor;
                         self.stream.cursor = cur;
                     } else {
                         self.stream.cursor = end;
-                        break res.into();
+                        break cache.into();
                     }
                 }
             }();
             let end = self.stream.cursor;
-            let res = result.clone().into();
-            self.memo.insert(cur, s, id, end, res);
+            let cache = result.clone().into();
+            self.memo.insert(cur, id, s, end, cache);
             result
         }
     )
