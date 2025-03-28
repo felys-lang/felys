@@ -23,8 +23,10 @@ pub fn memoize_helper(body: TokenStream) -> TokenStream {
                 self.stream.cursor = end;
                 return cache.into();
             }
+            
             let result = || -> #output #block();
             let end = self.stream.cursor;
+            
             let cache = result.clone().into();
             self.memo.insert(cur, id, s, end, cache);
             result
@@ -54,24 +56,23 @@ pub fn lecursion_helper(body: TokenStream) -> TokenStream {
                 self.stream.cursor = end;
                 return cache.into()
             }
-            let result = || -> #output {
-                let cur = self.stream.cursor;
-                let mut cache = None;
-                let mut end = cur;
-                loop {
-                    self.memo.insert(cur, id, s, end, cache.clone().into());
-                    let result = || -> #output #block();
-                    if end < self.stream.cursor {
-                        cache = result.into();
-                        end = self.stream.cursor;
-                        self.stream.cursor = cur;
-                    } else {
-                        self.stream.cursor = end;
-                        break cache.into();
-                    }
+
+            let mut result = None;
+            let mut end = cur;
+            loop {
+                let cache = result.clone().into();
+                self.memo.insert(cur, id, s, end, cache);
+                let temp = || -> #output #block();
+                if end < self.stream.cursor {
+                    result = temp;
+                    end = self.stream.cursor;
+                    self.stream.cursor = cur;
+                } else {
+                    self.stream.cursor = end;
+                    break;
                 }
-            }();
-            let end = self.stream.cursor;
+            }
+            
             let cache = result.clone().into();
             self.memo.insert(cur, id, s, end, cache);
             result
