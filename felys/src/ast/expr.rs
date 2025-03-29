@@ -1,4 +1,4 @@
-use crate::ast::common::{Block, Ident};
+use crate::ast::common::{Block, Ident, Path};
 use crate::ast::lit::Lit;
 use crate::ast::pat::Pat;
 use std::rc::Rc;
@@ -34,7 +34,7 @@ pub enum Expr {
     /// field: `elysia.mei`
     Field(Rc<Expr>, Ident),
     /// identifier: `elysia`
-    Ident(Ident),
+    Path(Path),
     /// tuple: `(elysia, 11.11)`
     Tuple(Vec<Expr>),
     /// literals: `"elysia"`, `11.11`, `true`

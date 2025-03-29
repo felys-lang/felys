@@ -369,14 +369,14 @@ impl Parser {
     #[felysium::memoize]
     pub fn primary(&mut self) -> Option<Expr> {
         if let Some(res) = self.alter(|x| {
-            let body = x.lit()?;
-            Some(Expr::Lit(body))
+            let body = x.path()?;
+            Some(Expr::Path(body))
         }) {
             return res;
         }
         if let Some(res) = self.alter(|x| {
-            let body = x.ident()?;
-            Some(Expr::Ident(body))
+            let body = x.lit()?;
+            Some(Expr::Lit(body))
         }) {
             return res;
         }

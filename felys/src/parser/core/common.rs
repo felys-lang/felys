@@ -1,4 +1,4 @@
-use crate::ast::common::{Block, Ident, Program};
+use crate::ast::common::{Block, Ident, Path, Program};
 use crate::parser::Parser;
 
 impl Parser {
@@ -32,6 +32,26 @@ impl Parser {
         None
     }
 
+    #[felysium::lecursion]
+    pub fn path(&mut self) -> Option<Path> {
+        if let Some(res) = self.alter(|x| {
+            let path = x.path()?;
+            x.expect("::")?;
+            let ident = x.ident()?;
+            return Some(Path::Path(path.into(), ident));
+        }) {
+            return res;
+        }
+        if let Some(res) = self.alter(|x| {
+            let ident = x.ident()?;
+            Some(Path::Ident(ident))
+        }) {
+            return res;
+        }
+        None
+    }
+
+    #[felysium::memoize]
     pub fn ident(&mut self) -> Option<Ident> {
         if let Some(res) = self.alter(|x| {
             let first = x.scan(|c| c.is_ascii_alphabetic() || c == '_')?;
