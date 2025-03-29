@@ -1,6 +1,6 @@
+use crate::ast::common::{Block, Ident};
 use crate::ast::lit::Lit;
-use crate::ast::pat::{Ident, Pat};
-use crate::ast::stmt::Block;
+use crate::ast::pat::Pat;
 use std::rc::Rc;
 
 #[derive(Clone, Debug)]

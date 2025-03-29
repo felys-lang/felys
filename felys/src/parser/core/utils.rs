@@ -1,4 +1,3 @@
-use crate::ast::program::Program;
 use crate::parser::packrat::Parser;
 
 impl Parser {
@@ -16,20 +15,5 @@ impl Parser {
 
     pub fn eof(&mut self) -> Option<char> {
         self.lookahead(|c| c == '\0')
-    }
-
-    pub fn program(&mut self) -> Option<Program> {
-        if let Some(res) = self.alter(|x| {
-            let mut body = Vec::new();
-            while let Some(stmt) = x.stmt() {
-                x.memo.clear();
-                body.push(stmt)
-            }
-            x.eof()?;
-            Some(Program(body))
-        }) {
-            return res;
-        }
-        None
     }
 }

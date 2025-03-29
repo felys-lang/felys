@@ -1,4 +1,5 @@
-use crate::ast::stmt::{Block, Stmt};
+use crate::ast::common::Block;
+use crate::ast::stmt::Stmt;
 use crate::parser::packrat::Parser;
 
 impl Parser {
@@ -20,21 +21,6 @@ impl Parser {
         if let Some(res) = self.alter(|x| {
             x.expect(";")?;
             Some(Stmt::Empty)
-        }) {
-            return res;
-        }
-        None
-    }
-
-    pub fn block(&mut self) -> Option<Block> {
-        if let Some(res) = self.alter(|x| {
-            x.expect("{")?;
-            let mut body = Vec::new();
-            while let Some(stmt) = x.stmt() {
-                body.push(stmt)
-            }
-            x.expect("}")?;
-            Some(Block(body))
         }) {
             return res;
         }

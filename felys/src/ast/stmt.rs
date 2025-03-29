@@ -9,6 +9,3 @@ pub enum Stmt {
     /// expression with semicolon: `1 + 1;`
     Semi(Expr),
 }
-
-#[derive(Clone, Debug)]
-pub struct Block(pub Vec<Stmt>);

@@ -1,5 +1,5 @@
+use crate::ast::common::Ident;
 use crate::ast::lit::Lit;
-use crate::ast::utils::Id;
 
 #[derive(Clone, Debug)]
 pub enum Pat {
@@ -12,5 +12,3 @@ pub enum Pat {
     /// identifier
     Ident(Ident),
 }
-
-pub type Ident = Id;

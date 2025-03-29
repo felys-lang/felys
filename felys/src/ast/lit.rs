@@ -8,7 +8,7 @@ pub enum Lit {
     Float(Float),
     /// boolean: `true`, `false`
     Bool(Bool),
-    /// string: `"elysia"`, `f"{1+1} = 2"`, `r"\t\r\n"`
+    /// string: `"elysia"`
     Str(Str),
 }
 
