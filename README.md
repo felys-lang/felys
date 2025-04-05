@@ -18,8 +18,6 @@ There is a clean [packrat](https://pdos.csail.mit.edu/~baford/packrat/thesis/the
 
 I witnessed the story of [Elysia](https://www.youtube.com/watch?v=IZg6Qqx_o9U) in my second last year in high school and graduated with [Kiana](https://www.youtube.com/watch?v=X7j8VFU6SIg) the next year. These are pretty much the only delightful part I would recall from that period. After coming to the college, life gets better, but I can no longer put myself into anything beyond studying or working. Thus, I created this project to make the sweetest memory immortal. 
 
-人只会记住美好的事情，而关于高中的那些年，我忘的好像只剩下爱莉希雅了……
-
 ## License
 
 Distributed under the terms of the [MIT License](LICENSE).
