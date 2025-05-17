@@ -1,3 +1,18 @@
+ADD: '+' ;
+SUB: '-' ;
+MUL: '*' ;
+DIV: '/' ;
+MOD: '%' ;
+GE: '>=' ;
+LE: '<=' ;
+GT: '>' ;
+LT: '<' ;
+EQ: '==' ;
+NE: '!=' ;
+
+OR: 'or' ;
+AND: 'and' ;
+NOT: 'not' ;
 TRUE: 'true';
 FALSE: 'false';
 
