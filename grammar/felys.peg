@@ -1,0 +1,10 @@
+{ use crate::ast::*; }
+
+lit -> { Lit }:
+    / lit=bool { Lit::Bool(lit) }
+    ;
+
+bool -> { Bool }:
+    / TRUE { Bool::True }
+    / FALSE { Bool::False }
+    ;

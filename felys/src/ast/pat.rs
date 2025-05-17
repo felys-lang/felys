@@ -1,4 +1,4 @@
-use crate::ast::lit::Lit;
+use crate::ast::*;
 
 #[derive(Clone, Debug)]
 pub enum Pat {

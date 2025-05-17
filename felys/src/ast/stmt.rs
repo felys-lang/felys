@@ -1,4 +1,4 @@
-use crate::ast::expr::Expr;
+use crate::ast::*;
 
 #[derive(Clone, Debug)]
 pub enum Stmt {

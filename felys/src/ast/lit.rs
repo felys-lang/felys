@@ -10,13 +10,7 @@ pub enum Lit {
     Str(Str),
 }
 
-#[derive(Clone, Debug)]
-pub enum Int {
-    Base16(usize),
-    Base10(usize),
-    Base8(usize),
-    Base2(usize),
-}
+pub type Int = usize;
 
 pub type Float = usize;
 
