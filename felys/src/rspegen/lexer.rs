@@ -1,0 +1,1 @@
+# [allow (non_snake_case , unused)] impl super :: Packrat { } impl super :: Stream { pub fn trim (& mut self) { } pub fn ws (& mut self) -> Option < () > { None } }
