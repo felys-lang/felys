@@ -1,0 +1,3 @@
+[submodule "rspegen"]
+	path = rspegen
+	url = https://github.com/FelysNeko/rspegen.git
