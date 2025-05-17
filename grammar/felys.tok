@@ -1,0 +1,8 @@
+@(intern, memo)
+NAME: [a-zA-Z_][a-zA-Z0-9_]* ;
+
+@(ws)
+WHITESPACE: [\u{20}\n\t\r]+ ;
+
+@(ws)
+COMMENT: '//' [^\n]* ;
