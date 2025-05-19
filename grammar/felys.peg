@@ -1,5 +1,14 @@
 { use crate::ast::*; }
 
+expr -> { Expr }:
+    / tuple=tuple { tuple }
+    ;
+
+tuple -> { Expr }:
+    / LPAREN elements=COMMA.expr+ RPAREN { Expr::Tuple(elements) }
+    / disjunction=disjunction { disjunction }
+    ;
+
 disjunction -> { Expr }:
     / lhs=disjunction OR rhs=conjunction! { Expr::Binary(lhs.into(), BinOp::Or, rhs.into()) }
     / conjunction=conjunction! { conjunction }
@@ -51,6 +60,7 @@ unary -> { Expr }:
 primary -> { Expr }:
     / lit=lit { Expr::Lit(lit) }
     / ident=IDENT { Expr::Ident(ident) }
+    / LPAREN expr=expr RPAREN { Expr::Paren(expr.into()) }
     ;
 
 lit -> { Lit }:
