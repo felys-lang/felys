@@ -10,26 +10,18 @@ LT: '<' ;
 EQ: '==' ;
 NE: '!=' ;
 
-@(keyword)
-OR: 'or' ;
-
-@(keyword)
-AND: 'and' ;
-
-@(keyword)
-NOT: 'not' ;
-
-@(keyword)
-TRUE: 'true';
-
-@(keyword)
-FALSE: 'false';
-
 @(intern, memo, identifier)
 IDENT: [a-zA-Z_][a-zA-Z0-9_]* ;
 
-@(ws)
-WS: [\u{20}\n\t\r]+ ;
+@(keyword) {
+    OR: 'or' ;
+    AND: 'and' ;
+    NOT: 'not' ;
+    TRUE: 'true';
+    FALSE: 'false' ;
+}
 
-@(ws)
-COMMENT: '//' [^\n]* ;
+@(ws) {
+    WS: [\u{20}\n\t\r]+ ;
+    COMMENT: '//' [^\n]* ;
+}
