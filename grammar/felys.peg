@@ -24,9 +24,16 @@ expr -> { Expr }:
     / block=block { Expr::Block(block) }
     / BREAK expr=expr? { Expr::Break(expr.map(Rc::new)) }
     / CONTINUE { Expr::Continue }
+    / IF expr=expr block=block otherwise=otherwise? {
+        Expr::If(expr.into(), block, otherwise.map(Rc::new))
+    }
     / LOOP block=block! { Expr::Loop(block) }
     / RETURN expr=expr? { Expr::Return(expr.map(Rc::new)) }
     / WHILE expr=expr! block=block! { Expr::While(expr.into(), block) }
+    ;
+
+otherwise -> { Expr }:
+    / ELSE expr=expr! { expr }
     ;
 
 disjunction -> { Expr }:

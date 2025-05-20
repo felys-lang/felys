@@ -27,6 +27,8 @@ IDENT: [a-zA-Z_][a-zA-Z0-9_]* ;
     FALSE: 'false' ;
     BREAK: 'break' ;
     CONTINUE: 'continue' ;
+    IF: 'if' ;
+    ELSE: 'else' ;
     LOOP: 'loop' ;
     RETURN: 'return' ;
     WHILE: 'while' ;
