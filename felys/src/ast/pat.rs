@@ -6,8 +6,6 @@ pub enum Pat {
     Any,
     /// unwrap a group: `(elysia, 11.11)`
     Tuple(Vec<Pat>),
-    /// literals: `"elysia"`, `11.11`, `true`
-    Lit(Lit),
     /// identifier
     Ident(Ident),
 }

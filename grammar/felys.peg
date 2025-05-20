@@ -3,6 +3,16 @@
     use std::rc::Rc;
 }
 
+pat -> { Pat }:
+    / UNDERSCORE { Pat::Any }
+    / ident=IDENT { Pat::Ident(ident) }
+    / LPAREN unpack=unpack? RPAREN { Pat::Tuple(unpack.unwrap_or_default()) }
+    ;
+
+unpack -> { Vec<Pat> }:
+    / unpack=COMMA.pat+ { unpack }
+    ;
+
 stmt -> { Stmt }:
     / expr=expr SEMICOLON { Stmt::Semi(expr) }
     / expr=expr { Stmt::Expr(expr) }
@@ -25,6 +35,7 @@ expr -> { Expr }:
     / LBRACK args=args? RBRACK { Expr::List(args.unwrap_or_default()) }
     / BREAK expr=expr? { Expr::Break(expr.map(Rc::new)) }
     / CONTINUE { Expr::Continue }
+    / FOR pat=pat IN expr=expr block=block { Expr::For(pat, expr.into(), block) }
     / IF expr=expr block=block otherwise=otherwise? {
         Expr::If(expr.into(), block, otherwise.map(Rc::new))
     }
