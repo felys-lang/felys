@@ -1,17 +1,37 @@
-{ use crate::ast::*; }
+{
+    use crate::ast::*;
+    use std::rc::Rc;
+}
 
-expr -> { Expr }:
-    / tuple=tuple { tuple }
+stmt -> { Stmt }:
+    / expr=expr SEMICOLON { Stmt::Semi(expr) }
+    / expr=expr { Stmt::Expr(expr) }
+    / SEMICOLON { Stmt::Empty }
     ;
 
-tuple -> { Expr }:
-    / LPAREN elements=COMMA.expr+ RPAREN { Expr::Tuple(elements) }
-    / disjunction=disjunction { disjunction }
+block -> { Block }:
+    / LBRACE stmts=stmt* RBRACE! { Block(stmts) }
+    ;
+
+@(memo)
+expr -> { Expr }:
+    / LPAREN first=expr COMMA more=COMMA.expr+ RPAREN! { {
+        let mut elements = more;
+        elements.insert(0, first);
+        Expr::Tuple(elements)
+    } }
+    / expr=disjunction { expr }
+    / block=block { Expr::Block(block) }
+    / BREAK expr=expr? { Expr::Break(expr.map(Rc::new)) }
+    / CONTINUE { Expr::Continue }
+    / LOOP block=block! { Expr::Loop(block) }
+    / RETURN expr=expr? { Expr::Return(expr.map(Rc::new)) }
+    / WHILE expr=expr! block=block! { Expr::While(expr.into(), block) }
     ;
 
 disjunction -> { Expr }:
     / lhs=disjunction OR rhs=conjunction! { Expr::Binary(lhs.into(), BinOp::Or, rhs.into()) }
-    / conjunction=conjunction! { conjunction }
+    / conjunction=conjunction { conjunction }
     ;
 
 conjunction -> { Expr }:
