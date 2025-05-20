@@ -11,11 +11,14 @@ EQ: '==' ;
 NE: '!=' ;
 LPAREN: '(' ;
 RPAREN: ')' ;
+LBRACK: '[' ;
+RBRACK: ']' ;
 LBRACE: '{' ;
 RBRACE: '}' ;
 COMMA: ',' ;
 SEMICOLON: ';' ;
 DOT: '.' ;
+PIPE: '|' ;
 
 @(intern, memo, identifier)
 IDENT: [a-zA-Z_][a-zA-Z0-9_]* ;

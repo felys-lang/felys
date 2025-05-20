@@ -22,6 +22,7 @@ expr -> { Expr }:
     } }
     / expr=disjunction { expr }
     / block=block { Expr::Block(block) }
+    / LBRACK args=args? RBRACK { Expr::List(args.unwrap_or_default()) }
     / BREAK expr=expr? { Expr::Break(expr.map(Rc::new)) }
     / CONTINUE { Expr::Continue }
     / IF expr=expr block=block otherwise=otherwise? {
@@ -99,7 +100,14 @@ args -> { Vec<Expr> }:
 primary -> { Expr }:
     / lit=lit { Expr::Lit(lit) }
     / ident=IDENT { Expr::Ident(ident) }
-    / LPAREN expr=expr RPAREN { Expr::Paren(expr.into()) }
+    / LPAREN expr=expr RPAREN! { Expr::Paren(expr.into()) }
+    / PIPE params=params? PIPE! expr=expr! {
+        Expr::Closure(params.unwrap_or_default(), expr.into())
+    }
+    ;
+
+params -> { Vec<Ident> }:
+    / params=COMMA.IDENT+ { params }
     ;
 
 lit -> { Lit }:

@@ -13,8 +13,6 @@ pub enum Expr {
     Continue,
     /// for loop: `for x in array { block }`
     For(Pat, Rc<Expr>, Block),
-    /// match: `match x { Mei => 1, Kiana => 0 }`
-    Match(Rc<Expr>, Vec<(Pat, Expr)>),
     /// if statement with optional else: `if expr { block } else { block }`
     If(Rc<Expr>, Block, Option<Rc<Expr>>),
     /// loop with not tests: `loop { block }`
@@ -26,7 +24,7 @@ pub enum Expr {
     /// binary operation: `1 + 2`
     Binary(Rc<Expr>, BinOp, Rc<Expr>),
     /// closure: `|x| { x+1 }`, `|x| x+1`
-    Func(Vec<Ident>, Rc<Expr>),
+    Closure(Vec<Ident>, Rc<Expr>),
     /// function call: `func(1, 2)`
     Call(Rc<Expr>, Vec<Expr>),
     /// field: `elysia.mei`
@@ -35,6 +33,8 @@ pub enum Expr {
     Ident(Ident),
     /// tuple: `(elysia, 11.11)`
     Tuple(Vec<Expr>),
+    /// tuple: `[elysia, 11.11]`
+    List(Vec<Expr>),
     /// literals: `"elysia"`, `11.11`, `true`
     Lit(Lit),
     /// explicit precedence: `(1 + 2)`
