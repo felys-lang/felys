@@ -12,3 +12,6 @@ pub enum Stmt {
 
 #[derive(Clone, Debug)]
 pub struct Block(pub Vec<Stmt>);
+
+#[derive(Clone, Debug)]
+pub struct Grammar(pub Vec<Stmt>);

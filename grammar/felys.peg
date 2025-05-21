@@ -3,6 +3,10 @@
     use std::rc::Rc;
 }
 
+grammar -> { Grammar }:
+    / stmts=stmt* eof! { Grammar(stmts) }
+    ;
+
 pat -> { Pat }:
     / UNDERSCORE { Pat::Any }
     / ident=IDENT { Pat::Ident(ident) }
