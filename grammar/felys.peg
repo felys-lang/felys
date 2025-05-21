@@ -6,11 +6,11 @@
 pat -> { Pat }:
     / UNDERSCORE { Pat::Any }
     / ident=IDENT { Pat::Ident(ident) }
-    / LPAREN unpack=unpack? RPAREN { Pat::Tuple(unpack.unwrap_or_default()) }
-    ;
-
-unpack -> { Vec<Pat> }:
-    / unpack=COMMA.pat+ { unpack }
+    / LPAREN first=pat! COMMA! more=COMMA.pat+ RPAREN { {
+        let mut elements = more;
+        elements.insert(0, first);
+        Pat::Tuple(elements)
+    } }
     ;
 
 stmt -> { Stmt }:
@@ -25,23 +25,36 @@ block -> { Block }:
 
 @(memo)
 expr -> { Expr }:
-    / LPAREN first=expr COMMA more=COMMA.expr+ RPAREN! { {
+    / LPAREN first=expr! COMMA more=COMMA.expr+ RPAREN! { {
         let mut elements = more;
         elements.insert(0, first);
         Expr::Tuple(elements)
     } }
-    / expr=disjunction { expr }
+    / assign=assign { assign }
+    / disjunction=disjunction { disjunction }
     / block=block { Expr::Block(block) }
-    / LBRACK args=args? RBRACK { Expr::List(args.unwrap_or_default()) }
+    / LET pat=pat! EQ! expr=expr! otherwise=otherwise? {
+        Expr::Let(pat, expr.into(), otherwise.map(Rc::new))
+    }
+    / LBRACK args=args? RBRACK! { Expr::List(args.unwrap_or_default()) }
     / BREAK expr=expr? { Expr::Break(expr.map(Rc::new)) }
     / CONTINUE { Expr::Continue }
-    / FOR pat=pat IN expr=expr block=block { Expr::For(pat, expr.into(), block) }
-    / IF expr=expr block=block otherwise=otherwise? {
+    / FOR pat=pat! IN! expr=expr! block=block! { Expr::For(pat, expr.into(), block) }
+    / IF expr=expr! block=block! otherwise=otherwise? {
         Expr::If(expr.into(), block, otherwise.map(Rc::new))
     }
     / LOOP block=block! { Expr::Loop(block) }
     / RETURN expr=expr? { Expr::Return(expr.map(Rc::new)) }
     / WHILE expr=expr! block=block! { Expr::While(expr.into(), block) }
+    ;
+
+assign -> { Expr }:
+    / ident=IDENT EQ expr=expr { Expr::Assign(ident, AssOp::Eq, expr.into()) }
+    / ident=IDENT ADDEQ expr=expr { Expr::Assign(ident, AssOp::AddEq, expr.into()) }
+    / ident=IDENT SUBEQ expr=expr { Expr::Assign(ident, AssOp::SubEq, expr.into()) }
+    / ident=IDENT MULEQ expr=expr { Expr::Assign(ident, AssOp::MulEq, expr.into()) }
+    / ident=IDENT DIVEQ expr=expr { Expr::Assign(ident, AssOp::DivEq, expr.into()) }
+    / ident=IDENT MODEQ expr=expr { Expr::Assign(ident, AssOp::ModEq, expr.into()) }
     ;
 
 otherwise -> { Expr }:
@@ -64,8 +77,8 @@ inversion -> { Expr }:
     ;
 
 equality -> { Expr }:
-    / lhs=equality EQ rhs=comparison! { Expr::Binary(lhs.into(), BinOp::Eq, rhs.into()) }
-    / lhs=equality NE rhs=comparison! { Expr::Binary(lhs.into(), BinOp::Ne, rhs.into()) }
+    / lhs=equality EQ2 rhs=comparison! { Expr::Binary(lhs.into(), BinOp::Eq, rhs.into()) }
+    / lhs=equality NEQ rhs=comparison! { Expr::Binary(lhs.into(), BinOp::Ne, rhs.into()) }
     / comparison=comparison { comparison }
     ;
 

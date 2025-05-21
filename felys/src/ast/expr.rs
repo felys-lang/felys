@@ -4,7 +4,7 @@ use std::rc::Rc;
 #[derive(Clone, Debug)]
 pub enum Expr {
     /// assignment: `x = 42`
-    Assign(Pat, AssOp, Rc<Expr>),
+    Assign(Ident, AssOp, Rc<Expr>),
     /// code block: `{ elysia }`
     Block(Block),
     /// break the loop: `break elysia;`
@@ -33,6 +33,8 @@ pub enum Expr {
     Ident(Ident),
     /// tuple: `(elysia, 11.11)`
     Tuple(Vec<Expr>),
+    /// assignment: `let (elysia, mei) = fc else { return; }`
+    Let(Pat, Rc<Expr>, Option<Rc<Expr>>),
     /// tuple: `[elysia, 11.11]`
     List(Vec<Expr>),
     /// literals: `"elysia"`, `11.11`, `true`
