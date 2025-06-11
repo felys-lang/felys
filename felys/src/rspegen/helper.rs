@@ -4,10 +4,10 @@ impl Packrat {
     pub fn ident(&mut self) -> Option<usize> {
         let id = self.IDENT()?;
         let ident = self.intern.get(&id).unwrap();
-        if self.keywords.filter(ident).is_some() {
-            Some(id)
-        } else {
+        if self.keywords.contains(ident) {
             None
+        } else {
+            Some(id)
         }
     }
     

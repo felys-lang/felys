@@ -44,16 +44,12 @@ expr -> { Expr }:
     / @(token)('break' !IB) expr=expr? { Expr::Break(expr.map(Rc::new)) }
     / @(token)('continue' !IB) { Expr::Continue }
     / @(token)('for' !IB) pat=pat @(token)('in' !IB) expr=expr block=block { Expr::For(pat, expr.into(), block) }
-    / @(token)('if' !IB) expr=expr block=block otherwise=otherwise? {
+    / @(token)('if' !IB) expr=expr block=block otherwise=(@(token)('else' !IB) e=expr)? {
         Expr::If(expr.into(), block, otherwise.map(Rc::new))
     }
     / @(token)('loop' !IB) block=block { Expr::Loop(block) }
     / @(token)('return' !IB) expr=expr? { Expr::Return(expr.map(Rc::new)) }
     / @(token)('while' !IB) expr=expr block=block { Expr::While(expr.into(), block) }
-    ;
-
-otherwise -> { Expr }:
-    / @(token)('else' !IB) expr=expr { expr }
     ;
 
 assign -> { Expr }:
@@ -121,9 +117,7 @@ evaluation -> { Expr }:
     / primary=primary { primary }
     ;
 
-args -> { Vec<Expr> }:
-    / args=','.expr+ { args }
-    ;
+args -> { Vec<Expr> }: args=','.expr+ { args } ;
 
 primary -> { Expr }:
     / lit=lit { Expr::Lit(lit) }
@@ -134,9 +128,7 @@ primary -> { Expr }:
     }
     ;
 
-params -> { Vec<Ident> }:
-    / params=','.ident+ { params }
-    ;
+params -> { Vec<Ident> }: params=','.ident+ ;
 
 lit -> { Lit }:
     / lit=bool { Lit::Bool(lit) }
