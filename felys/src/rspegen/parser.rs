@@ -16,7 +16,10 @@ impl super::Packrat {
                 }
                 body
             };
-            let _ = x.eof()?;
+            let _ = match x.eof() {
+                Some(value) => value,
+                None => return x.__error("x . eof ()"),
+            };
             Some(Grammar(stmts))
         }];
         self.__rule(RULES)
@@ -40,22 +43,36 @@ impl super::Packrat {
             },
             |x| {
                 let _ = x.__expect("(")?;
-                let first = x.pat()?;
-                let _ = x.__expect(",")?;
+                let first = match x.pat() {
+                    Some(value) => value,
+                    None => return x.__error("x . pat ()"),
+                };
+                let _ = match x.__expect(",") {
+                    Some(value) => value,
+                    None => return x.__error("x . __expect (\",\")"),
+                };
+                let second = match x.pat() {
+                    Some(value) => value,
+                    None => return x.__error("x . pat ()"),
+                };
                 let more = {
-                    let first = x.pat()?;
-                    let mut body = Vec::from([first]);
-                    while let Some(res) = x.__attempt(|x| {
-                        x.__expect(",")?;
-                        x.pat()
-                    }) {
-                        body.push(res)
+                    let mut body = Vec::new();
+                    while let Some(data) = x.__rule([|x| {
+                        let _ = x.__expect(",")?;
+                        let p = match x.pat() {
+                            Some(value) => value,
+                            None => return x.__error("x . pat ()"),
+                        };
+                        Some((p))
+                    }]) {
+                        body.push(data)
                     }
                     body
                 };
                 let _ = x.__expect(")")?;
                 Some({
                     let mut elements = more;
+                    elements.insert(0, second);
                     elements.insert(0, first);
                     Pat::Tuple(elements)
                 })
@@ -97,7 +114,10 @@ impl super::Packrat {
                 }
                 body
             };
-            let _ = x.__expect("}")?;
+            let _ = match x.__expect("}") {
+                Some(value) => value,
+                None => return x.__error("x . __expect (\"}\")"),
+            };
             Some(Block(stmts))
         }];
         self.__rule(RULES)
@@ -111,20 +131,32 @@ impl super::Packrat {
                 let _ = x.__expect("(")?;
                 let first = x.expr()?;
                 let _ = x.__expect(",")?;
+                let second = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
+                let _ = x.__expect(",")?;
                 let more = {
-                    let first = x.expr()?;
-                    let mut body = Vec::from([first]);
-                    while let Some(res) = x.__attempt(|x| {
-                        x.__expect(",")?;
-                        x.expr()
-                    }) {
-                        body.push(res)
+                    let mut body = Vec::new();
+                    while let Some(data) = x.__rule([|x| {
+                        let _ = x.__expect(",")?;
+                        let e = match x.expr() {
+                            Some(value) => value,
+                            None => return x.__error("x . expr ()"),
+                        };
+                        Some((e))
+                    }]) {
+                        body.push(data)
                     }
                     body
                 };
-                let _ = x.__expect(")")?;
+                let _ = match x.__expect(")") {
+                    Some(value) => value,
+                    None => return x.__error("x . __expect (\")\")"),
+                };
                 Some({
                     let mut elements = more;
+                    elements.insert(0, second);
                     elements.insert(0, first);
                     Expr::Tuple(elements)
                 })
@@ -147,16 +179,28 @@ impl super::Packrat {
                     let _ = x.__lookahead(|x| x.IB(), false)?;
                     Some(())
                 }])?;
-                let pat = x.pat()?;
-                let _ = x.__expect("=")?;
-                let expr = x.expr()?;
+                let pat = match x.pat() {
+                    Some(value) => value,
+                    None => return x.__error("x . pat ()"),
+                };
+                let _ = match x.__expect("=") {
+                    Some(value) => value,
+                    None => return x.__error("x . __expect (\"=\")"),
+                };
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
                 let otherwise = x.otherwise();
                 Some(Expr::Let(pat, expr.into(), otherwise.map(Rc::new)))
             },
             |x| {
                 let _ = x.__expect("[")?;
                 let args = x.args();
-                let _ = x.__expect("]")?;
+                let _ = match x.__expect("]") {
+                    Some(value) => value,
+                    None => return x.__error("x . __expect (\"]\")"),
+                };
                 Some(Expr::List(args.unwrap_or_default()))
             },
             |x| {
@@ -182,14 +226,26 @@ impl super::Packrat {
                     let _ = x.__lookahead(|x| x.IB(), false)?;
                     Some(())
                 }])?;
-                let pat = x.pat()?;
+                let pat = match x.pat() {
+                    Some(value) => value,
+                    None => return x.__error("x . pat ()"),
+                };
                 let _ = x.__token([|x| {
-                    let _ = x.__expect("in")?;
+                    let _ = match x.__expect("in") {
+                        Some(value) => value,
+                        None => return x.__error("x . __expect (\"in\")"),
+                    };
                     let _ = x.__lookahead(|x| x.IB(), false)?;
                     Some(())
                 }])?;
-                let expr = x.expr()?;
-                let block = x.block()?;
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
+                let block = match x.block() {
+                    Some(value) => value,
+                    None => return x.__error("x . block ()"),
+                };
                 Some(Expr::For(pat, expr.into(), block))
             },
             |x| {
@@ -198,8 +254,14 @@ impl super::Packrat {
                     let _ = x.__lookahead(|x| x.IB(), false)?;
                     Some(())
                 }])?;
-                let expr = x.expr()?;
-                let block = x.block()?;
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
+                let block = match x.block() {
+                    Some(value) => value,
+                    None => return x.__error("x . block ()"),
+                };
                 let otherwise = x.otherwise();
                 Some(Expr::If(expr.into(), block, otherwise.map(Rc::new)))
             },
@@ -209,7 +271,10 @@ impl super::Packrat {
                     let _ = x.__lookahead(|x| x.IB(), false)?;
                     Some(())
                 }])?;
-                let block = x.block()?;
+                let block = match x.block() {
+                    Some(value) => value,
+                    None => return x.__error("x . block ()"),
+                };
                 Some(Expr::Loop(block))
             },
             |x| {
@@ -227,8 +292,14 @@ impl super::Packrat {
                     let _ = x.__lookahead(|x| x.IB(), false)?;
                     Some(())
                 }])?;
-                let expr = x.expr()?;
-                let block = x.block()?;
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
+                let block = match x.block() {
+                    Some(value) => value,
+                    None => return x.__error("x . block ()"),
+                };
                 Some(Expr::While(expr.into(), block))
             },
         ];
@@ -254,7 +325,10 @@ impl super::Packrat {
                 let _ = x.__lookahead(|x| x.IB(), false)?;
                 Some(())
             }])?;
-            let expr = x.expr()?;
+            let expr = match x.expr() {
+                Some(value) => value,
+                None => return x.__error("x . expr ()"),
+            };
             Some((expr))
         }];
         self.__rule(RULES)
@@ -267,37 +341,55 @@ impl super::Packrat {
             |x| {
                 let ident = x.ident()?;
                 let _ = x.__expect("=")?;
-                let expr = x.expr()?;
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
                 Some(Expr::Assign(ident, AssOp::Eq, expr.into()))
             },
             |x| {
                 let ident = x.ident()?;
                 let _ = x.__expect("+=")?;
-                let expr = x.expr()?;
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
                 Some(Expr::Assign(ident, AssOp::AddEq, expr.into()))
             },
             |x| {
                 let ident = x.ident()?;
                 let _ = x.__expect("-=")?;
-                let expr = x.expr()?;
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
                 Some(Expr::Assign(ident, AssOp::SubEq, expr.into()))
             },
             |x| {
                 let ident = x.ident()?;
                 let _ = x.__expect("*=")?;
-                let expr = x.expr()?;
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
                 Some(Expr::Assign(ident, AssOp::MulEq, expr.into()))
             },
             |x| {
                 let ident = x.ident()?;
                 let _ = x.__expect("/=")?;
-                let expr = x.expr()?;
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
                 Some(Expr::Assign(ident, AssOp::DivEq, expr.into()))
             },
             |x| {
                 let ident = x.ident()?;
                 let _ = x.__expect("%=")?;
-                let expr = x.expr()?;
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
                 Some(Expr::Assign(ident, AssOp::ModEq, expr.into()))
             },
         ];
@@ -315,7 +407,10 @@ impl super::Packrat {
                     let _ = x.__lookahead(|x| x.IB(), false)?;
                     Some(())
                 }])?;
-                let rhs = x.conjunction()?;
+                let rhs = match x.conjunction() {
+                    Some(value) => value,
+                    None => return x.__error("x . conjunction ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::Or, rhs.into()))
             },
             |x| {
@@ -360,7 +455,10 @@ impl super::Packrat {
                     let _ = x.__lookahead(|x| x.IB(), false)?;
                     Some(())
                 }])?;
-                let rhs = x.inversion()?;
+                let rhs = match x.inversion() {
+                    Some(value) => value,
+                    None => return x.__error("x . inversion ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::And, rhs.into()))
             },
             |x| {
@@ -404,7 +502,10 @@ impl super::Packrat {
                     let _ = x.__lookahead(|x| x.IB(), false)?;
                     Some(())
                 }])?;
-                let inversion = x.inversion()?;
+                let inversion = match x.inversion() {
+                    Some(value) => value,
+                    None => return x.__error("x . inversion ()"),
+                };
                 Some(Expr::Unary(UnaOp::Not, inversion.into()))
             },
             |x| {
@@ -422,13 +523,19 @@ impl super::Packrat {
             |x| {
                 let lhs = x.equality()?;
                 let _ = x.__expect("==")?;
-                let rhs = x.comparison()?;
+                let rhs = match x.comparison() {
+                    Some(value) => value,
+                    None => return x.__error("x . comparison ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::Eq, rhs.into()))
             },
             |x| {
                 let lhs = x.equality()?;
                 let _ = x.__expect("!=")?;
-                let rhs = x.comparison()?;
+                let rhs = match x.comparison() {
+                    Some(value) => value,
+                    None => return x.__error("x . comparison ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::Ne, rhs.into()))
             },
             |x| {
@@ -469,25 +576,37 @@ impl super::Packrat {
             |x| {
                 let lhs = x.comparison()?;
                 let _ = x.__expect(">=")?;
-                let rhs = x.term()?;
+                let rhs = match x.term() {
+                    Some(value) => value,
+                    None => return x.__error("x . term ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::Ge, rhs.into()))
             },
             |x| {
                 let lhs = x.comparison()?;
                 let _ = x.__expect("<=")?;
-                let rhs = x.term()?;
+                let rhs = match x.term() {
+                    Some(value) => value,
+                    None => return x.__error("x . term ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::Le, rhs.into()))
             },
             |x| {
                 let lhs = x.comparison()?;
                 let _ = x.__expect(">")?;
-                let rhs = x.term()?;
+                let rhs = match x.term() {
+                    Some(value) => value,
+                    None => return x.__error("x . term ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::Gt, rhs.into()))
             },
             |x| {
                 let lhs = x.comparison()?;
                 let _ = x.__expect("<")?;
-                let rhs = x.term()?;
+                let rhs = match x.term() {
+                    Some(value) => value,
+                    None => return x.__error("x . term ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::Lt, rhs.into()))
             },
             |x| {
@@ -528,13 +647,19 @@ impl super::Packrat {
             |x| {
                 let lhs = x.term()?;
                 let _ = x.__expect("+")?;
-                let rhs = x.factor()?;
+                let rhs = match x.factor() {
+                    Some(value) => value,
+                    None => return x.__error("x . factor ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::Add, rhs.into()))
             },
             |x| {
                 let lhs = x.term()?;
                 let _ = x.__expect("-")?;
-                let rhs = x.factor()?;
+                let rhs = match x.factor() {
+                    Some(value) => value,
+                    None => return x.__error("x . factor ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::Sub, rhs.into()))
             },
             |x| {
@@ -575,19 +700,28 @@ impl super::Packrat {
             |x| {
                 let lhs = x.factor()?;
                 let _ = x.__expect("*")?;
-                let rhs = x.unary()?;
+                let rhs = match x.unary() {
+                    Some(value) => value,
+                    None => return x.__error("x . unary ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::Mul, rhs.into()))
             },
             |x| {
                 let lhs = x.factor()?;
                 let _ = x.__expect("/")?;
-                let rhs = x.unary()?;
+                let rhs = match x.unary() {
+                    Some(value) => value,
+                    None => return x.__error("x . unary ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::Div, rhs.into()))
             },
             |x| {
                 let lhs = x.factor()?;
                 let _ = x.__expect("%")?;
-                let rhs = x.unary()?;
+                let rhs = match x.unary() {
+                    Some(value) => value,
+                    None => return x.__error("x . unary ()"),
+                };
                 Some(Expr::Binary(lhs.into(), BinOp::Mod, rhs.into()))
             },
             |x| {
@@ -627,12 +761,18 @@ impl super::Packrat {
         const RULES: super::Rules<Expr, 3usize> = [
             |x| {
                 let _ = x.__expect("+")?;
-                let unary = x.unary()?;
+                let unary = match x.unary() {
+                    Some(value) => value,
+                    None => return x.__error("x . unary ()"),
+                };
                 Some(Expr::Unary(UnaOp::Pos, unary.into()))
             },
             |x| {
                 let _ = x.__expect("-")?;
-                let unary = x.unary()?;
+                let unary = match x.unary() {
+                    Some(value) => value,
+                    None => return x.__error("x . unary ()"),
+                };
                 Some(Expr::Unary(UnaOp::Neg, unary.into()))
             },
             |x| {
@@ -650,14 +790,20 @@ impl super::Packrat {
             |x| {
                 let evaluation = x.evaluation()?;
                 let _ = x.__expect(".")?;
-                let field = x.ident()?;
+                let field = match x.ident() {
+                    Some(value) => value,
+                    None => return x.__error("x . ident ()"),
+                };
                 Some(Expr::Field(evaluation.into(), field))
             },
             |x| {
                 let evaluation = x.evaluation()?;
                 let _ = x.__expect("(")?;
                 let args = x.args();
-                let _ = x.__expect(")")?;
+                let _ = match x.__expect(")") {
+                    Some(value) => value,
+                    None => return x.__error("x . __expect (\")\")"),
+                };
                 Some(Expr::Call(evaluation.into(), args.unwrap_or_default()))
             },
             |x| {
@@ -695,18 +841,26 @@ impl super::Packrat {
             return None;
         }
         const RULES: super::Rules<Vec<Expr>, 1usize> = [|x| {
-            let args = {
-                let first = x.expr()?;
-                let mut body = Vec::from([first]);
-                while let Some(res) = x.__attempt(|x| {
-                    x.__expect(",")?;
-                    x.expr()
-                }) {
-                    body.push(res)
+            let first = x.expr()?;
+            let more = {
+                let mut body = Vec::new();
+                while let Some(data) = x.__rule([|x| {
+                    let _ = x.__expect(",")?;
+                    let e = match x.expr() {
+                        Some(value) => value,
+                        None => return x.__error("x . expr ()"),
+                    };
+                    Some((e))
+                }]) {
+                    body.push(data)
                 }
                 body
             };
-            Some(args)
+            Some({
+                let mut elements = more;
+                elements.insert(0, first);
+                elements
+            })
         }];
         self.__rule(RULES)
     }
@@ -725,15 +879,27 @@ impl super::Packrat {
             },
             |x| {
                 let _ = x.__expect("(")?;
-                let expr = x.expr()?;
-                let _ = x.__expect(")")?;
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
+                let _ = match x.__expect(")") {
+                    Some(value) => value,
+                    None => return x.__error("x . __expect (\")\")"),
+                };
                 Some(Expr::Paren(expr.into()))
             },
             |x| {
                 let _ = x.__expect("|")?;
                 let params = x.params();
-                let _ = x.__expect("|")?;
-                let expr = x.expr()?;
+                let _ = match x.__expect("|") {
+                    Some(value) => value,
+                    None => return x.__error("x . __expect (\"|\")"),
+                };
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("x . expr ()"),
+                };
                 Some(Expr::Closure(params.unwrap_or_default(), expr.into()))
             },
         ];
@@ -744,18 +910,26 @@ impl super::Packrat {
             return None;
         }
         const RULES: super::Rules<Vec<Ident>, 1usize> = [|x| {
-            let params = {
-                let first = x.ident()?;
-                let mut body = Vec::from([first]);
-                while let Some(res) = x.__attempt(|x| {
-                    x.__expect(",")?;
-                    x.ident()
-                }) {
-                    body.push(res)
+            let first = x.ident()?;
+            let more = {
+                let mut body = Vec::new();
+                while let Some(data) = x.__rule([|x| {
+                    let _ = x.__expect(",")?;
+                    let i = match x.ident() {
+                        Some(value) => value,
+                        None => return x.__error("x . ident ()"),
+                    };
+                    Some((i))
+                }]) {
+                    body.push(data)
                 }
                 body
             };
-            Some((params))
+            Some({
+                let mut elements = more;
+                elements.insert(0, first);
+                elements
+            })
         }];
         self.__rule(RULES)
     }
