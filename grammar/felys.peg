@@ -10,7 +10,7 @@ grammar -> { Grammar }:
 pat -> { Pat }:
     / @(token)('_' !IB) { Pat::Any }
     / ident=ident { Pat::Ident(ident) }
-    / '(' first=#pat #',' second=#pat more=(',' p=#pat)* ')' { {
+    / '(' first=#pat #',' second=#pat more=(',' pat=#pat)* #')' { {
         let mut elements = more;
         elements.insert(0, second);
         elements.insert(0, first);
@@ -30,7 +30,7 @@ block -> { Block }:
 
 @(memo)
 expr -> { Expr }:
-    / '(' first=expr ',' second=#expr ',' more=(',' e=#expr)* #')' { {
+    / '(' first=expr ',' second=#expr more=(',' expr=#expr)* #')' { {
         let mut elements = more;
         elements.insert(0, second);
         elements.insert(0, first);
@@ -45,7 +45,9 @@ expr -> { Expr }:
     / '[' args=args? #']' { Expr::List(args.unwrap_or_default()) }
     / @(token)('break' !IB) expr=expr? { Expr::Break(expr.map(Rc::new)) }
     / @(token)('continue' !IB) { Expr::Continue }
-    / @(token)('for' !IB) pat=#pat @(token)(#'in' !IB) expr=#expr block=#block { Expr::For(pat, expr.into(), block) }
+    / @(token)('for' !IB) pat=#pat @(token)(#'in' !IB) expr=#expr block=#block {
+        Expr::For(pat, expr.into(), block)
+    }
     / @(token)('if' !IB) expr=#expr block=#block otherwise=otherwise? {
         Expr::If(expr.into(), block, otherwise.map(Rc::new))
     }
@@ -122,7 +124,7 @@ evaluation -> { Expr }:
     ;
 
 args -> { Vec<Expr> }:
-    / first=expr more=(',' e=#expr)* { {
+    / first=expr more=(',' expr=#expr)* { {
       let mut elements = more;
       elements.insert(0, first);
       elements
@@ -139,7 +141,7 @@ primary -> { Expr }:
     ;
 
 params -> { Vec<Ident> }:
-    / first=ident more=(',' i=#ident)* { {
+    / first=ident more=(',' ident=#ident)* { {
       let mut elements = more;
       elements.insert(0, first);
       elements
