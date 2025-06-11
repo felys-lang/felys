@@ -8,7 +8,7 @@ grammar -> { Grammar }:
     ;
 
 pat -> { Pat }:
-    / '_' { Pat::Any }
+    / @(token)('_' !IB) { Pat::Any }
     / ident=ident { Pat::Ident(ident) }
     / '(' first=pat ',' more=','.pat+ ')' { {
         let mut elements = more;
@@ -37,19 +37,23 @@ expr -> { Expr }:
     / assign=assign { assign }
     / disjunction=disjunction { disjunction }
     / block=block { Expr::Block(block) }
-    / 'let' pat=pat '=' expr=expr otherwise=otherwise? {
+    / @(token)('let' !IB) pat=pat '=' expr=expr otherwise=otherwise? {
         Expr::Let(pat, expr.into(), otherwise.map(Rc::new))
     }
     / '[' args=args? ']' { Expr::List(args.unwrap_or_default()) }
-    / 'break' expr=expr? { Expr::Break(expr.map(Rc::new)) }
-    / 'continue' { Expr::Continue }
-    / 'for' pat=pat 'in' expr=expr block=block { Expr::For(pat, expr.into(), block) }
-    / 'if' expr=expr block=block otherwise=otherwise? {
+    / @(token)('break' !IB) expr=expr? { Expr::Break(expr.map(Rc::new)) }
+    / @(token)('continue' !IB) { Expr::Continue }
+    / @(token)('for' !IB) pat=pat @(token)('in' !IB) expr=expr block=block { Expr::For(pat, expr.into(), block) }
+    / @(token)('if' !IB) expr=expr block=block otherwise=otherwise? {
         Expr::If(expr.into(), block, otherwise.map(Rc::new))
     }
-    / 'loop' block=block { Expr::Loop(block) }
-    / 'return' expr=expr? { Expr::Return(expr.map(Rc::new)) }
-    / 'while' expr=expr block=block { Expr::While(expr.into(), block) }
+    / @(token)('loop' !IB) block=block { Expr::Loop(block) }
+    / @(token)('return' !IB) expr=expr? { Expr::Return(expr.map(Rc::new)) }
+    / @(token)('while' !IB) expr=expr block=block { Expr::While(expr.into(), block) }
+    ;
+
+otherwise -> { Expr }:
+    / @(token)('else' !IB) expr=expr { expr }
     ;
 
 assign -> { Expr }:
@@ -61,22 +65,18 @@ assign -> { Expr }:
     / ident=ident '%=' expr=expr { Expr::Assign(ident, AssOp::ModEq, expr.into()) }
     ;
 
-otherwise -> { Expr }:
-    / 'else' expr=expr { expr }
-    ;
-
 disjunction -> { Expr }:
-    / lhs=disjunction 'or' rhs=conjunction { Expr::Binary(lhs.into(), BinOp::Or, rhs.into()) }
+    / lhs=disjunction @(token)('or' !IB) rhs=conjunction { Expr::Binary(lhs.into(), BinOp::Or, rhs.into()) }
     / conjunction=conjunction { conjunction }
     ;
 
 conjunction -> { Expr }:
-    / lhs=conjunction 'and' rhs=inversion { Expr::Binary(lhs.into(), BinOp::And, rhs.into()) }
+    / lhs=conjunction @(token)('and' !IB) rhs=inversion { Expr::Binary(lhs.into(), BinOp::And, rhs.into()) }
     / inversion=inversion { inversion }
     ;
 
 inversion -> { Expr }:
-    / 'not' inversion=inversion { Expr::Unary(UnaOp::Not, inversion.into()) }
+    / @(token)('not' !IB) inversion=inversion { Expr::Unary(UnaOp::Not, inversion.into()) }
     / equality=equality { equality }
     ;
 
@@ -143,13 +143,14 @@ lit -> { Lit }:
     ;
 
 bool -> { Bool }:
-    / 'true' { Bool::True }
-    / 'false' { Bool::False }
+    / @(token)('true' !IB) { Bool::True }
+    / @(token)('false' !IB) { Bool::False }
     ;
 
-
 @(intern, memo)
-IDENT: [a-zA-Z_][a-zA-Z0-9_]* ;
+IDENT: [a-zA-Z_] IB* ;
+
+IB: [a-zA-Z0-9_] ;
 
 @(ws) {
     WS: [\u{20}\n\t\r]+ ;

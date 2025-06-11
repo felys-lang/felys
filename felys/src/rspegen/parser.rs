@@ -26,7 +26,11 @@ impl super::Packrat {
         }
         const RULES: super::Rules<Pat, 3usize> = [
             |x| {
-                let _ = x.__expect("_")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("_")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 Some(Pat::Any)
             },
             |x| {
@@ -137,7 +141,11 @@ impl super::Packrat {
                 Some(Expr::Block(block))
             },
             |x| {
-                let _ = x.__expect("let")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("let")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 let pat = x.pat()?;
                 let _ = x.__expect("=")?;
                 let expr = x.expr()?;
@@ -151,41 +159,73 @@ impl super::Packrat {
                 Some(Expr::List(args.unwrap_or_default()))
             },
             |x| {
-                let _ = x.__expect("break")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("break")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 let expr = x.expr();
                 Some(Expr::Break(expr.map(Rc::new)))
             },
             |x| {
-                let _ = x.__expect("continue")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("continue")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 Some(Expr::Continue)
             },
             |x| {
-                let _ = x.__expect("for")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("for")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 let pat = x.pat()?;
-                let _ = x.__expect("in")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("in")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 let expr = x.expr()?;
                 let block = x.block()?;
                 Some(Expr::For(pat, expr.into(), block))
             },
             |x| {
-                let _ = x.__expect("if")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("if")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 let expr = x.expr()?;
                 let block = x.block()?;
                 let otherwise = x.otherwise();
                 Some(Expr::If(expr.into(), block, otherwise.map(Rc::new)))
             },
             |x| {
-                let _ = x.__expect("loop")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("loop")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 let block = x.block()?;
                 Some(Expr::Loop(block))
             },
             |x| {
-                let _ = x.__expect("return")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("return")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 let expr = x.expr();
                 Some(Expr::Return(expr.map(Rc::new)))
             },
             |x| {
-                let _ = x.__expect("while")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("while")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 let expr = x.expr()?;
                 let block = x.block()?;
                 Some(Expr::While(expr.into(), block))
@@ -202,6 +242,21 @@ impl super::Packrat {
         let cache = result.clone();
         self.memo.expr.insert((start, policy), (end, cache));
         result
+    }
+    pub fn otherwise(&mut self) -> Option<Expr> {
+        if self.snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::Rules<Expr, 1usize> = [|x| {
+            let _ = x.__token([|x| {
+                let _ = x.__expect("else")?;
+                let _ = x.__lookahead(|x| x.IB(), false)?;
+                Some(())
+            }])?;
+            let expr = x.expr()?;
+            Some(expr)
+        }];
+        self.__rule(RULES)
     }
     pub fn assign(&mut self) -> Option<Expr> {
         if self.snapshot.is_some() {
@@ -247,17 +302,6 @@ impl super::Packrat {
         ];
         self.__rule(RULES)
     }
-    pub fn otherwise(&mut self) -> Option<Expr> {
-        if self.snapshot.is_some() {
-            return None;
-        }
-        const RULES: super::Rules<Expr, 1usize> = [|x| {
-            let _ = x.__expect("else")?;
-            let expr = x.expr()?;
-            Some(expr)
-        }];
-        self.__rule(RULES)
-    }
     pub fn disjunction(&mut self) -> Option<Expr> {
         if self.snapshot.is_some() {
             return None;
@@ -265,7 +309,11 @@ impl super::Packrat {
         const RULES: super::Rules<Expr, 2usize> = [
             |x| {
                 let lhs = x.disjunction()?;
-                let _ = x.__expect("or")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("or")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 let rhs = x.conjunction()?;
                 Some(Expr::Binary(lhs.into(), BinOp::Or, rhs.into()))
             },
@@ -306,7 +354,11 @@ impl super::Packrat {
         const RULES: super::Rules<Expr, 2usize> = [
             |x| {
                 let lhs = x.conjunction()?;
-                let _ = x.__expect("and")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("and")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 let rhs = x.inversion()?;
                 Some(Expr::Binary(lhs.into(), BinOp::And, rhs.into()))
             },
@@ -346,7 +398,11 @@ impl super::Packrat {
         }
         const RULES: super::Rules<Expr, 2usize> = [
             |x| {
-                let _ = x.__expect("not")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("not")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 let inversion = x.inversion()?;
                 Some(Expr::Unary(UnaOp::Not, inversion.into()))
             },
@@ -718,11 +774,19 @@ impl super::Packrat {
         }
         const RULES: super::Rules<Bool, 2usize> = [
             |x| {
-                let _ = x.__expect("true")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("true")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 Some(Bool::True)
             },
             |x| {
-                let _ = x.__expect("false")?;
+                let _ = x.__token([|x| {
+                    let _ = x.__expect("false")?;
+                    let _ = x.__lookahead(|x| x.IB(), false)?;
+                    Some(())
+                }])?;
                 Some(Bool::False)
             },
         ];
@@ -760,6 +824,24 @@ impl super::Packrat {
         let end = self.stream.mark();
         self.memo.IDENT.insert((start, policy), (end, result));
         result
+    }
+    pub fn IB(&mut self) -> Option<()> {
+        if self.snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
+            let s = match (s, c as usize) {
+                (0usize, 48usize..=57usize) => 1usize,
+                (0usize, 65usize..=90usize) => 1usize,
+                (0usize, 95usize..=95usize) => 1usize,
+                (0usize, 97usize..=122usize) => 1usize,
+                _ => return None,
+            };
+            Some(s)
+        }
+        const ACCEPTANCE: [bool; 2usize] = [false, true];
+        self.stream.trim();
+        self.stream.dfa(transition, ACCEPTANCE).and(Some(()))
     }
     pub fn WS(&mut self) -> Option<()> {
         if self.snapshot.is_some() {
