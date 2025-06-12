@@ -9,12 +9,7 @@ use std::thread;
 use std::time::Duration;
 
 impl Grammar {
-    pub fn exec(
-        &self,
-        mut intern: Intern,
-        timeout: u64,
-        depth: u64,
-    ) -> Result<Value, &'static str> {
+    pub fn exec(&self, mut intern: Intern, timeout: u64, depth: u64) -> Result<Value, String> {
         let (tx, rx) = mpsc::channel();
         let limit = Duration::from_millis(timeout);
         if !limit.is_zero() {
@@ -45,8 +40,8 @@ impl Grammar {
         match self.eval(&mut backend) {
             Ok(_) => Ok(Value::Void),
             Err(Signal::Return(value)) => Ok(value),
-            Err(Signal::Error(e)) => Err(e),
-            _ => Err("invalid signal"),
+            Err(Signal::Error(e)) => Err(e.to_string()),
+            _ => Err("invalid signal".to_string()),
         }
     }
 }
