@@ -11,7 +11,11 @@ impl super::Packrat {
         const RULES: super::Rules<Grammar, 1usize> = [|x| {
             let stmts = {
                 let mut body = Vec::new();
-                while let Some(data) = x.stmt() {
+                while let Some(data) = x.__rule([|x| {
+                    let stmt = x.stmt()?;
+                    x.memo.clean();
+                    Some((stmt))
+                }]) {
                     body.push(data)
                 }
                 body

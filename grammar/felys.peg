@@ -4,7 +4,7 @@
 }
 
 grammar -> { Grammar }:
-    / stmts=stmt* #eof { Grammar(stmts) }
+    / stmts=(stmt=stmt $)* #eof { Grammar(stmts) }
     ;
 
 pat -> { Pat }:
@@ -68,12 +68,16 @@ assign -> { Expr }:
     ;
 
 disjunction -> { Expr }:
-    / lhs=disjunction @(token)('or' !IB) rhs=#conjunction { Expr::Binary(lhs.into(), BinOp::Or, rhs.into()) }
+    / lhs=disjunction @(token)('or' !IB) rhs=#conjunction {
+        Expr::Binary(lhs.into(), BinOp::Or, rhs.into())
+    }
     / conjunction=conjunction
     ;
 
 conjunction -> { Expr }:
-    / lhs=conjunction @(token)('and' !IB) rhs=#inversion { Expr::Binary(lhs.into(), BinOp::And, rhs.into()) }
+    / lhs=conjunction @(token)('and' !IB) rhs=#inversion {
+        Expr::Binary(lhs.into(), BinOp::And, rhs.into())
+    }
     / inversion=inversion
     ;
 
