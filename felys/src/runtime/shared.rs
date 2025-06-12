@@ -9,11 +9,11 @@ pub enum Signal {
 }
 
 pub trait Evaluation {
-    fn eval(&self, backend: &mut Backend) -> Result<Value, Signal>;
-    fn run(&self, backend: &mut Backend) -> Result<Value, Signal> {
+    fn __eval(&self, backend: &mut Backend) -> Result<Value, Signal>;
+    fn eval(&self, backend: &mut Backend) -> Result<Value, Signal> {
         if backend.timer.try_recv().unwrap_or(false) {
             return Err(Signal::Error("timeout"));
         }
-        self.eval(backend)
+        self.__eval(backend)
     }
 }

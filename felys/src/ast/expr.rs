@@ -27,14 +27,10 @@ pub enum Expr {
     Closure(Vec<Ident>, Rc<Expr>),
     /// function call: `func(1, 2)`
     Call(Rc<Expr>, Vec<Expr>),
-    /// field: `elysia.mei`
-    Field(Rc<Expr>, Ident),
     /// identifier: `elysia`
     Ident(Ident),
     /// tuple: `(elysia, 11.11)`
     Tuple(Vec<Expr>),
-    /// assignment: `let (elysia, mei) = fc else { return; }`
-    Let(Pat, Rc<Expr>, Option<Rc<Expr>>),
     /// tuple: `[elysia, 11.11]`
     List(Vec<Expr>),
     /// literals: `"elysia"`, `11.11`, `true`
