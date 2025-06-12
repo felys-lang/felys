@@ -1,4 +1,4 @@
-use crate::ast::{BinOp, Block, Expr, UnaOp};
+use crate::ast::{AssOp, BinOp, Block, Expr, Pat, UnaOp};
 use crate::runtime::context::backend::Backend;
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::{Evaluation, Signal};
@@ -7,14 +7,14 @@ use std::rc::Rc;
 impl Evaluation for Expr {
     fn __eval(&self, backend: &mut Backend) -> Result<Value, Signal> {
         match self {
-            Expr::Assign(pat, expr, opt) => todo!(),
-            Expr::Block(x) => x.eval(backend),
-            Expr::Break(x) => __break(backend, x),
+            Expr::Assign(pat, op, expr) => __assign(backend, pat, op, expr),
+            Expr::Block(block) => block.eval(backend, vec![]),
+            Expr::Break(opt) => __break(backend, opt),
             Expr::Continue => Err(Signal::Continue),
-            Expr::For(pat, expr, block) => todo!(),
+            Expr::For(pat, expr, block) => __for(backend, pat, expr, block),
             Expr::If(expr, block, opt) => __if(backend, expr, block, opt),
-            Expr::Loop(x) => __loop(backend, x),
-            Expr::Return(x) => __return(backend, x),
+            Expr::Loop(block) => __loop(backend, block),
+            Expr::Return(opt) => __return(backend, opt),
             Expr::While(expr, block) => __while(backend, expr, block),
             Expr::Binary(rhs, op, lhs) => __binary(backend, rhs, op, lhs),
             Expr::Closure(params, expr) => Ok(Value::Closure(params.clone(), expr.clone())),
@@ -24,9 +24,26 @@ impl Evaluation for Expr {
             Expr::List(list) => __list(backend, list),
             Expr::Lit(lit) => lit.eval(backend),
             Expr::Paren(expr) => expr.eval(backend),
-            Expr::Unary(op, x) => __unary(backend, op, x),
+            Expr::Unary(op, expr) => __unary(backend, op, expr),
         }
     }
+}
+
+fn __assign(backend: &mut Backend, pat: &Pat, op: &AssOp, expr: &Expr) -> Result<Value, Signal> {
+    let l = pat.eval(backend)?;
+    let r = expr.eval(backend)?;
+    let value = match op {
+        AssOp::AddEq => l.add(r)?,
+        AssOp::SubEq => l.sub(r)?,
+        AssOp::MulEq => l.mul(r)?,
+        AssOp::DivEq => l.div(r)?,
+        AssOp::ModEq => l.rem(r)?,
+        AssOp::Eq => r,
+    };
+    for (id, val) in pat.unpack(backend, value)? {
+        backend.put(id, val);
+    }
+    Ok(Value::Void)
 }
 
 fn __break(backend: &mut Backend, opt: &Option<Rc<Expr>>) -> Result<Value, Signal> {
@@ -37,6 +54,41 @@ fn __break(backend: &mut Backend, opt: &Option<Rc<Expr>>) -> Result<Value, Signa
         Signal::Break(Value::Void)
     };
     Err(result)
+}
+
+fn __for(backend: &mut Backend, pat: &Pat, expr: &Expr, block: &Block) -> Result<Value, Signal> {
+    for value in expr.eval(backend)?.list()? {
+        let default = pat.unpack(backend, value)?;
+        block.eval(backend, default)?.void()?;
+    }
+    Ok(Value::Void)
+}
+
+fn __if(
+    backend: &mut Backend,
+    expr: &Expr,
+    block: &Block,
+    opt: &Option<Rc<Expr>>,
+) -> Result<Value, Signal> {
+    if expr.eval(backend)?.bool()? {
+        block.eval(backend, vec![])
+    } else if let Some(alter) = opt {
+        alter.eval(backend)
+    } else {
+        Ok(Value::Void)
+    }
+}
+
+fn __loop(backend: &mut Backend, block: &Block) -> Result<Value, Signal> {
+    loop {
+        match block.eval(backend, vec![]) {
+            Err(Signal::Continue) => continue,
+            Err(Signal::Break(value)) => break Ok(value),
+            other => {
+                other?;
+            }
+        }
+    }
 }
 
 fn __return(backend: &mut Backend, opt: &Option<Rc<Expr>>) -> Result<Value, Signal> {
@@ -51,7 +103,7 @@ fn __return(backend: &mut Backend, opt: &Option<Rc<Expr>>) -> Result<Value, Sign
 
 fn __while(backend: &mut Backend, expr: &Expr, block: &Block) -> Result<Value, Signal> {
     while expr.eval(backend)?.bool()? {
-        match block.eval(backend) {
+        match block.eval(backend, vec![]) {
             Err(Signal::Continue) => continue,
             Err(Signal::Break(_)) => break,
             other => {
@@ -60,33 +112,6 @@ fn __while(backend: &mut Backend, expr: &Expr, block: &Block) -> Result<Value, S
         }
     }
     Ok(Value::Void)
-}
-
-fn __if(
-    backend: &mut Backend,
-    expr: &Expr,
-    block: &Block,
-    opt: &Option<Rc<Expr>>,
-) -> Result<Value, Signal> {
-    if expr.eval(backend)?.bool()? {
-        block.eval(backend)
-    } else if let Some(alter) = opt {
-        alter.eval(backend)
-    } else {
-        Ok(Value::Void)
-    }
-}
-
-fn __loop(backend: &mut Backend, block: &Block) -> Result<Value, Signal> {
-    loop {
-        match block.eval(backend) {
-            Err(Signal::Continue) => continue,
-            Err(Signal::Break(value)) => break Ok(value),
-            other => {
-                other?;
-            }
-        }
-    }
 }
 
 fn __call(backend: &mut Backend, func: &Expr, args: &[Expr]) -> Result<Value, Signal> {
@@ -145,11 +170,11 @@ fn __binary(backend: &mut Backend, lhs: &Expr, op: &BinOp, rhs: &Expr) -> Result
     }
 }
 
-fn __unary(backend: &mut Backend, op: &UnaOp, rhs: &Expr) -> Result<Value, Signal> {
-    let r = rhs.eval(backend)?;
+fn __unary(backend: &mut Backend, op: &UnaOp, expr: &Expr) -> Result<Value, Signal> {
+    let e = expr.eval(backend)?;
     match op {
-        UnaOp::Not => r.not(),
-        UnaOp::Pos => r.pos(),
-        UnaOp::Neg => r.neg(),
+        UnaOp::Not => e.not(),
+        UnaOp::Pos => e.pos(),
+        UnaOp::Neg => e.neg(),
     }
 }

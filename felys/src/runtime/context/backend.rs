@@ -1,3 +1,4 @@
+use crate::ast::Ident;
 use crate::rspegen::Intern;
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::Signal;
@@ -47,8 +48,12 @@ impl Backend<'_> {
         Err(Signal::Error("id does not exist"))
     }
 
-    pub fn stack(&mut self) {
-        self.data.push(HashMap::new())
+    pub fn stack(&mut self, default: Vec<(Ident, Value)>) {
+        let mut data = HashMap::new();
+        for (k, v) in default {
+            data.insert(k, v);
+        }
+        self.data.push(data)
     }
 
     pub fn unstack(&mut self) {

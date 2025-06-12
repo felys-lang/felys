@@ -17,6 +17,14 @@ impl Value {
         Ok(result)
     }
 
+    pub fn tuple(self) -> Result<Vec<Value>, Signal> {
+        if let Value::Tuple(tuple) = self {
+            Ok(tuple)
+        } else {
+            Err(Signal::Error("expect a `tuple` type"))
+        }
+    }
+
     pub fn list(self) -> Result<Vec<Value>, Signal> {
         if let Value::List(list) = self {
             Ok(list)
