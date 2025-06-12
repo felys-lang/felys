@@ -30,14 +30,13 @@ impl Evaluation for Expr {
 }
 
 fn __assign(backend: &mut Backend, pat: &Pat, op: &AssOp, expr: &Expr) -> Result<Value, Signal> {
-    let l = pat.eval(backend)?;
     let r = expr.eval(backend)?;
     let value = match op {
-        AssOp::AddEq => l.add(r)?,
-        AssOp::SubEq => l.sub(r)?,
-        AssOp::MulEq => l.mul(r)?,
-        AssOp::DivEq => l.div(r)?,
-        AssOp::ModEq => l.rem(r)?,
+        AssOp::AddEq => pat.eval(backend)?.add(r)?,
+        AssOp::SubEq => pat.eval(backend)?.sub(r)?,
+        AssOp::MulEq => pat.eval(backend)?.mul(r)?,
+        AssOp::DivEq => pat.eval(backend)?.div(r)?,
+        AssOp::ModEq => pat.eval(backend)?.rem(r)?,
         AssOp::Eq => r,
     };
     for (id, val) in pat.unpack(backend, value)? {

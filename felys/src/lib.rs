@@ -8,9 +8,16 @@ mod tests {
 
     #[test]
     fn playground() {
-        let mut packrat = Packrat::from("(y,a) = 1.0;".to_string());
-        match packrat.parse() {
-            Ok(ast) => println!("{:?}", ast),
+        let mut packrat = Packrat::from("a = 1.0; return a;".to_string());
+        let ast = match packrat.parse() {
+            Ok(ast) => ast,
+            Err(msg) => {
+                println!("Error: {}", msg);
+                return;
+            }
+        };
+        match ast.exec(packrat.intern, 100, 1000) {
+            Ok(value) => println!("{}", value),
             Err(msg) => println!("Error: {}", msg),
         }
     }
