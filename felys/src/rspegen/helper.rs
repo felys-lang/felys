@@ -1,3 +1,4 @@
+use crate::ast::Chunk;
 use crate::rspegen::Packrat;
 
 impl Packrat {

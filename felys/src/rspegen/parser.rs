@@ -309,16 +309,16 @@ impl super::Packrat {
                 Some(Expr::While(expr.into(), block))
             },
         ];
-        let start = self.stream.mark();
-        let policy = self.stream.policy();
-        if let Some((end, cache)) = self.memo.expr.get(&(start, policy)) {
-            self.stream.jump(*end);
+        let start = self.stream.cursor;
+        let strict = self.stream.strict;
+        if let Some((end, cache)) = self.memo.expr.get(&(start, strict)) {
+            self.stream.cursor = end.to_owned();
             return cache.clone();
         }
         let result = self.__rule(RULES);
-        let end = self.stream.mark();
+        let end = self.stream.cursor;
         let cache = result.clone();
-        self.memo.expr.insert((start, policy), (end, cache));
+        self.memo.expr.insert((start, strict), (end, cache));
         result
     }
     pub fn otherwise(&mut self) -> Option<Expr> {
@@ -424,29 +424,29 @@ impl super::Packrat {
                 Some((conjunction))
             },
         ];
-        let start = self.stream.mark();
-        let policy = self.stream.policy();
-        if let Some((end, cache)) = self.memo.disjunction.get(&(start, policy)) {
-            self.stream.jump(*end);
+        let start = self.stream.cursor;
+        let strict = self.stream.strict;
+        if let Some((end, cache)) = self.memo.disjunction.get(&(start, strict)) {
+            self.stream.cursor = end.to_owned();
             return cache.clone();
         }
         let mut result = None;
         let mut end = start;
         loop {
             let cache = result.clone();
-            self.memo.disjunction.insert((start, policy), (end, cache));
+            self.memo.disjunction.insert((start, strict), (end, cache));
             let temp = self.__rule(RULES);
-            if end < self.stream.mark() {
+            if end < self.stream.cursor {
                 result = temp;
-                end = self.stream.mark();
-                self.stream.jump(start);
+                end = self.stream.cursor;
+                self.stream.cursor = start;
             } else {
-                self.stream.jump(end);
+                self.stream.cursor = end;
                 break;
             }
         }
         let cache = result.clone();
-        self.memo.disjunction.insert((start, policy), (end, cache));
+        self.memo.disjunction.insert((start, strict), (end, cache));
         result
     }
     pub fn conjunction(&mut self) -> Option<Expr> {
@@ -472,29 +472,29 @@ impl super::Packrat {
                 Some((inversion))
             },
         ];
-        let start = self.stream.mark();
-        let policy = self.stream.policy();
-        if let Some((end, cache)) = self.memo.conjunction.get(&(start, policy)) {
-            self.stream.jump(*end);
+        let start = self.stream.cursor;
+        let strict = self.stream.strict;
+        if let Some((end, cache)) = self.memo.conjunction.get(&(start, strict)) {
+            self.stream.cursor = end.to_owned();
             return cache.clone();
         }
         let mut result = None;
         let mut end = start;
         loop {
             let cache = result.clone();
-            self.memo.conjunction.insert((start, policy), (end, cache));
+            self.memo.conjunction.insert((start, strict), (end, cache));
             let temp = self.__rule(RULES);
-            if end < self.stream.mark() {
+            if end < self.stream.cursor {
                 result = temp;
-                end = self.stream.mark();
-                self.stream.jump(start);
+                end = self.stream.cursor;
+                self.stream.cursor = start;
             } else {
-                self.stream.jump(end);
+                self.stream.cursor = end;
                 break;
             }
         }
         let cache = result.clone();
-        self.memo.conjunction.insert((start, policy), (end, cache));
+        self.memo.conjunction.insert((start, strict), (end, cache));
         result
     }
     pub fn inversion(&mut self) -> Option<Expr> {
@@ -549,29 +549,29 @@ impl super::Packrat {
                 Some((comparison))
             },
         ];
-        let start = self.stream.mark();
-        let policy = self.stream.policy();
-        if let Some((end, cache)) = self.memo.equality.get(&(start, policy)) {
-            self.stream.jump(*end);
+        let start = self.stream.cursor;
+        let strict = self.stream.strict;
+        if let Some((end, cache)) = self.memo.equality.get(&(start, strict)) {
+            self.stream.cursor = end.to_owned();
             return cache.clone();
         }
         let mut result = None;
         let mut end = start;
         loop {
             let cache = result.clone();
-            self.memo.equality.insert((start, policy), (end, cache));
+            self.memo.equality.insert((start, strict), (end, cache));
             let temp = self.__rule(RULES);
-            if end < self.stream.mark() {
+            if end < self.stream.cursor {
                 result = temp;
-                end = self.stream.mark();
-                self.stream.jump(start);
+                end = self.stream.cursor;
+                self.stream.cursor = start;
             } else {
-                self.stream.jump(end);
+                self.stream.cursor = end;
                 break;
             }
         }
         let cache = result.clone();
-        self.memo.equality.insert((start, policy), (end, cache));
+        self.memo.equality.insert((start, strict), (end, cache));
         result
     }
     pub fn comparison(&mut self) -> Option<Expr> {
@@ -620,29 +620,29 @@ impl super::Packrat {
                 Some((term))
             },
         ];
-        let start = self.stream.mark();
-        let policy = self.stream.policy();
-        if let Some((end, cache)) = self.memo.comparison.get(&(start, policy)) {
-            self.stream.jump(*end);
+        let start = self.stream.cursor;
+        let strict = self.stream.strict;
+        if let Some((end, cache)) = self.memo.comparison.get(&(start, strict)) {
+            self.stream.cursor = end.to_owned();
             return cache.clone();
         }
         let mut result = None;
         let mut end = start;
         loop {
             let cache = result.clone();
-            self.memo.comparison.insert((start, policy), (end, cache));
+            self.memo.comparison.insert((start, strict), (end, cache));
             let temp = self.__rule(RULES);
-            if end < self.stream.mark() {
+            if end < self.stream.cursor {
                 result = temp;
-                end = self.stream.mark();
-                self.stream.jump(start);
+                end = self.stream.cursor;
+                self.stream.cursor = start;
             } else {
-                self.stream.jump(end);
+                self.stream.cursor = end;
                 break;
             }
         }
         let cache = result.clone();
-        self.memo.comparison.insert((start, policy), (end, cache));
+        self.memo.comparison.insert((start, strict), (end, cache));
         result
     }
     pub fn term(&mut self) -> Option<Expr> {
@@ -673,29 +673,29 @@ impl super::Packrat {
                 Some((factor))
             },
         ];
-        let start = self.stream.mark();
-        let policy = self.stream.policy();
-        if let Some((end, cache)) = self.memo.term.get(&(start, policy)) {
-            self.stream.jump(*end);
+        let start = self.stream.cursor;
+        let strict = self.stream.strict;
+        if let Some((end, cache)) = self.memo.term.get(&(start, strict)) {
+            self.stream.cursor = end.to_owned();
             return cache.clone();
         }
         let mut result = None;
         let mut end = start;
         loop {
             let cache = result.clone();
-            self.memo.term.insert((start, policy), (end, cache));
+            self.memo.term.insert((start, strict), (end, cache));
             let temp = self.__rule(RULES);
-            if end < self.stream.mark() {
+            if end < self.stream.cursor {
                 result = temp;
-                end = self.stream.mark();
-                self.stream.jump(start);
+                end = self.stream.cursor;
+                self.stream.cursor = start;
             } else {
-                self.stream.jump(end);
+                self.stream.cursor = end;
                 break;
             }
         }
         let cache = result.clone();
-        self.memo.term.insert((start, policy), (end, cache));
+        self.memo.term.insert((start, strict), (end, cache));
         result
     }
     pub fn factor(&mut self) -> Option<Expr> {
@@ -735,29 +735,29 @@ impl super::Packrat {
                 Some((unary))
             },
         ];
-        let start = self.stream.mark();
-        let policy = self.stream.policy();
-        if let Some((end, cache)) = self.memo.factor.get(&(start, policy)) {
-            self.stream.jump(*end);
+        let start = self.stream.cursor;
+        let strict = self.stream.strict;
+        if let Some((end, cache)) = self.memo.factor.get(&(start, strict)) {
+            self.stream.cursor = end.to_owned();
             return cache.clone();
         }
         let mut result = None;
         let mut end = start;
         loop {
             let cache = result.clone();
-            self.memo.factor.insert((start, policy), (end, cache));
+            self.memo.factor.insert((start, strict), (end, cache));
             let temp = self.__rule(RULES);
-            if end < self.stream.mark() {
+            if end < self.stream.cursor {
                 result = temp;
-                end = self.stream.mark();
-                self.stream.jump(start);
+                end = self.stream.cursor;
+                self.stream.cursor = start;
             } else {
-                self.stream.jump(end);
+                self.stream.cursor = end;
                 break;
             }
         }
         let cache = result.clone();
-        self.memo.factor.insert((start, policy), (end, cache));
+        self.memo.factor.insert((start, strict), (end, cache));
         result
     }
     pub fn unary(&mut self) -> Option<Expr> {
@@ -817,29 +817,29 @@ impl super::Packrat {
                 Some((primary))
             },
         ];
-        let start = self.stream.mark();
-        let policy = self.stream.policy();
-        if let Some((end, cache)) = self.memo.evaluation.get(&(start, policy)) {
-            self.stream.jump(*end);
+        let start = self.stream.cursor;
+        let strict = self.stream.strict;
+        if let Some((end, cache)) = self.memo.evaluation.get(&(start, strict)) {
+            self.stream.cursor = end.to_owned();
             return cache.clone();
         }
         let mut result = None;
         let mut end = start;
         loop {
             let cache = result.clone();
-            self.memo.evaluation.insert((start, policy), (end, cache));
+            self.memo.evaluation.insert((start, strict), (end, cache));
             let temp = self.__rule(RULES);
-            if end < self.stream.mark() {
+            if end < self.stream.cursor {
                 result = temp;
-                end = self.stream.mark();
-                self.stream.jump(start);
+                end = self.stream.cursor;
+                self.stream.cursor = start;
             } else {
-                self.stream.jump(end);
+                self.stream.cursor = end;
                 break;
             }
         }
         let cache = result.clone();
-        self.memo.evaluation.insert((start, policy), (end, cache));
+        self.memo.evaluation.insert((start, strict), (end, cache));
         result
     }
     pub fn args(&mut self) -> Option<Vec<Expr>> {
@@ -943,11 +943,78 @@ impl super::Packrat {
         if self.snapshot.is_some() {
             return None;
         }
-        const RULES: super::Rules<Lit, 1usize> = [|x| {
-            let lit = x.bool()?;
-            Some(Lit::Bool(lit))
-        }];
+        const RULES: super::Rules<Lit, 4usize> = [
+            |x| {
+                let float = x.FLOAT()?;
+                Some(Lit::Float(float))
+            },
+            |x| {
+                let int = x.INT()?;
+                Some(Lit::Int(int))
+            },
+            |x| {
+                let str = x.str()?;
+                Some(Lit::Str(str))
+            },
+            |x| {
+                let bool = x.bool()?;
+                Some(Lit::Bool(bool))
+            },
+        ];
         self.__rule(RULES)
+    }
+    pub fn str(&mut self) -> Option<Vec<Chunk>> {
+        if self.snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::Rules<Vec<Chunk>, 1usize> = [|x| {
+            let _ = x.__expect("\"")?;
+            let chunks = {
+                let mut body = Vec::new();
+                while let Some(data) = x.chunk() {
+                    body.push(data)
+                }
+                body
+            };
+            let _ = match x.__expect("\"") {
+                Some(value) => value,
+                None => return x.__error("'\"'"),
+            };
+            Some((chunks))
+        }];
+        self.__token(RULES)
+    }
+    pub fn chunk(&mut self) -> Option<Chunk> {
+        if self.snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::Rules<Chunk, 3usize> = [
+            |x| {
+                let slice = x.SLICE()?;
+                Some(Chunk::Slice(slice))
+            },
+            |x| {
+                let _ = x.__expect("\\u{")?;
+                let hex = match x.HEX() {
+                    Some(value) => value,
+                    None => return x.__error("<HEX>"),
+                };
+                let _ = match x.__expect("}") {
+                    Some(value) => value,
+                    None => return x.__error("'}'"),
+                };
+                Some(Chunk::Unicode(hex))
+            },
+            |x| {
+                let _ = x.__expect("\\")?;
+                let escape = match x.ESCAPE() {
+                    Some(value) => value,
+                    None => return x.__error("<ESCAPE>"),
+                };
+                Some(Chunk::Escape(escape))
+            },
+        ];
+        self.__token(RULES)
     }
     pub fn bool(&mut self) -> Option<Bool> {
         if self.snapshot.is_some() {
@@ -955,23 +1022,79 @@ impl super::Packrat {
         }
         const RULES: super::Rules<Bool, 2usize> = [
             |x| {
-                let _ = x.__token([|x| {
-                    let _ = x.__expect("true")?;
-                    let _ = x.__lookahead(|x| x.IB(), false)?;
-                    Some(())
-                }])?;
+                let _ = x.__expect("true")?;
+                let _ = x.__lookahead(|x| x.IB(), false)?;
                 Some(Bool::True)
             },
             |x| {
-                let _ = x.__token([|x| {
-                    let _ = x.__expect("false")?;
-                    let _ = x.__lookahead(|x| x.IB(), false)?;
-                    Some(())
-                }])?;
+                let _ = x.__expect("false")?;
+                let _ = x.__lookahead(|x| x.IB(), false)?;
                 Some(Bool::False)
             },
         ];
-        self.__rule(RULES)
+        self.__token(RULES)
+    }
+    pub fn IB(&mut self) -> Option<()> {
+        if self.snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
+            let s = match (s, c as usize) {
+                (0usize, 48usize..=57usize) => 1usize,
+                (0usize, 65usize..=90usize) => 1usize,
+                (0usize, 95usize..=95usize) => 1usize,
+                (0usize, 97usize..=122usize) => 1usize,
+                _ => return None,
+            };
+            Some(s)
+        }
+        const ACCEPTANCE: [bool; 2usize] = [false, true];
+        self.stream.trim();
+        self.stream.dfa(transition, ACCEPTANCE).and(Some(()))
+    }
+    pub fn INT(&mut self) -> Option<usize> {
+        if self.snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
+            let s = match (s, c as usize) {
+                (0usize, 48usize..=48usize) => 1usize,
+                (0usize, 49usize..=57usize) => 2usize,
+                (2usize, 48usize..=57usize) => 2usize,
+                _ => return None,
+            };
+            Some(s)
+        }
+        const ACCEPTANCE: [bool; 3usize] = [false, true, true];
+        self.stream.trim();
+        self.stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.intern.id(s))
+    }
+    pub fn FLOAT(&mut self) -> Option<usize> {
+        if self.snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
+            let s = match (s, c as usize) {
+                (0usize, 48usize..=48usize) => 1usize,
+                (0usize, 49usize..=57usize) => 2usize,
+                (2usize, 46usize..=46usize) => 3usize,
+                (2usize, 48usize..=57usize) => 2usize,
+                (3usize, 48usize..=57usize) => 4usize,
+                (4usize, 48usize..=57usize) => 4usize,
+                (1usize, 46usize..=46usize) => 5usize,
+                (5usize, 48usize..=57usize) => 6usize,
+                (6usize, 48usize..=57usize) => 6usize,
+                _ => return None,
+            };
+            Some(s)
+        }
+        const ACCEPTANCE: [bool; 7usize] = [false, false, false, false, true, false, true];
+        self.stream.trim();
+        self.stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.intern.id(s))
     }
     pub fn IDENT(&mut self) -> Option<usize> {
         if self.snapshot.is_some() {
@@ -991,38 +1114,71 @@ impl super::Packrat {
             Some(s)
         }
         const ACCEPTANCE: [bool; 2usize] = [false, true];
-        let start = self.stream.mark();
-        let policy = self.stream.policy();
-        if let Some(&(end, cache)) = self.memo.IDENT.get(&(start, policy)) {
-            self.stream.jump(end);
-            return cache;
-        }
         self.stream.trim();
-        let result = self
-            .stream
+        self.stream
             .dfa(transition, ACCEPTANCE)
-            .map(|s| self.intern.id(s));
-        let end = self.stream.mark();
-        self.memo.IDENT.insert((start, policy), (end, result));
-        result
+            .map(|s| self.intern.id(s))
     }
-    pub fn IB(&mut self) -> Option<()> {
+    pub fn SLICE(&mut self) -> Option<usize> {
         if self.snapshot.is_some() {
             return None;
         }
         fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
-                (0usize, 48usize..=57usize) => 1usize,
-                (0usize, 65usize..=90usize) => 1usize,
-                (0usize, 95usize..=95usize) => 1usize,
-                (0usize, 97usize..=122usize) => 1usize,
+                (0usize, 0usize..=33usize) => 1usize,
+                (0usize, 35usize..=91usize) => 1usize,
+                (0usize, 93usize..=18446744073709551615usize) => 1usize,
+                (1usize, 0usize..=33usize) => 1usize,
+                (1usize, 35usize..=91usize) => 1usize,
+                (1usize, 93usize..=18446744073709551615usize) => 1usize,
                 _ => return None,
             };
             Some(s)
         }
         const ACCEPTANCE: [bool; 2usize] = [false, true];
         self.stream.trim();
-        self.stream.dfa(transition, ACCEPTANCE).and(Some(()))
+        self.stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.intern.id(s))
+    }
+    pub fn HEX(&mut self) -> Option<usize> {
+        if self.snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
+            let s = match (s, c as usize) {
+                (0usize, 48usize..=57usize) => 0usize,
+                (0usize, 97usize..=102usize) => 0usize,
+                _ => return None,
+            };
+            Some(s)
+        }
+        const ACCEPTANCE: [bool; 1usize] = [true];
+        self.stream.trim();
+        self.stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.intern.id(s))
+    }
+    pub fn ESCAPE(&mut self) -> Option<usize> {
+        if self.snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
+            let s = match (s, c as usize) {
+                (0usize, 39usize..=39usize) => 1usize,
+                (0usize, 92usize..=92usize) => 1usize,
+                (0usize, 110usize..=110usize) => 1usize,
+                (0usize, 114usize..=114usize) => 1usize,
+                (0usize, 116usize..=116usize) => 1usize,
+                _ => return None,
+            };
+            Some(s)
+        }
+        const ACCEPTANCE: [bool; 2usize] = [false, true];
+        self.stream.trim();
+        self.stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.intern.id(s))
     }
     pub fn WS(&mut self) -> Option<()> {
         if self.snapshot.is_some() {
@@ -1068,7 +1224,7 @@ impl super::Packrat {
 #[allow(unused)]
 impl super::Stream {
     pub fn trim(&mut self) {
-        if self.policy() {
+        if self.strict {
             return;
         }
         fn transition(s: usize, c: char) -> Option<usize> {

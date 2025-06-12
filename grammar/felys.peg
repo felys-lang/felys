@@ -153,18 +153,38 @@ params -> { Vec<Ident> }:
     ;
 
 lit -> { Lit }:
-    / lit=bool { Lit::Bool(lit) }
+    / float=FLOAT { Lit::Float(float) }
+    / int=INT { Lit::Int(int) }
+    / str=str { Lit::Str(str) }
+    / bool=bool { Lit::Bool(bool) }
     ;
 
+@(token)
+str -> { Vec<Chunk> }: '"' chunks=chunk* #'"' ;
+
+@(token)
+chunk -> { Chunk }:
+    / slice=SLICE { Chunk::Slice(slice) }
+    / '\\u{' hex=#HEX #'}' { Chunk::Unicode(hex) }
+    / '\\' escape=#ESCAPE { Chunk::Escape(escape) }
+    ;
+
+@(token)
 bool -> { Bool }:
-    / @(token)('true' !IB) { Bool::True }
-    / @(token)('false' !IB) { Bool::False }
+    / 'true' !IB { Bool::True }
+    / 'false' !IB { Bool::False }
     ;
-
-@(intern, memo)
-IDENT: [a-zA-Z_] IB* ;
 
 IB: [a-zA-Z0-9_] ;
+
+@(intern) {
+    INT: '0' | [1-9][0-9]* ;
+    FLOAT: [1-9][0-9]* '.' [0-9]+ | '0.' [0-9]+;
+    IDENT: [a-zA-Z_] IB* ;
+    SLICE: [^"\\]+ ;
+    HEX: [0-9a-f]* ;
+    ESCAPE: ['ntr\\] ;
+}
 
 @(ws) {
     WS: [\u{20}\n\t\r]+ ;

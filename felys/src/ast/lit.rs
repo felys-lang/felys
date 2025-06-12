@@ -20,4 +20,11 @@ pub enum Bool {
     False,
 }
 
-pub type Str = usize;
+pub type Str = Vec<Chunk>;
+
+#[derive(Clone, Debug)]
+pub enum Chunk {
+    Slice(usize),
+    Unicode(usize),
+    Escape(usize),
+}
