@@ -7,6 +7,7 @@ grammar -> { Grammar }:
     / stmts=(stmt=stmt $)* #eof { Grammar(stmts) }
     ;
 
+@(memo)
 pat -> { Pat }:
     / @(token)('_' !IB) { Pat::Any }
     / ident=ident { Pat::Ident(ident) }
@@ -30,14 +31,14 @@ block -> { Block }:
 
 @(memo)
 expr -> { Expr }:
+    / assignment=assignment
     / '(' first=expr ',' second=#expr more=(',' expr=#expr)* #')' { {
         let mut elements = more;
         elements.insert(0, second);
         elements.insert(0, first);
         Expr::Tuple(elements)
     } }
-    / assign=assign { assign }
-    / disjunction=disjunction { disjunction }
+    / disjunction=disjunction
     / block=block { Expr::Block(block) }
     / @(token)('let' !IB) pat=#pat #'=' expr=#expr otherwise=otherwise? {
         Expr::Let(pat, expr.into(), otherwise.map(Rc::new))
@@ -58,13 +59,13 @@ expr -> { Expr }:
 
 otherwise -> { Expr }: @(token)('else' !IB) expr=#expr ;
 
-assign -> { Expr }:
-    / ident=ident '=' expr=#expr { Expr::Assign(ident, AssOp::Eq, expr.into()) }
-    / ident=ident '+=' expr=#expr { Expr::Assign(ident, AssOp::AddEq, expr.into()) }
-    / ident=ident '-=' expr=#expr { Expr::Assign(ident, AssOp::SubEq, expr.into()) }
-    / ident=ident '*=' expr=#expr { Expr::Assign(ident, AssOp::MulEq, expr.into()) }
-    / ident=ident '/=' expr=#expr { Expr::Assign(ident, AssOp::DivEq, expr.into()) }
-    / ident=ident '%=' expr=#expr { Expr::Assign(ident, AssOp::ModEq, expr.into()) }
+assignment -> { Expr }:
+    / pat=pat '=' expr=#expr { Expr::Assign(pat, AssOp::Eq, expr.into()) }
+    / pat=pat '+=' expr=#expr { Expr::Assign(pat, AssOp::AddEq, expr.into()) }
+    / pat=pat '-=' expr=#expr { Expr::Assign(pat, AssOp::SubEq, expr.into()) }
+    / pat=pat '*=' expr=#expr { Expr::Assign(pat, AssOp::MulEq, expr.into()) }
+    / pat=pat '/=' expr=#expr { Expr::Assign(pat, AssOp::DivEq, expr.into()) }
+    / pat=pat '%=' expr=#expr { Expr::Assign(pat, AssOp::ModEq, expr.into()) }
     ;
 
 disjunction -> { Expr }:

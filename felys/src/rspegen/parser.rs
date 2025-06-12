@@ -135,6 +135,10 @@ impl super::Packrat {
         }
         const RULES: super::Rules<Expr, 13usize> = [
             |x| {
+                let assignment = x.assignment()?;
+                Some((assignment))
+            },
+            |x| {
                 let _ = x.__expect("(")?;
                 let first = x.expr()?;
                 let _ = x.__expect(",")?;
@@ -168,12 +172,8 @@ impl super::Packrat {
                 })
             },
             |x| {
-                let assign = x.assign()?;
-                Some(assign)
-            },
-            |x| {
                 let disjunction = x.disjunction()?;
-                Some(disjunction)
+                Some((disjunction))
             },
             |x| {
                 let block = x.block()?;
@@ -339,64 +339,64 @@ impl super::Packrat {
         }];
         self.__rule(RULES)
     }
-    pub fn assign(&mut self) -> Option<Expr> {
+    pub fn assignment(&mut self) -> Option<Expr> {
         if self.snapshot.is_some() {
             return None;
         }
         const RULES: super::Rules<Expr, 6usize> = [
             |x| {
-                let ident = x.ident()?;
+                let pat = x.pat()?;
                 let _ = x.__expect("=")?;
                 let expr = match x.expr() {
                     Some(value) => value,
                     None => return x.__error("<expr>"),
                 };
-                Some(Expr::Assign(ident, AssOp::Eq, expr.into()))
+                Some(Expr::Assign(pat, AssOp::Eq, expr.into()))
             },
             |x| {
-                let ident = x.ident()?;
+                let pat = x.pat()?;
                 let _ = x.__expect("+=")?;
                 let expr = match x.expr() {
                     Some(value) => value,
                     None => return x.__error("<expr>"),
                 };
-                Some(Expr::Assign(ident, AssOp::AddEq, expr.into()))
+                Some(Expr::Assign(pat, AssOp::AddEq, expr.into()))
             },
             |x| {
-                let ident = x.ident()?;
+                let pat = x.pat()?;
                 let _ = x.__expect("-=")?;
                 let expr = match x.expr() {
                     Some(value) => value,
                     None => return x.__error("<expr>"),
                 };
-                Some(Expr::Assign(ident, AssOp::SubEq, expr.into()))
+                Some(Expr::Assign(pat, AssOp::SubEq, expr.into()))
             },
             |x| {
-                let ident = x.ident()?;
+                let pat = x.pat()?;
                 let _ = x.__expect("*=")?;
                 let expr = match x.expr() {
                     Some(value) => value,
                     None => return x.__error("<expr>"),
                 };
-                Some(Expr::Assign(ident, AssOp::MulEq, expr.into()))
+                Some(Expr::Assign(pat, AssOp::MulEq, expr.into()))
             },
             |x| {
-                let ident = x.ident()?;
+                let pat = x.pat()?;
                 let _ = x.__expect("/=")?;
                 let expr = match x.expr() {
                     Some(value) => value,
                     None => return x.__error("<expr>"),
                 };
-                Some(Expr::Assign(ident, AssOp::DivEq, expr.into()))
+                Some(Expr::Assign(pat, AssOp::DivEq, expr.into()))
             },
             |x| {
-                let ident = x.ident()?;
+                let pat = x.pat()?;
                 let _ = x.__expect("%=")?;
                 let expr = match x.expr() {
                     Some(value) => value,
                     None => return x.__error("<expr>"),
                 };
-                Some(Expr::Assign(ident, AssOp::ModEq, expr.into()))
+                Some(Expr::Assign(pat, AssOp::ModEq, expr.into()))
             },
         ];
         self.__rule(RULES)

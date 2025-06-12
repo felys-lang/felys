@@ -7,11 +7,10 @@ mod tests {
 
     #[test]
     fn playground() {
-        let mut packrat = Packrat::from("let x = 1.0".to_string());
-        let result = packrat.grammar();
-        if let Some((loc, msg)) = packrat.snapshot {
-            println!("{} @ {}", msg, loc);
+        let mut packrat = Packrat::from("(y,a) = 1.0;".to_string());
+        match packrat.parse() {
+            Ok(ast) => println!("{:?}", ast),
+            Err(msg) => println!("Error: {}", msg),
         }
-        println!("{:?}", result);
     }
 }

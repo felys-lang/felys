@@ -4,7 +4,7 @@ use std::rc::Rc;
 #[derive(Clone, Debug)]
 pub enum Expr {
     /// assignment: `x = 42`
-    Assign(Ident, AssOp, Rc<Expr>),
+    Assign(Pat, AssOp, Rc<Expr>),
     /// code block: `{ elysia }`
     Block(Block),
     /// break the loop: `break elysia;`
