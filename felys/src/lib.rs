@@ -1,5 +1,6 @@
 mod ast;
 mod rspegen;
+mod runtime;
 
 #[cfg(test)]
 mod tests {
