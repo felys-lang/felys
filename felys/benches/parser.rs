@@ -7,14 +7,12 @@ const PAYLOADS: [&str; 3] = [
     "break (3 + 4 * (sin(2)*2)) / (5 - 2 * (if x > 10 { x } else y)) + 3 - -2 \"hello world\";",
 ];
 
-fn main() {
+#[test]
+fn parser() {
     for payload in PAYLOADS {
         let code = payload.repeat(1000);
         let start = Instant::now();
-        if let Err(e) = Packrat::from(code).parse() {
-            println!("Error: {}", e)
-        } else {
-            println!("{:?}", start.elapsed());
-        }
+        Packrat::from(code).parse().unwrap();
+        println!("{:?}", start.elapsed());
     }
 }
