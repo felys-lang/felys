@@ -59,7 +59,7 @@ expr -> { Expr }:
 otherwise -> { Expr }: @(token)('else' !IB) expr=#expr ;
 
 assignment -> { Expr }:
-    / pat=pat '=' expr=#expr { Expr::Assign(pat, AssOp::Eq, expr.into()) }
+    / pat=pat '=' expr=expr { Expr::Assign(pat, AssOp::Eq, expr.into()) }
     / pat=pat '+=' expr=#expr { Expr::Assign(pat, AssOp::AddEq, expr.into()) }
     / pat=pat '-=' expr=#expr { Expr::Assign(pat, AssOp::SubEq, expr.into()) }
     / pat=pat '*=' expr=#expr { Expr::Assign(pat, AssOp::MulEq, expr.into()) }

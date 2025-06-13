@@ -1,13 +1,13 @@
 use crate::ast::Grammar;
-use crate::rspegen::Packrat;
+use crate::rspegen::{Intern, Packrat};
 
 impl Packrat {
-    pub fn parse(&mut self) -> Result<Grammar, String> {
+    pub fn parse(mut self) -> Result<(Grammar, Intern), String> {
         let result = self.grammar();
         if let Some((loc, msg)) = self.snapshot {
             return Err(format!("{} @ {}", msg, loc));
         }
-        result.ok_or("unknown".to_string())
+        Ok((result.ok_or("unknown".to_string())?, self.intern))
     }
 
     pub fn ident(&mut self) -> Option<usize> {
