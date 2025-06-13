@@ -335,7 +335,11 @@ impl super::Packrat {
             |x| {
                 let pat = x.pat()?;
                 let _ = x.__expect("=")?;
-                let expr = x.expr()?;
+                let _ = x.__lookahead(|x| x.__expect("="), false)?;
+                let expr = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("<expr>"),
+                };
                 Some(Expr::Assign(pat, AssOp::Eq, expr.into()))
             },
             |x| {

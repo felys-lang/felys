@@ -1,7 +1,7 @@
 use felys::Packrat;
 
 #[test]
-fn literal() {
+fn builtin() {
     assert_eq!("42", run("42"));
     assert_eq!("3.14", run("3.14"));
     assert_eq!("true", run("true"));
@@ -21,11 +21,37 @@ fn arithmetic() {
 }
 
 #[test]
+fn comparison() {
+    assert_eq!("true", run("1 == 1"));
+    assert_eq!("false", run("1 == 2"));
+    assert_eq!("true", run("1 != 2"));
+    assert_eq!("false", run("2 != 2"));
+    assert_eq!("true", run("3 > 2"));
+    assert_eq!("false", run("2 > 3"));
+    assert_eq!("true", run("3 >= 3"));
+    assert_eq!("false", run("2 >= 3"));
+    assert_eq!("true", run("2 < 3"));
+    assert_eq!("false", run("3 < 2"));
+    assert_eq!("true", run("3 <= 3"));
+    assert_eq!("false", run("4 <= 3"));
+}
+
+#[test]
+fn logical() {
+    assert_eq!("false", run("false and true"));
+    assert_eq!("true", run("true or false"));
+    assert_eq!("true", run("not false"));
+    assert_eq!("false", run("not true"));
+    assert_eq!("true", run("true and not false"));
+    assert_eq!("false", run("false or false and true"));
+    assert_eq!("true", run("not false or false"));
+}
+
+#[test]
 fn combined() {
     assert_eq!("6", run("1 + 2 + 3"));
     assert_eq!("7", run("1 + 2 * 3"));
     assert_eq!("9", run("(1 + 2) * 3"));
-    assert_eq!("true", run("true and not false"));
     assert_eq!("true", run("1 + 2 == 3"));
     assert_eq!("1", run("if true { 1 } else { 2 }"));
     assert_eq!("10", run("a = 0; while a < 10 { a += 1 }; a"));
