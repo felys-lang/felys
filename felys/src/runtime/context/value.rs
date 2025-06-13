@@ -20,7 +20,7 @@ impl Display for Value {
             Value::Bool(x) => write!(f, "{}", x),
             Value::Float(x) => write!(f, "{}", x),
             Value::Int(x) => write!(f, "{}", x),
-            Value::Str(x) => write!(f, "\"{}\"", x),
+            Value::Str(x) => write!(f, "{}", x),
             Value::Closure(_, x) => write!(f, "<{:p}>", x),
             Value::Tuple(x) => {
                 write!(f, "(")?;

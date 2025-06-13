@@ -49,7 +49,7 @@ impl Grammar {
 impl Evaluation for Grammar {
     fn __eval(&self, backend: &mut Backend) -> Result<Value, Signal> {
         for stmt in &self.0 {
-            stmt.eval(backend)?;
+            stmt.eval(backend)?.void()?;
         }
         Ok(Value::Void)
     }

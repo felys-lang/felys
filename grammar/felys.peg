@@ -34,15 +34,8 @@ block -> { Block }:
 @(memo)
 expr -> { Expr }:
     / assignment=assignment
-    / '(' first=expr ',' second=#expr more=(',' expr=#expr)* #')' { {
-        let mut elements = more;
-        elements.insert(0, second);
-        elements.insert(0, first);
-        Expr::Tuple(elements)
-    } }
     / disjunction=disjunction
     / block=block { Expr::Block(block) }
-    / '[' args=args? #']' { Expr::List(args.unwrap_or_default()) }
     / @(token)('break' !IB) expr=expr? { Expr::Break(expr.map(Rc::new)) }
     / @(token)('continue' !IB) { Expr::Continue }
     / @(token)('for' !IB) pat=#pat @(token)(#'in' !IB) expr=#expr block=#block {
@@ -137,7 +130,14 @@ args -> { Vec<Expr> }:
 primary -> { Expr }:
     / lit=lit { Expr::Lit(lit) }
     / ident=ident { Expr::Ident(ident) }
-    / '(' expr=#expr #')' { Expr::Paren(expr.into()) }
+    / '(' expr=#expr ')' { Expr::Paren(expr.into()) }
+    / '(' first=#expr #',' second=#expr more=(',' expr=#expr)* #')' { {
+        let mut elements = more;
+        elements.insert(0, second);
+        elements.insert(0, first);
+        Expr::Tuple(elements)
+    } }
+    / '[' args=args? #']' { Expr::List(args.unwrap_or_default()) }
     / '|' params=params? #'|' expr=#expr {
         Expr::Closure(params.unwrap_or_default(), expr.into())
     }

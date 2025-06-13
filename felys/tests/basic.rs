@@ -6,7 +6,7 @@ fn builtin() {
     assert_eq!("3.14", run("3.14"));
     assert_eq!("true", run("true"));
     assert_eq!("false", run("false"));
-    assert_eq!(r#""hello""#, run(r#""hello""#));
+    assert_eq!(r#"hello"#, run(r#""hello""#));
     assert_eq!("(1, 2, 3)", run("(1, 2, 3)"));
     assert_eq!("[1, 2, 3]", run("[1, 2, 3]"));
 }

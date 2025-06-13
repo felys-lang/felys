@@ -142,43 +142,10 @@ impl super::Packrat {
         if self.snapshot.is_some() {
             return None;
         }
-        const RULES: super::Rules<Expr, 12usize> = [
+        const RULES: super::Rules<Expr, 10usize> = [
             |x| {
                 let assignment = x.assignment()?;
                 Some((assignment))
-            },
-            |x| {
-                let _ = x.__expect("(")?;
-                let first = x.expr()?;
-                let _ = x.__expect(",")?;
-                let second = match x.expr() {
-                    Some(value) => value,
-                    None => return x.__error("<expr>"),
-                };
-                let more = {
-                    let mut body = Vec::new();
-                    while let Some(data) = x.__rule([|x| {
-                        let _ = x.__expect(",")?;
-                        let expr = match x.expr() {
-                            Some(value) => value,
-                            None => return x.__error("<expr>"),
-                        };
-                        Some((expr))
-                    }]) {
-                        body.push(data)
-                    }
-                    body
-                };
-                let _ = match x.__expect(")") {
-                    Some(value) => value,
-                    None => return x.__error("')'"),
-                };
-                Some({
-                    let mut elements = more;
-                    elements.insert(0, second);
-                    elements.insert(0, first);
-                    Expr::Tuple(elements)
-                })
             },
             |x| {
                 let disjunction = x.disjunction()?;
@@ -187,15 +154,6 @@ impl super::Packrat {
             |x| {
                 let block = x.block()?;
                 Some(Expr::Block(block))
-            },
-            |x| {
-                let _ = x.__expect("[")?;
-                let args = x.args();
-                let _ = match x.__expect("]") {
-                    Some(value) => value,
-                    None => return x.__error("']'"),
-                };
-                Some(Expr::List(args.unwrap_or_default()))
             },
             |x| {
                 let _ = x.__token([|x| {
@@ -854,7 +812,7 @@ impl super::Packrat {
         if self.snapshot.is_some() {
             return None;
         }
-        const RULES: super::Rules<Expr, 4usize> = [
+        const RULES: super::Rules<Expr, 6usize> = [
             |x| {
                 let lit = x.lit()?;
                 Some(Expr::Lit(lit))
@@ -869,11 +827,56 @@ impl super::Packrat {
                     Some(value) => value,
                     None => return x.__error("<expr>"),
                 };
+                let _ = x.__expect(")")?;
+                Some(Expr::Paren(expr.into()))
+            },
+            |x| {
+                let _ = x.__expect("(")?;
+                let first = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("<expr>"),
+                };
+                let _ = match x.__expect(",") {
+                    Some(value) => value,
+                    None => return x.__error("','"),
+                };
+                let second = match x.expr() {
+                    Some(value) => value,
+                    None => return x.__error("<expr>"),
+                };
+                let more = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.__rule([|x| {
+                        let _ = x.__expect(",")?;
+                        let expr = match x.expr() {
+                            Some(value) => value,
+                            None => return x.__error("<expr>"),
+                        };
+                        Some((expr))
+                    }]) {
+                        body.push(data)
+                    }
+                    body
+                };
                 let _ = match x.__expect(")") {
                     Some(value) => value,
                     None => return x.__error("')'"),
                 };
-                Some(Expr::Paren(expr.into()))
+                Some({
+                    let mut elements = more;
+                    elements.insert(0, second);
+                    elements.insert(0, first);
+                    Expr::Tuple(elements)
+                })
+            },
+            |x| {
+                let _ = x.__expect("[")?;
+                let args = x.args();
+                let _ = match x.__expect("]") {
+                    Some(value) => value,
+                    None => return x.__error("']'"),
+                };
+                Some(Expr::List(args.unwrap_or_default()))
             },
             |x| {
                 let _ = x.__expect("|")?;
