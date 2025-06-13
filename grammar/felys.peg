@@ -13,7 +13,7 @@ pat -> { Pat }:
     / @(token)('_' !IB) { Pat::Any }
     / ident=ident { Pat::Ident(ident) }
     / lit=lit { Pat::Lit(lit) }
-    / '(' first=#pat #',' second=#pat more=(',' pat=#pat)* #')' { {
+    / '(' first=pat ',' second=#pat more=(',' pat=#pat)* #')' { {
         let mut elements = more;
         elements.insert(0, second);
         elements.insert(0, first);
