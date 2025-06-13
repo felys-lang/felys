@@ -48,9 +48,9 @@ fn __str(backend: &mut Backend, x: &Str) -> Result<Value, Signal> {
     let value = x
         .iter()
         .map(|chunk| match chunk {
-            Chunk::Slice(x) => Ok(backend.intern.get(x).unwrap().to_string()),
+            Chunk::Slice(x) => Ok(backend.intern.get(x).ok_or("unreachable")?.to_string()),
             Chunk::Unicode(x) => {
-                let hex = backend.intern.get(x).unwrap();
+                let hex = backend.intern.get(x).ok_or("unreachable")?;
                 let Ok(x) = u32::from_str_radix(hex, 16) else {
                     return Err("invalid hex");
                 };
@@ -60,7 +60,7 @@ fn __str(backend: &mut Backend, x: &Str) -> Result<Value, Signal> {
                 Ok(c.to_string())
             }
             Chunk::Escape(x) => {
-                let str = backend.intern.get(x).unwrap();
+                let str = backend.intern.get(x).ok_or("unreachable")?;
                 let c = match str {
                     "\"" => '"',
                     "n" => '\n',
