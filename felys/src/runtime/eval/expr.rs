@@ -58,7 +58,13 @@ fn __break(backend: &mut Backend, opt: &Option<Rc<Expr>>) -> Result<Value, Signa
 fn __for(backend: &mut Backend, pat: &Pat, expr: &Expr, block: &Block) -> Result<Value, Signal> {
     for value in expr.eval(backend)?.list()? {
         let default = pat.unpack(backend, value)?;
-        block.eval(backend, default)?.void()?;
+        match block.eval(backend, default) {
+            Err(Signal::Continue) => continue,
+            Err(Signal::Break(_)) => break,
+            other => {
+                other?.void()?;
+            }
+        }
     }
     Ok(Value::Void)
 }
@@ -106,7 +112,7 @@ fn __while(backend: &mut Backend, expr: &Expr, block: &Block) -> Result<Value, S
             Err(Signal::Continue) => continue,
             Err(Signal::Break(_)) => break,
             other => {
-                other?;
+                other?.void()?;
             }
         }
     }
