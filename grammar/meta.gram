@@ -30,7 +30,6 @@ peg decorator -> { Decorator }:
 peg tag -> { Tag }:
     / 'memo' { Tag::Memo }
     / 'left' { Tag::Left }
-    / 'token' { Tag::Token }
     / 'intern' { Tag::Intern }
     / 'ws' { Tag::Whitespace }
     ;
@@ -93,18 +92,15 @@ peg primary -> { Primary }:
     / set=set { set }
     ;
 
-@(token)
 lex set -> { Primary }:
     / '[' '^' set=#range+ #']' { Primary::Exclude(set) }
     / '[' set=#range+ #']' { Primary::Include(set) }
     ;
 
-@(token)
 lex string -> { Vec<usize> }:
     / '\'' string=#LCH+ #'\'' { string }
     ;
 
-@(token)
 lex range -> { (usize, usize) }:
     / start=SCH '-' end=#SCH { (start, end) }
     / ch=SCH { (ch, ch) }

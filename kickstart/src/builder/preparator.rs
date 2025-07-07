@@ -32,9 +32,9 @@ impl Builder {
 
         for callable in grammar.callables {
             let (name, deco) = match callable {
-                Callable::Rule(deco, _, name, ty, rule) => {
+                Callable::Rule(deco, prefix, name, ty, rule) => {
                     keywords.append(&mut rule.keywords(&intern));
-                    rules.insert(name, (ty, rule));
+                    rules.insert(name, (prefix, ty, rule));
                     (name, deco)
                 }
                 Callable::Regex(deco, name, regex) => {
@@ -64,7 +64,7 @@ impl Builder {
         }
 
         let mut graph = HashMap::new();
-        for (name, (_, rule)) in &rules {
+        for (name, (_, _, rule)) in &rules {
             graph.insert(*name, rule.left());
         }
 

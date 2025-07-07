@@ -1,4 +1,4 @@
-use crate::ast::{Alter, Assignment, Atom, Item, Lookahead, Rule, Tag};
+use crate::ast::{Alter, Assignment, Atom, Item, Lookahead, Prefix, Rule, Tag};
 use crate::builder::common::{s2c, Builder, Root};
 use crate::builder::dfa::common::{Automaton, Language};
 use crate::parser::Intern;
@@ -76,12 +76,11 @@ impl Builder {
 
     fn method(&self, id: &usize) -> (TokenStream, TokenStream, TokenStream) {
         let name = format_ident!("{}", self.intern.get(id).unwrap());
-        let (ty, constant, body) = if let Some((ty, rule)) = self.rules.get(id) {
+        let (ty, constant, body) = if let Some((prefix, ty, rule)) = self.rules.get(id) {
             let ty = parse_str::<TokenStream>(self.intern.get(ty).unwrap()).unwrap();
-            let body = if self.tags.token.contains(id) {
-                quote! { self.__token(RULES) }
-            } else {
-                quote! { self.__rule(RULES) }
+            let body = match prefix {
+                Prefix::Peg => quote! { self.__rule(RULES) },
+                Prefix::Lex => quote! { self.__token(RULES) },
             };
 
             let body = if self.tags.left.contains(id) {
