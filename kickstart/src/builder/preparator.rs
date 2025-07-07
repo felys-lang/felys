@@ -111,17 +111,17 @@ impl Builder {
 
 impl Rule {
     fn left(&self) -> HashSet<usize> {
-        let mut left = HashSet::new();
-        for alter in &self.alters {
+        let mut left = self.first.left();
+        for alter in &self.more {
             left.extend(alter.left());
         }
         left
     }
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
-        let mut keywords = Vec::new();
-        for alter in &self.alters {
-            keywords.append(&mut alter.keywords(intern));
+        let mut keywords = self.first.keywords(intern);
+        for alter in &self.more {
+            keywords.extend(alter.keywords(intern));
         }
         keywords
     }
@@ -142,7 +142,7 @@ impl Alter {
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         let mut keywords = Vec::new();
         for assignment in &self.assignments {
-            keywords.append(&mut assignment.keywords(intern));
+            keywords.extend(assignment.keywords(intern));
         }
         keywords
     }

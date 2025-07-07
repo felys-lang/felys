@@ -1,9 +1,10 @@
 use crate::ast::{Alter, Assignment, Atom, Item, Lookahead, Rule, Tag};
-use crate::builder::dfa::common::{Automaton, Language};
 use crate::builder::common::{s2c, Builder, Root};
+use crate::builder::dfa::common::{Automaton, Language};
 use crate::parser::Intern;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
+use std::iter::once;
 use syn::parse_str;
 
 impl Builder {
@@ -133,7 +134,7 @@ impl Builder {
             };
 
             let rules = rule.codegen(&self.intern);
-            let size = rule.alters.len();
+            let size = 1 + rule.more.len();
             let constant = quote! {
                 const RULES: super::Rules<#ty, #size> = #rules;
             };
@@ -190,7 +191,9 @@ impl Builder {
 
 impl Rule {
     fn codegen(&self, intern: &Intern) -> TokenStream {
-        let alters = self.alters.iter().map(|x| x.codegen(intern));
+        let first = once(self.first.codegen(intern));
+        let more = self.more.iter().map(|x| x.codegen(intern));
+        let alters = first.chain(more);
         quote! { [#(#alters),*] }
     }
 }

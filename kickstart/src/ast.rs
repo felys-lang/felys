@@ -12,7 +12,8 @@ pub enum Callable {
 }
 
 pub struct Rule {
-    pub alters: Vec<Alter>,
+    pub first: Alter,
+    pub more: Vec<Alter>,
 }
 
 #[derive(Debug)]

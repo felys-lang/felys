@@ -35,11 +35,9 @@ tag -> { Tag }:
     ;
 
 rule -> { Rule }:
-    / '/'? first=#alter more=('/' alter=#alter)* { {
-        let mut alters = more;
-        alters.insert(0, first);
-        Rule { alters }
-    } }
+    / '/'? first=#alter more=('/' alter=#alter)* {
+        Rule { first, more }
+    }
     ;
 
 alter -> { Alter }:
