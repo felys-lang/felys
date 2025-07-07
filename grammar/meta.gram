@@ -19,11 +19,7 @@ callable -> { Callable }:
     ;
 
 decorator -> { Decorator }:
-    / '@' #'(' first=#tag more=(',' tag=#tag)* #')' { {
-        let mut tags = more;
-        tags.insert(0, first);
-        Decorator { tags }
-    } }
+    / '@' #'(' first=#tag more=(',' tag=#tag)* #')' { Decorator { first, more } }
     ;
 
 tag -> { Tag }:

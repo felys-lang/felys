@@ -337,7 +337,7 @@ impl Atom {
             Atom::Nested(deco, x) => {
                 let rule = x.codegen(intern);
                 if let Some(deco) = deco {
-                    if let Some(Tag::Token) = deco.tags.first() {
+                    if let Tag::Token = deco.first {
                         quote! { x.__token(#rule) }
                     } else {
                         panic!("tag not supported")

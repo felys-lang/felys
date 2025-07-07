@@ -45,7 +45,8 @@ impl Builder {
                     for (name, regex) in shared {
                         sequence.push(name);
                         regexes.insert(name, regex);
-                        for tag in &deco.tags {
+                        tags.add(&deco.first, name);
+                        for tag in &deco.more {
                             tags.add(tag, name);
                         }
                     }
@@ -56,7 +57,8 @@ impl Builder {
             let Some(decorator) = deco else {
                 continue;
             };
-            for tag in &decorator.tags {
+            tags.add(&decorator.first, name);
+            for tag in &decorator.more {
                 tags.add(tag, name);
             }
         }

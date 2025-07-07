@@ -18,7 +18,8 @@ pub struct Rule {
 
 #[derive(Debug)]
 pub struct Decorator {
-    pub tags: Vec<Tag>,
+    pub first: Tag,
+    pub more: Vec<Tag>,
 }
 
 #[derive(Debug)]
