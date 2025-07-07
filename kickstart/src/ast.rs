@@ -1,0 +1,78 @@
+use std::rc::Rc;
+
+pub struct Grammar {
+    pub import: Option<usize>,
+    pub callables: Vec<Callable>,
+}
+
+pub enum Callable {
+    Rule(Option<Decorator>, usize, usize, Rule),
+    Regex(Option<Decorator>, usize, Regex),
+    Shared(Decorator, Vec<(usize, Regex)>),
+}
+
+pub struct Rule {
+    pub alters: Vec<Alter>,
+}
+
+#[derive(Debug)]
+pub struct Decorator {
+    pub tags: Vec<Tag>,
+}
+
+#[derive(Debug)]
+pub enum Tag {
+    Memo,
+    Left,
+    Token,
+    Intern,
+    Whitespace,
+}
+
+pub struct Alter {
+    pub assignments: Vec<Assignment>,
+    pub action: Option<usize>,
+}
+
+pub enum Assignment {
+    Named(usize, Item),
+    Lookahead(Lookahead),
+    Anonymous(Item),
+    Clean,
+}
+
+pub enum Lookahead {
+    Positive(Atom),
+    Negative(Atom),
+}
+
+pub enum Item {
+    Optional(Atom),
+    ZeroOrMore(Atom),
+    OnceOrMore(bool, Atom),
+    Name(bool, Atom),
+}
+
+pub enum Atom {
+    Name(usize),
+    String(Vec<usize>),
+    Nested(Option<Decorator>, Rule),
+}
+
+#[derive(Clone)]
+pub enum Regex {
+    Union(Rc<Regex>, Rc<Regex>),
+    Concat(Rc<Regex>, Rc<Regex>),
+    ZeroOrMore(Rc<Regex>),
+    OnceOrMore(Rc<Regex>),
+    Primary(Primary),
+}
+
+#[derive(Clone)]
+pub enum Primary {
+    Parentheses(Rc<Regex>),
+    Exclude(Vec<(usize, usize)>),
+    Include(Vec<(usize, usize)>),
+    Literal(Vec<usize>),
+    Name(usize),
+}
