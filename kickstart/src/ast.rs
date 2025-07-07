@@ -31,7 +31,6 @@ pub struct Decorator {
 pub enum Tag {
     Memo,
     Left,
-    Token,
     Intern,
     Whitespace,
 }
@@ -63,7 +62,7 @@ pub enum Item {
 pub enum Atom {
     Name(usize),
     String(Vec<usize>),
-    Nested(Option<Decorator>, Rule),
+    Nested(Rule),
 }
 
 #[derive(Clone)]

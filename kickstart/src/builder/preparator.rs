@@ -9,7 +9,6 @@ impl Tags {
             Tag::Memo => self.memo.insert(name),
             Tag::Left => self.left.insert(name),
             Tag::Intern => self.intern.insert(name),
-            Tag::Token => self.token.insert(name),
             Tag::Whitespace => self.ws.insert(name),
         };
     }
@@ -25,7 +24,6 @@ impl Builder {
         let mut tags = Tags {
             memo: HashSet::new(),
             left: HashSet::new(),
-            token: HashSet::new(),
             intern: HashSet::new(),
             ws: HashSet::new(),
         };
@@ -236,7 +234,7 @@ impl Atom {
         match self {
             Atom::Name(name) => HashSet::from([*name]),
             Atom::String(_) => HashSet::new(),
-            Atom::Nested(_, _) => HashSet::new(),
+            Atom::Nested(_) => HashSet::new(),
         }
     }
 
@@ -250,7 +248,7 @@ impl Atom {
                     .collect();
                 vec![string]
             }
-            Atom::Nested(_, rule) => rule.keywords(intern),
+            Atom::Nested(rule) => rule.keywords(intern),
         }
     }
 }

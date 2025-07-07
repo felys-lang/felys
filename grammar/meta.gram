@@ -64,7 +64,7 @@ peg item -> { Item }:
     ;
 
 peg atom -> { Atom }:
-    / decorator=decorator? '(' rule=#rule #')' { Atom::Nested(decorator, rule) }
+    / '(' rule=#rule #')' { Atom::Nested(rule) }
     / string=string { Atom::String(string) }
     / name=NAME { Atom::Name(name) }
     ;

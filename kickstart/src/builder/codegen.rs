@@ -1,4 +1,4 @@
-use crate::ast::{Alter, Assignment, Atom, Item, Lookahead, Prefix, Rule, Tag};
+use crate::ast::{Alter, Assignment, Atom, Item, Lookahead, Prefix, Rule};
 use crate::builder::common::{s2c, Builder, Root};
 use crate::builder::dfa::common::{Automaton, Language};
 use crate::parser::Intern;
@@ -333,17 +333,9 @@ impl Atom {
                     .collect::<String>();
                 quote! { x.__expect(#string) }
             }
-            Atom::Nested(deco, x) => {
+            Atom::Nested(x) => {
                 let rule = x.codegen(intern);
-                if let Some(deco) = deco {
-                    if let Tag::Token = deco.first {
-                        quote! { x.__token(#rule) }
-                    } else {
-                        panic!("tag not supported")
-                    }
-                } else {
-                    quote! { x.__rule(#rule) }
-                }
+                quote! { x.__rule(#rule) }
             }
         }
     }
@@ -357,7 +349,7 @@ impl Atom {
                     .map(|x| s2c(intern.get(x).unwrap()))
                     .collect::<String>()
             ),
-            Atom::Nested(_, _) => "???".to_string(),
+            Atom::Nested(_) => "???".to_string(),
         }
     }
 }
