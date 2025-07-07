@@ -1,5 +1,5 @@
 use crate::ast::Rule;
-use crate::builder::regex::common::Language;
+use crate::builder::dfa::common::Language;
 use crate::parser::Intern;
 use proc_macro2::TokenStream;
 use std::collections::{HashMap, HashSet};

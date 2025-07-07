@@ -1,4 +1,4 @@
-use crate::builder::regex::common::{Automaton, Language, Terminal};
+use crate::builder::dfa::common::{Automaton, Language, Terminal};
 use std::collections::{HashMap, HashSet};
 
 type Graph = HashMap<usize, HashSet<usize>>;

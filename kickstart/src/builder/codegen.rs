@@ -1,5 +1,5 @@
 use crate::ast::{Alter, Assignment, Atom, Item, Lookahead, Rule, Tag};
-use crate::builder::regex::common::{Automaton, Language};
+use crate::builder::dfa::common::{Automaton, Language};
 use crate::builder::common::{s2c, Builder, Root};
 use crate::parser::Intern;
 use proc_macro2::TokenStream;

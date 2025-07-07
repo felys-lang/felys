@@ -2,7 +2,7 @@ use crate::ast::{Primary, Regex};
 use crate::parser::Intern;
 use std::collections::HashMap;
 use crate::builder::common::s2c;
-use crate::builder::regex::common::{Language, Terminal};
+use crate::builder::dfa::common::{Language, Terminal};
 
 impl Regex {
     pub fn desugar(

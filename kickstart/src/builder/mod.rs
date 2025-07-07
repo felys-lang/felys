@@ -3,4 +3,4 @@ pub mod common;
 mod preparator;
 mod template;
 mod writer;
-mod regex;
+mod dfa;
