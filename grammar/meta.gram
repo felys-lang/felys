@@ -1,4 +1,7 @@
-{ use crate::ast::*; }
+{
+    use crate::ast::*;
+    use crate::builder::common::s2c;
+}
 
 peg grammar -> { Grammar }:
     / import=action? $ callables=(callable=callable $)* #eof {
@@ -95,6 +98,16 @@ peg primary -> { Primary }:
 lex SET -> { Primary }:
     / '[' '^' set=#RANGE+ #']' { Primary::Exclude(set) }
     / '[' set=#RANGE+ #']' { Primary::Include(set) }
+    ;
+
+lex KEYWORD -> { usize }:
+    / '\'' keyword=#LCH+ #'\'' { {
+        let keyword = keyword
+            .iter()
+            .map(|c| s2c(x.intern.get(c).unwrap()))
+            .collect::<String>();
+        x.intern.id(keyword.as_str())
+    } }
     ;
 
 lex STRING -> { Vec<usize> }:
