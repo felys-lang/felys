@@ -6,9 +6,14 @@ pub struct Grammar {
 }
 
 pub enum Callable {
-    Rule(Option<Decorator>, usize, usize, Rule),
+    Rule(Option<Decorator>, Prefix, usize, usize, Rule),
     Regex(Option<Decorator>, usize, Regex),
     Shared(Decorator, Vec<(usize, Regex)>),
+}
+
+pub enum Prefix {
+    Peg,
+    Lex,
 }
 
 pub struct Rule {

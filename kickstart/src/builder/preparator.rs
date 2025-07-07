@@ -32,7 +32,7 @@ impl Builder {
 
         for callable in grammar.callables {
             let (name, deco) = match callable {
-                Callable::Rule(deco, name, ty, rule) => {
+                Callable::Rule(deco, _, name, ty, rule) => {
                     keywords.append(&mut rule.keywords(&intern));
                     rules.insert(name, (ty, rule));
                     (name, deco)
