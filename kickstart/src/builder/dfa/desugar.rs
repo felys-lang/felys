@@ -1,8 +1,8 @@
 use crate::ast::{Primary, Regex};
-use crate::parser::Intern;
-use std::collections::HashMap;
 use crate::builder::common::s2c;
 use crate::builder::dfa::common::{Language, Terminal};
+use crate::parser::Intern;
+use std::collections::HashMap;
 
 impl Regex {
     pub fn desugar(

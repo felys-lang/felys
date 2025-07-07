@@ -65,7 +65,7 @@ peg item -> { Item }:
 
 peg atom -> { Atom }:
     / '(' rule=#rule #')' { Atom::Nested(rule) }
-    / string=string { Atom::String(string) }
+    / string=STRING { Atom::String(string) }
     / name=NAME { Atom::Name(name) }
     ;
 
@@ -87,21 +87,21 @@ peg repeat -> { Regex }:
 
 peg primary -> { Primary }:
     / '(' regex=#union #')' { Primary::Parentheses(regex.into()) }
-    / string=string { Primary::Literal(string) }
+    / string=STRING { Primary::Literal(string) }
     / name=NAME { Primary::Name(name) }
-    / set=set { set }
+    / set=SET { set }
     ;
 
-lex set -> { Primary }:
-    / '[' '^' set=#range+ #']' { Primary::Exclude(set) }
-    / '[' set=#range+ #']' { Primary::Include(set) }
+lex SET -> { Primary }:
+    / '[' '^' set=#RANGE+ #']' { Primary::Exclude(set) }
+    / '[' set=#RANGE+ #']' { Primary::Include(set) }
     ;
 
-lex string -> { Vec<usize> }:
+lex STRING -> { Vec<usize> }:
     / '\'' string=#LCH+ #'\'' { string }
     ;
 
-lex range -> { (usize, usize) }:
+lex RANGE -> { (usize, usize) }:
     / start=SCH '-' end=#SCH { (start, end) }
     / ch=SCH { (ch, ch) }
     ;

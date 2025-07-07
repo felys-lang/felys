@@ -79,8 +79,8 @@ impl Builder {
         let (ty, constant, body) = if let Some((prefix, ty, rule)) = self.rules.get(id) {
             let ty = parse_str::<TokenStream>(self.intern.get(ty).unwrap()).unwrap();
             let body = match prefix {
-                Prefix::Peg => quote! { self.__rule(RULES) },
-                Prefix::Lex => quote! { self.__token(RULES) },
+                Prefix::Peg => quote! { self.__peg(RULES) },
+                Prefix::Lex => quote! { self.__lex(RULES) },
             };
 
             let body = if self.tags.left.contains(id) {
@@ -335,7 +335,7 @@ impl Atom {
             }
             Atom::Nested(x) => {
                 let rule = x.codegen(intern);
-                quote! { x.__rule(#rule) }
+                quote! { x.__peg(#rule) }
             }
         }
     }
