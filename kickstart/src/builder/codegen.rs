@@ -1,5 +1,5 @@
 use crate::ast::{Alter, Assignment, Atom, Item, Lookahead, Prefix, Rule};
-use crate::builder::common::{s2c, Builder, Root};
+use crate::builder::common::{Builder, Root};
 use crate::builder::dfa::common::{Automaton, Language};
 use crate::parser::Intern;
 use proc_macro2::TokenStream;
@@ -326,12 +326,9 @@ impl Atom {
                 let name = format_ident!("{}", intern.get(x).unwrap());
                 quote! { x.#name() }
             }
-            Atom::String(x) => {
-                let string = x
-                    .iter()
-                    .map(|x| s2c(intern.get(x).unwrap()))
-                    .collect::<String>();
-                quote! { x.__expect(#string) }
+            Atom::Keyword(x) => {
+                let keyword = intern.get(x).unwrap();
+                quote! { x.__expect(#keyword) }
             }
             Atom::Nested(x) => {
                 let rule = x.codegen(intern);
@@ -343,12 +340,7 @@ impl Atom {
     fn msg(&self, intern: &Intern) -> String {
         match self {
             Atom::Name(x) => format!("<{}>", intern.get(x).unwrap()),
-            Atom::String(x) => format!(
-                "'{}'",
-                x.iter()
-                    .map(|x| s2c(intern.get(x).unwrap()))
-                    .collect::<String>()
-            ),
+            Atom::Keyword(x) => format!("'{}'", intern.get(x).unwrap()),
             Atom::Nested(_) => "???".to_string(),
         }
     }

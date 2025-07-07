@@ -61,7 +61,7 @@ pub enum Item {
 
 pub enum Atom {
     Name(usize),
-    String(Vec<usize>),
+    Keyword(usize),
     Nested(Rule),
 }
 

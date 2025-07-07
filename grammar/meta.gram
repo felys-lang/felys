@@ -1,5 +1,6 @@
 {
     use crate::ast::*;
+    #[allow(unused_imports)]
     use crate::builder::common::s2c;
 }
 
@@ -68,7 +69,7 @@ peg item -> { Item }:
 
 peg atom -> { Atom }:
     / '(' rule=#rule #')' { Atom::Nested(rule) }
-    / string=STRING { Atom::String(string) }
+    / keyword=KEYWORD { Atom::Keyword(keyword) }
     / name=NAME { Atom::Name(name) }
     ;
 
