@@ -69,6 +69,7 @@ pub enum BinOp {
     Mul,
     Div,
     Mod,
+    Dot,
 }
 
 #[derive(Clone, Debug)]
