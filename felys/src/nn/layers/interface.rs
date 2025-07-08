@@ -2,7 +2,9 @@ use crate::nn::layers::function::{CrossEntropy, ReLU};
 use crate::nn::layers::{Add, Div, Dot, Mul, Neg, Pow, Sub};
 use crate::nn::matrix::Matrix;
 use crate::nn::optim::Gradients;
+use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct Operator {
     pub matrix: Matrix,
     pub layer: Layer,
@@ -14,16 +16,17 @@ impl Operator {
     }
 }
 
+#[derive(Clone)]
 pub enum Layer {
-    Add(Box<Add>),
-    Sub(Box<Sub>),
-    Mul(Box<Mul>),
-    Div(Box<Div>),
-    Pow(Box<Pow>),
-    Neg(Box<Neg>),
-    Dot(Box<Dot>),
-    ReLU(Box<ReLU>),
-    CrossEntropy(Box<CrossEntropy>),
+    Add(Rc<Add>),
+    Sub(Rc<Sub>),
+    Mul(Rc<Mul>),
+    Div(Rc<Div>),
+    Pow(Rc<Pow>),
+    Neg(Rc<Neg>),
+    Dot(Rc<Dot>),
+    ReLU(Rc<ReLU>),
+    CrossEntropy(Rc<CrossEntropy>),
     Learnable(usize),
     Fixed,
 }
@@ -48,11 +51,8 @@ impl Layer {
 
 pub trait Differentiable<const S: usize> {
     fn build(input: [Operator; S]) -> Result<Operator, String>;
-    fn differentiate(self, grad: &Matrix) -> Result<[Operator; S], String>;
-    fn backward(self, grad: Matrix) -> Result<Gradients, String>
-    where
-        Self: Sized,
-    {
+    fn differentiate(&self, grad: &Matrix) -> Result<[Operator; S], String>;
+    fn backward(&self, grad: Matrix) -> Result<Gradients, String> {
         let mut gradients = Gradients::empty();
         for op in self.differentiate(&grad)? {
             let more = op.layer.backward(op.matrix)?;

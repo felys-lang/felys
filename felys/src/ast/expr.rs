@@ -19,7 +19,7 @@ pub enum Expr {
     /// loop with not tests: `loop { block }`
     Loop(Block),
     /// matlab like matrix: `[0.0, 0.0;]`
-    Matrix(Vec<BufVec<Float, 1>>),
+    Matrix(BufVec<BufVec<Float, 1>, 1>),
     /// return value: `return elysia`
     Return(Option<Rc<Expr>>),
     /// while loop: `while expr { block }`

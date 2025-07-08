@@ -19,8 +19,8 @@ impl Differentiable<2> for Add {
         Ok(Operator::new(x.matrix, layer))
     }
 
-    fn differentiate(self, grad: &Matrix) -> Result<[Operator; 2], String> {
-        let [x, y] = self.subtree;
+    fn differentiate(&self, grad: &Matrix) -> Result<[Operator; 2], String> {
+        let [x, y] = self.subtree.clone();
         let dx = grad.clone();
         let dy = grad.clone();
         Ok([Operator::new(dx, x), Operator::new(dy, y)])
@@ -44,8 +44,8 @@ impl Differentiable<2> for Sub {
         Ok(Operator::new(x.matrix, layer))
     }
 
-    fn differentiate(self, grad: &Matrix) -> Result<[Operator; 2], String> {
-        let [x, y] = self.subtree;
+    fn differentiate(&self, grad: &Matrix) -> Result<[Operator; 2], String> {
+        let [x, y] = self.subtree.clone();
         let dx = grad.clone();
         let mut dy = grad.clone();
         dy.apply(|x| -x)?;
@@ -72,9 +72,9 @@ impl Differentiable<2> for Mul {
         Ok(Operator::new(x.matrix, layer))
     }
 
-    fn differentiate(self, grad: &Matrix) -> Result<[Operator; 2], String> {
-        let [x, y] = self.subtree;
-        let [mut dx, mut dy] = self.grad;
+    fn differentiate(&self, grad: &Matrix) -> Result<[Operator; 2], String> {
+        let [x, y] = self.subtree.clone();
+        let [mut dx, mut dy] = self.grad.clone();
         dx.broadcast(grad, |x, y| x * y)?;
         dy.broadcast(grad, |x, y| x * y)?;
         Ok([Operator::new(dx, x), Operator::new(dy, y)])
@@ -106,9 +106,9 @@ impl Differentiable<2> for Div {
         Ok(Operator::new(x.matrix, layer))
     }
 
-    fn differentiate(self, grad: &Matrix) -> Result<[Operator; 2], String> {
-        let [x, y] = self.subtree;
-        let [mut dx, mut dy] = self.grad;
+    fn differentiate(&self, grad: &Matrix) -> Result<[Operator; 2], String> {
+        let [x, y] = self.subtree.clone();
+        let [mut dx, mut dy] = self.grad.clone();
         dx.broadcast(grad, |x, y| x * y)?;
         dy.broadcast(grad, |x, y| x * y)?;
         Ok([Operator::new(dx, x), Operator::new(dy, y)])
@@ -140,9 +140,9 @@ impl Differentiable<2> for Pow {
         Ok(Operator::new(x.matrix, layer))
     }
 
-    fn differentiate(self, grad: &Matrix) -> Result<[Operator; 2], String> {
-        let [x, y] = self.subtree;
-        let [mut dx, mut dy] = self.grad;
+    fn differentiate(&self, grad: &Matrix) -> Result<[Operator; 2], String> {
+        let [x, y] = self.subtree.clone();
+        let [mut dx, mut dy] = self.grad.clone();
         dx.broadcast(grad, |x, y| x * y)?;
         dy.broadcast(grad, |x, y| x * y)?;
         Ok([Operator::new(dx, x), Operator::new(dy, y)])
@@ -161,8 +161,8 @@ impl Differentiable<1> for Neg {
         Ok(Operator::new(x.matrix, layer))
     }
 
-    fn differentiate(self, grad: &Matrix) -> Result<[Operator; 1], String> {
-        let [x] = self.subtree;
+    fn differentiate(&self, grad: &Matrix) -> Result<[Operator; 1], String> {
+        let [x] = self.subtree.clone();
         let mut dx = grad.clone();
         dx.apply(|x| -x)?;
         Ok([Operator::new(dx, x)])
@@ -192,9 +192,9 @@ impl Differentiable<2> for Dot {
         Ok(Operator::new(matrix, layer))
     }
 
-    fn differentiate(self, grad: &Matrix) -> Result<[Operator; 2], String> {
-        let [x, y] = self.subtree;
-        let [dx, dy] = self.grad;
+    fn differentiate(&self, grad: &Matrix) -> Result<[Operator; 2], String> {
+        let [x, y] = self.subtree.clone();
+        let [dx, dy] = &self.grad;
         let dx = grad.dot(&dx)?;
         let dy = dy.dot(grad)?;
         Ok([Operator::new(dx, x), Operator::new(dy, y)])

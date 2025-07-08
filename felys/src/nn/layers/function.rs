@@ -25,9 +25,9 @@ impl Differentiable<1> for ReLU {
         Ok(Operator::new(x.matrix, layer))
     }
 
-    fn differentiate(self, grad: &Matrix) -> Result<[Operator; 1], String> {
-        let [x] = self.subtree;
-        let [mut dx] = self.grad;
+    fn differentiate(&self, grad: &Matrix) -> Result<[Operator; 1], String> {
+        let [x] = self.subtree.clone();
+        let [mut dx] = self.grad.clone();
         dx.broadcast(grad, |x, y| x * y)?;
         Ok([Operator::new(dx, x)])
     }
@@ -88,9 +88,9 @@ impl Differentiable<2> for CrossEntropy {
         Ok(Operator::new(matrix, layer))
     }
 
-    fn differentiate(self, _: &Matrix) -> Result<[Operator; 2], String> {
-        let [x, y] = self.subtree;
-        let dx = Matrix::from(self.softmax);
+    fn differentiate(&self, _: &Matrix) -> Result<[Operator; 2], String> {
+        let [x, y] = self.subtree.clone();
+        let dx = Matrix::from(self.softmax.clone());
         let dy = Matrix::empty();
         Ok([Operator::new(dx, x), Operator::new(dy, y)])
     }

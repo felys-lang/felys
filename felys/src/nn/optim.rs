@@ -35,21 +35,23 @@ impl Gradients {
 
 pub struct Optimizer {
     parameters: Vec<(Matrix, Matrix)>,
-    lr: f64,
     momentum: f64,
 }
 
 impl Optimizer {
-    pub fn new(parameters: Vec<Matrix>, lr: f64, momentum: f64) -> Self {
+    pub fn new(parameters: Vec<Matrix>, momentum: f64) -> Self {
         let params = parameters
             .into_iter()
             .map(|x| (Matrix::full(0.0, x.shape), x))
             .collect();
         Self {
             parameters: params,
-            lr,
             momentum,
         }
+    }
+
+    pub fn export(self) -> Vec<(Matrix, Matrix)> {
+        self.parameters
     }
 
     pub fn get(&self, id: usize) -> Result<Matrix, String> {
@@ -61,10 +63,10 @@ impl Optimizer {
         Ok(matrix)
     }
 
-    pub fn step(&mut self, gradients: Gradients) -> Result<(), String> {
+    pub fn step(&mut self, gradients: Gradients, lr: f64) -> Result<(), String> {
         for (id, grad) in gradients.make()? {
             if let Some((m, x)) = self.parameters.get_mut(id) {
-                m.broadcast(&grad, |mu, gt| self.momentum * mu - self.lr * gt)?;
+                m.broadcast(&grad, |mu, gt| self.momentum * mu - lr * gt)?;
                 x.broadcast(m, |theta, vt| theta + vt)?;
             } else {
                 return Err(format!("parameter {id} does not exist"));

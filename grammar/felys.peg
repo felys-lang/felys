@@ -128,7 +128,7 @@ peg primary -> { Expr }:
     / '(' first=#expr #',' second=#expr more=(',' expr=#expr)* ','? #')' {
         Expr::Tuple(BufVec::new([first, second], more))
     }
-    / '[' rows=row+ #']' { Expr::Matrix(rows) }
+    / '[' first=row more=row+ #']' { Expr::Matrix(BufVec::new([first], more)) }
     / '[' args=args? #']' { Expr::List(args) }
     / '|' params=params? #'|' expr=#expr { Expr::Closure(params, expr.into()) }
     ;
