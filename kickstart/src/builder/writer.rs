@@ -23,7 +23,7 @@ impl Root {
             .create(true)
             .open(helper)
             .unwrap();
-        
+
         self.common.write(&path, "common");
     }
 }

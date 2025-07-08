@@ -1,9 +1,10 @@
-use crate::ast::{Alter, Assignment, Atom, Item, Lookahead, Rule, Tag};
+use crate::ast::{Alter, Assignment, Atom, Item, Lookahead, Prefix, Rule};
+use crate::builder::common::{Builder, Root};
 use crate::builder::dfa::common::{Automaton, Language};
-use crate::builder::common::{s2c, Builder, Root};
 use crate::parser::Intern;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
+use std::iter::once;
 use syn::parse_str;
 
 impl Builder {
@@ -75,12 +76,11 @@ impl Builder {
 
     fn method(&self, id: &usize) -> (TokenStream, TokenStream, TokenStream) {
         let name = format_ident!("{}", self.intern.get(id).unwrap());
-        let (ty, constant, body) = if let Some((ty, rule)) = self.rules.get(id) {
+        let (ty, constant, body) = if let Some((prefix, ty, rule)) = self.rules.get(id) {
             let ty = parse_str::<TokenStream>(self.intern.get(ty).unwrap()).unwrap();
-            let body = if self.tags.token.contains(id) {
-                quote! { self.__token(RULES) }
-            } else {
-                quote! { self.__rule(RULES) }
+            let body = match prefix {
+                Prefix::Peg => quote! { self.__peg(RULES) },
+                Prefix::Lex => quote! { self.__lex(RULES) },
             };
 
             let body = if self.tags.left.contains(id) {
@@ -133,7 +133,7 @@ impl Builder {
             };
 
             let rules = rule.codegen(&self.intern);
-            let size = rule.alters.len();
+            let size = 1 + rule.more.len();
             let constant = quote! {
                 const RULES: super::Rules<#ty, #size> = #rules;
             };
@@ -190,7 +190,9 @@ impl Builder {
 
 impl Rule {
     fn codegen(&self, intern: &Intern) -> TokenStream {
-        let alters = self.alters.iter().map(|x| x.codegen(intern));
+        let first = once(self.first.codegen(intern));
+        let more = self.more.iter().map(|x| x.codegen(intern));
+        let alters = first.chain(more);
         quote! { [#(#alters),*] }
     }
 }
@@ -324,24 +326,13 @@ impl Atom {
                 let name = format_ident!("{}", intern.get(x).unwrap());
                 quote! { x.#name() }
             }
-            Atom::String(x) => {
-                let string = x
-                    .iter()
-                    .map(|x| s2c(intern.get(x).unwrap()))
-                    .collect::<String>();
-                quote! { x.__expect(#string) }
+            Atom::Keyword(x) => {
+                let keyword = intern.get(x).unwrap();
+                quote! { x.__expect(#keyword) }
             }
-            Atom::Nested(deco, x) => {
+            Atom::Nested(x) => {
                 let rule = x.codegen(intern);
-                if let Some(deco) = deco {
-                    if let Some(Tag::Token) = deco.tags.first() {
-                        quote! { x.__token(#rule) }
-                    } else {
-                        panic!("tag not supported")
-                    }
-                } else {
-                    quote! { x.__rule(#rule) }
-                }
+                quote! { x.__peg(#rule) }
             }
         }
     }
@@ -349,13 +340,8 @@ impl Atom {
     fn msg(&self, intern: &Intern) -> String {
         match self {
             Atom::Name(x) => format!("<{}>", intern.get(x).unwrap()),
-            Atom::String(x) => format!(
-                "'{}'",
-                x.iter()
-                    .map(|x| s2c(intern.get(x).unwrap()))
-                    .collect::<String>()
-            ),
-            Atom::Nested(_, _) => "???".to_string(),
+            Atom::Keyword(x) => format!("'{}'", intern.get(x).unwrap()),
+            Atom::Nested(_) => "???".to_string(),
         }
     }
 }

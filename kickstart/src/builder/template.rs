@@ -170,15 +170,15 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
                 result
             }
 
-            pub fn __rule<T, const S: usize>(&mut self, rules: Rules<T, S>) -> Option<T> {
+            pub fn __peg<T, const S: usize>(&mut self, rules: Rules<T, S>) -> Option<T> {
                 rules.iter().filter_map(|rule| self.__attempt(*rule)).next()
             }
 
-            pub fn __token<T, const S: usize>(&mut self, rules: Rules<T, S>) -> Option<T> {
+            pub fn __lex<T, const S: usize>(&mut self, rules: Rules<T, S>) -> Option<T> {
                 self.stream.trim();
                 let strict = self.stream.strict;
                 self.stream.strict = true;
-                let result = self.__rule(rules);
+                let result = self.__peg(rules);
                 self.stream.strict = strict;
                 result
             }

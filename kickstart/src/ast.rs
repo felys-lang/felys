@@ -6,25 +6,31 @@ pub struct Grammar {
 }
 
 pub enum Callable {
-    Rule(Option<Decorator>, usize, usize, Rule),
+    Rule(Option<Decorator>, Prefix, usize, usize, Rule),
     Regex(Option<Decorator>, usize, Regex),
     Shared(Decorator, Vec<(usize, Regex)>),
 }
 
+pub enum Prefix {
+    Peg,
+    Lex,
+}
+
 pub struct Rule {
-    pub alters: Vec<Alter>,
+    pub first: Alter,
+    pub more: Vec<Alter>,
 }
 
 #[derive(Debug)]
 pub struct Decorator {
-    pub tags: Vec<Tag>,
+    pub first: Tag,
+    pub more: Vec<Tag>,
 }
 
 #[derive(Debug)]
 pub enum Tag {
     Memo,
     Left,
-    Token,
     Intern,
     Whitespace,
 }
@@ -55,8 +61,8 @@ pub enum Item {
 
 pub enum Atom {
     Name(usize),
-    String(Vec<usize>),
-    Nested(Option<Decorator>, Rule),
+    Keyword(usize),
+    Nested(Rule),
 }
 
 #[derive(Clone)]

@@ -1,5 +1,5 @@
 use crate::ast::{Alter, Assignment, Atom, Callable, Grammar, Item, Lookahead, Rule, Tag};
-use crate::builder::common::{s2c, Builder, Tags};
+use crate::builder::common::{Builder, Tags};
 use crate::parser::Intern;
 use std::collections::{HashMap, HashSet};
 
@@ -9,7 +9,6 @@ impl Tags {
             Tag::Memo => self.memo.insert(name),
             Tag::Left => self.left.insert(name),
             Tag::Intern => self.intern.insert(name),
-            Tag::Token => self.token.insert(name),
             Tag::Whitespace => self.ws.insert(name),
         };
     }
@@ -25,16 +24,15 @@ impl Builder {
         let mut tags = Tags {
             memo: HashSet::new(),
             left: HashSet::new(),
-            token: HashSet::new(),
             intern: HashSet::new(),
             ws: HashSet::new(),
         };
 
         for callable in grammar.callables {
             let (name, deco) = match callable {
-                Callable::Rule(deco, name, ty, rule) => {
+                Callable::Rule(deco, prefix, name, ty, rule) => {
                     keywords.append(&mut rule.keywords(&intern));
-                    rules.insert(name, (ty, rule));
+                    rules.insert(name, (prefix, ty, rule));
                     (name, deco)
                 }
                 Callable::Regex(deco, name, regex) => {
@@ -45,7 +43,8 @@ impl Builder {
                     for (name, regex) in shared {
                         sequence.push(name);
                         regexes.insert(name, regex);
-                        for tag in &deco.tags {
+                        tags.add(&deco.first, name);
+                        for tag in &deco.more {
                             tags.add(tag, name);
                         }
                     }
@@ -56,13 +55,14 @@ impl Builder {
             let Some(decorator) = deco else {
                 continue;
             };
-            for tag in &decorator.tags {
+            tags.add(&decorator.first, name);
+            for tag in &decorator.more {
                 tags.add(tag, name);
             }
         }
 
         let mut graph = HashMap::new();
-        for (name, (_, rule)) in &rules {
+        for (name, (_, _, rule)) in &rules {
             graph.insert(*name, rule.left());
         }
 
@@ -111,17 +111,17 @@ impl Builder {
 
 impl Rule {
     fn left(&self) -> HashSet<usize> {
-        let mut left = HashSet::new();
-        for alter in &self.alters {
+        let mut left = self.first.left();
+        for alter in &self.more {
             left.extend(alter.left());
         }
         left
     }
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
-        let mut keywords = Vec::new();
-        for alter in &self.alters {
-            keywords.append(&mut alter.keywords(intern));
+        let mut keywords = self.first.keywords(intern);
+        for alter in &self.more {
+            keywords.extend(alter.keywords(intern));
         }
         keywords
     }
@@ -142,7 +142,7 @@ impl Alter {
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         let mut keywords = Vec::new();
         for assignment in &self.assignments {
-            keywords.append(&mut assignment.keywords(intern));
+            keywords.extend(assignment.keywords(intern));
         }
         keywords
     }
@@ -233,22 +233,16 @@ impl Atom {
     fn left(&self) -> HashSet<usize> {
         match self {
             Atom::Name(name) => HashSet::from([*name]),
-            Atom::String(_) => HashSet::new(),
-            Atom::Nested(_, _) => HashSet::new(),
+            Atom::Keyword(_) => HashSet::new(),
+            Atom::Nested(_) => HashSet::new(),
         }
     }
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         match self {
             Atom::Name(_) => Vec::new(),
-            Atom::String(keyword) => {
-                let string = keyword
-                    .iter()
-                    .map(|x| s2c(intern.get(x).unwrap()))
-                    .collect();
-                vec![string]
-            }
-            Atom::Nested(_, rule) => rule.keywords(intern),
+            Atom::Keyword(keyword) => vec![intern.get(keyword).unwrap().to_string()],
+            Atom::Nested(rule) => rule.keywords(intern),
         }
     }
 }
