@@ -1,3 +1,4 @@
+use crate::ast::utils::BufVec;
 use crate::ast::*;
 use std::rc::Rc;
 
@@ -17,6 +18,8 @@ pub enum Expr {
     If(Rc<Expr>, Block, Option<Rc<Expr>>),
     /// loop with not tests: `loop { block }`
     Loop(Block),
+    /// matlab like matrix: `[0.0, 0.0;]`
+    Matrix(Vec<BufVec<Float, 1>>),
     /// return value: `return elysia`
     Return(Option<Rc<Expr>>),
     /// while loop: `while expr { block }`
@@ -24,15 +27,15 @@ pub enum Expr {
     /// binary operation: `1 + 2`
     Binary(Rc<Expr>, BinOp, Rc<Expr>),
     /// closure: `|x| { x+1 }`, `|x| x+1`
-    Closure(Vec<Ident>, Rc<Expr>),
+    Closure(Option<BufVec<Ident, 1>>, Rc<Expr>),
     /// function call: `func(1, 2)`
-    Call(Rc<Expr>, Vec<Expr>),
+    Call(Rc<Expr>, Option<BufVec<Expr, 1>>),
     /// identifier: `elysia`
     Ident(Ident),
     /// tuple: `(elysia, 11.11)`
-    Tuple(Vec<Expr>),
+    Tuple(BufVec<Expr, 2>),
     /// tuple: `[elysia, 11.11]`
-    List(Vec<Expr>),
+    List(Option<BufVec<Expr, 1>>),
     /// literals: `"elysia"`, `11.11`, `true`
     Lit(Lit),
     /// explicit precedence: `(1 + 2)`

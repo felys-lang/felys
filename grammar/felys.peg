@@ -13,12 +13,9 @@ peg pat -> { Pat }:
     / UNDERSCORE { Pat::Any }
     / ident=ident { Pat::Ident(ident) }
     / lit=lit { Pat::Lit(lit) }
-    / '(' first=pat ',' second=#pat more=(',' pat=#pat)* #')' { {
-        let mut elements = more;
-        elements.insert(0, second);
-        elements.insert(0, first);
-        Pat::Tuple(elements)
-    } }
+    / '(' first=pat ',' second=#pat more=(',' pat=#pat)* #')' {
+        Pat::Tuple(BufVec::new([first, second], more))
+    }
     ;
 
 peg stmt -> { Stmt }:
@@ -110,41 +107,33 @@ peg unary -> { Expr }:
 
 peg call -> { Expr }:
     / call=call '(' args=args? #')' {
-        Expr::Call(call.into(), args.unwrap_or_default())
+        Expr::Call(call.into(), args)
     }
     / primary=primary
     ;
 
-peg args -> { Vec<Expr> }:
-    / first=expr more=(',' expr=#expr)* { {
-      let mut elements = more;
-      elements.insert(0, first);
-      elements
-    } }
+peg args -> { BufVec<Expr, 1> }:
+    / first=expr more=(',' expr=#expr)* { BufVec::new([first], more) }
     ;
 
 peg primary -> { Expr }:
     / lit=lit { Expr::Lit(lit) }
     / ident=ident { Expr::Ident(ident) }
     / '(' expr=#expr ')' { Expr::Paren(expr.into()) }
-    / '(' first=#expr #',' second=#expr more=(',' expr=#expr)* #')' { {
-        let mut elements = more;
-        elements.insert(0, second);
-        elements.insert(0, first);
-        Expr::Tuple(elements)
-    } }
-    / '[' args=args? #']' { Expr::List(args.unwrap_or_default()) }
-    / '|' params=params? #'|' expr=#expr {
-        Expr::Closure(params.unwrap_or_default(), expr.into())
+    / '(' first=#expr #',' second=#expr more=(',' expr=#expr)* #')' {
+        Expr::Tuple(BufVec::new([first, second], more))
     }
+    / '[' rows=row+ #']' { Expr::Matrix(rows) }
+    / '[' args=args? #']' { Expr::List(args) }
+    / '|' params=params? #'|' expr=#expr { Expr::Closure(params, expr.into()) }
     ;
 
-peg params -> { Vec<Ident> }:
-    / first=ident more=(',' ident=#ident)* { {
-        let mut elements = more;
-        elements.insert(0, first);
-        elements
-    } }
+peg row -> { BufVec<Float, 1> }:
+    / first=FLOAT more=(',' f=FLOAT)* ';' { BufVec::new([first], more) }
+    ;
+
+peg params -> { BufVec<Ident, 1> }:
+    / first=ident more=(',' ident=#ident)* { BufVec::new([first], more) }
     ;
 
 peg lit -> { Lit }:
