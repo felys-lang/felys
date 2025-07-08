@@ -1,6 +1,6 @@
-use crate::Fxx;
 use crate::nn::layers::{Differentiable, Layer, Operator};
 use crate::nn::matrix::Matrix;
+use crate::Fxx;
 
 pub struct ReLU {
     subtree: [Layer; 1],

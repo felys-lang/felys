@@ -1,4 +1,4 @@
-use crate::ast::{BufVec, Expr, Ident};
+use crate::ast::{Expr, Ident};
 use crate::nn::layers::Operator;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;

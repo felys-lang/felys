@@ -11,7 +11,6 @@ impl Value {
             Value::Float(x) => *x != 0.0,
             Value::Int(x) => *x != 0,
             Value::Str(x) => !x.is_empty(),
-            Value::Tuple(x) => !x.is_empty(),
             Value::List(x) => !x.is_empty(),
             _ => Err(Signal::Error("boolean value not available".to_string()))?,
         };

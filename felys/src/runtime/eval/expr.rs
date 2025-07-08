@@ -180,10 +180,13 @@ fn __list(backend: &mut Backend, list: &Option<BufVec<Expr, 1>>) -> Result<Value
 }
 
 fn __matrix(backend: &mut Backend, matrix: &BufVec<BufVec<Float, 1>, 1>) -> Result<Value, Signal> {
-    let shape = (matrix.len(), matrix.buffer()[0].len());
-    let length = shape.0 * shape.1;
-    let mut data = Vec::with_capacity(length);
+    let rows = matrix.len();
+    let cols = matrix.buffer()[0].len();
+    let mut data = Vec::with_capacity(rows * cols);
     for row in matrix.iter() {
+        if row.len() != cols {
+            return Err(Signal::Error("row length are not equal".to_string()));
+        }
         for x in row.iter() {
             let raw = backend
                 .intern
@@ -195,7 +198,7 @@ fn __matrix(backend: &mut Backend, matrix: &BufVec<BufVec<Float, 1>, 1>) -> Resu
             data.push(value);
         }
     }
-    let mat = Matrix::new(data, shape).map_err(Signal::Error)?;
+    let mat = Matrix::new(data, (rows, cols)).map_err(Signal::Error)?;
     let op = Operator::new(mat, Layer::Fixed);
     Ok(Value::Operator(op))
 }
@@ -222,10 +225,10 @@ fn __binary(backend: &mut Backend, lhs: &Expr, op: &BinOp, rhs: &Expr) -> Result
 }
 
 fn __unary(backend: &mut Backend, op: &UnaOp, expr: &Expr) -> Result<Value, Signal> {
-    let e = expr.eval(backend)?;
+    let x = expr.eval(backend)?;
     match op {
-        UnaOp::Not => e.not(),
-        UnaOp::Pos => e.pos(),
-        UnaOp::Neg => e.neg(),
+        UnaOp::Not => x.not(),
+        UnaOp::Pos => x.pos(),
+        UnaOp::Neg => x.neg(),
     }
 }
