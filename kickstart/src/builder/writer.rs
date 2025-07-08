@@ -15,7 +15,7 @@ impl Root {
         }
 
         write(&path, "mod.rs", &self.module);
-        write(&path, "parser.rs", &self.parser);
+        write(&path, "core.rs", &self.core);
         let mut helper = PathBuf::from(&path);
         helper.push("helper.rs");
         OpenOptions::new()

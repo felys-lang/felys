@@ -54,7 +54,7 @@ impl Builder {
             Some(x) => parse_str(self.intern.get(x).unwrap()).unwrap(),
             None => quote! {},
         };
-        let parser = quote! {
+        let core = quote! {
             #import
 
             #[allow(clippy::double_parens, clippy::let_unit_value)]
@@ -71,7 +71,7 @@ impl Builder {
             }
         };
 
-        self.template(parser, memo)
+        self.template(core, memo)
     }
 
     fn method(&self, id: &usize) -> (TokenStream, TokenStream, TokenStream) {

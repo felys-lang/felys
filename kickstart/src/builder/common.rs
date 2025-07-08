@@ -24,7 +24,7 @@ pub struct Tags {
 pub struct Root {
     pub common: Common,
     pub module: TokenStream,
-    pub parser: TokenStream,
+    pub core: TokenStream,
 }
 
 pub struct Common {

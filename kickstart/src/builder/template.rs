@@ -4,7 +4,7 @@ use quote::{quote, ToTokens};
 use syn::parse_str;
 
 impl Builder {
-    pub fn template(&self, parser: TokenStream, memo: Vec<(TokenStream, TokenStream)>) -> Root {
+    pub fn template(&self, core: TokenStream, memo: Vec<(TokenStream, TokenStream)>) -> Root {
         let import = match &self.import {
             Some(x) => parse_str::<TokenStream>(self.intern.get(x).unwrap()).unwrap(),
             None => quote! {},
@@ -39,7 +39,7 @@ impl Builder {
             module: quote! {
                 mod common;
                 mod helper;
-                mod parser;
+                mod core;
 
                 #[allow(unused)]
                 pub use helper::*;
@@ -47,7 +47,7 @@ impl Builder {
                 #[allow(unused)]
                 pub use common::*;
             },
-            parser,
+            core,
         }
     }
 }
