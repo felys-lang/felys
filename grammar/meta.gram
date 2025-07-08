@@ -11,7 +11,7 @@ peg grammar -> { Grammar }:
     ;
 
 peg callable -> { Callable }:
-    / decorator=decorator? prefix=prefix name=#NAME #'->' ty=#action #':' rule=#rule #';' {
+    / decorator=decorator? prefix=PREFIX name=#NAME #'->' ty=#action #':' rule=#rule #';' {
         Callable::Rule(decorator, prefix, name, ty, rule)
     }
     / decorator=decorator? name=NAME #':' regex=#union #';' {
@@ -20,11 +20,6 @@ peg callable -> { Callable }:
     / decorator=decorator #'{' shared=#(name=NAME #':' regex=#union #';')+ #'}' {
         Callable::Shared(decorator, shared)
     }
-    ;
-
-peg prefix -> { Prefix }:
-    / 'peg' { Prefix::Peg }
-    / 'lex' { Prefix::Lex }
     ;
 
 peg decorator -> { Decorator }:
@@ -96,6 +91,11 @@ peg primary -> { Primary }:
     / set=SET { set }
     ;
 
+lex PREFIX -> { Prefix }:
+    / 'peg' !TAIL { Prefix::Peg }
+    / 'lex' !TAIL { Prefix::Lex }
+    ;
+
 lex SET -> { Primary }:
     / '[' '^' set=#RANGE+ #']' { Primary::Exclude(set) }
     / '[' set=#RANGE+ #']' { Primary::Include(set) }
@@ -121,7 +121,8 @@ lex RANGE -> { (usize, usize) }:
     ;
 
 @(intern, memo)
-NAME: [a-zA-Z_][a-zA-Z0-9_]* ;
+NAME: [a-zA-Z_] TAIL* ;
+TAIL: [a-zA-Z0-9_] ;
 
 @(intern) {
     LCH: UNICODE | ESCAPE | [^\'\\] ;
