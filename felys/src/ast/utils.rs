@@ -1,13 +1,15 @@
+use std::rc::Rc;
+
 #[derive(Clone, Debug)]
 pub struct BufVec<T, const N: usize> {
-    buf: Box<[T; N]>,
+    buf: Rc<[T; N]>,
     vec: Vec<T>,
 }
 
 impl<T, const N: usize> BufVec<T, N> {
     pub fn new(buf: [T; N], vec: Vec<T>) -> Self {
         Self {
-            buf: Box::new(buf),
+            buf: Rc::new(buf),
             vec,
         }
     }
