@@ -14,6 +14,11 @@ impl Operator {
     pub fn new(matrix: Matrix, layer: Layer) -> Self {
         Self { matrix, layer }
     }
+
+    pub fn backward(&self) -> Result<Gradients, String> {
+        let grad = Matrix::full(1.0, self.matrix.shape);
+        self.layer.backward(grad)
+    }
 }
 
 #[derive(Clone)]
@@ -32,7 +37,7 @@ pub enum Layer {
 }
 
 impl Layer {
-    pub fn backward(self, grad: Matrix) -> Result<Gradients, String> {
+    pub fn backward(&self, grad: Matrix) -> Result<Gradients, String> {
         match self {
             Layer::Add(x) => x.backward(grad),
             Layer::Sub(x) => x.backward(grad),
@@ -43,7 +48,7 @@ impl Layer {
             Layer::Dot(x) => x.backward(grad),
             Layer::ReLU(x) => x.backward(grad),
             Layer::CrossEntropy(x) => x.backward(grad),
-            Layer::Learnable(name) => Ok(Gradients::new(name, grad)),
+            Layer::Learnable(name) => Ok(Gradients::new(*name, grad)),
             Layer::Fixed => Ok(Gradients::empty()),
         }
     }

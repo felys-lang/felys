@@ -195,7 +195,7 @@ impl Differentiable<2> for Dot {
     fn differentiate(&self, grad: &Matrix) -> Result<[Operator; 2], String> {
         let [x, y] = self.subtree.clone();
         let [dx, dy] = &self.grad;
-        let dx = grad.dot(&dx)?;
+        let dx = grad.dot(dx)?;
         let dy = dy.dot(grad)?;
         Ok([Operator::new(dx, x), Operator::new(dy, y)])
     }

@@ -1,4 +1,4 @@
-use crate::ast::{AssOp, BinOp, Block, BufVec, Expr, Float, Ident, Pat, UnaOp};
+use crate::ast::{AssOp, BinOp, Block, BufVec, Expr, Float, Ident, Int, Pat, UnaOp};
 use crate::nn::layers::{Layer, Operator};
 use crate::nn::matrix::Matrix;
 use crate::runtime::context::backend::{Frame, Global};
@@ -23,9 +23,11 @@ impl Evaluation for Expr {
             Expr::Closure(params, expr) => __closure(global, frame, params, expr),
             Expr::Call(params, args) => __call(global, frame, params, args),
             Expr::Ident(ident) => frame.get(*ident),
+            Expr::Step(expr) => __step(global, frame, expr),
             Expr::Tuple(tuple) => __tuple(global, frame, tuple),
             Expr::List(list) => __list(global, frame, list),
             Expr::Lit(lit) => lit.eval(global, frame),
+            Expr::Param(rows, cols, id) => __parameter(global, frame, rows, cols, id),
             Expr::Paren(expr) => expr.eval(global, frame),
             Expr::Unary(op, expr) => __unary(global, frame, op, expr),
         }
@@ -188,6 +190,16 @@ fn __closure(
     Ok(Value::Closure(params, expr.clone()))
 }
 
+fn __step(global: &mut Global, frame: &mut Frame, expr: &Rc<Expr>) -> Result<Value, Signal> {
+    let grads = expr
+        .eval(global, frame)?
+        .operator()?
+        .backward()
+        .map_err(Signal::Error)?;
+    global.optim.step(grads, 0.001).map_err(Signal::Error)?;
+    Ok(Value::Void)
+}
+
 fn __tuple(
     global: &mut Global,
     frame: &mut Frame,
@@ -268,6 +280,18 @@ fn __binary(
         BinOp::Mod => x.rem(y),
         BinOp::Dot => x.dot(y),
     }
+}
+
+fn __parameter(
+    global: &mut Global,
+    _: &mut Frame,
+    _: &Int,
+    _: &Int,
+    id: &usize,
+) -> Result<Value, Signal> {
+    let matrix = global.optim.get(id).map_err(Signal::Error)?;
+    let op = Operator::new(matrix, Layer::Learnable(*id));
+    Ok(Value::Operator(op))
 }
 
 fn __unary(

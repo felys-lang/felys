@@ -42,6 +42,7 @@ peg expr -> { Expr }:
     / LOOP block=#block { Expr::Loop(block) }
     / RETURN expr=expr? { Expr::Return(expr.map(Rc::new)) }
     / WHILE expr=#expr block=#block { Expr::While(expr.into(), block) }
+    / STEP expr=#expr { Expr::Step(expr.into()) }
     ;
 
 peg assignment -> { Expr }:
@@ -131,6 +132,7 @@ peg primary -> { Expr }:
     / '[' first=row more=row+ #']' { Expr::Matrix(BufVec::new([first], more)) }
     / '[' args=args? #']' { Expr::List(args) }
     / '|' params=params? #'|' expr=#expr { Expr::Closure(params, expr.into()) }
+    / '<' rows=#INT #',' cols=#INT #'>' { Expr::Param(rows, cols, x.stream.cursor) }
     ;
 
 peg row -> { BufVec<Float, 1> }:
@@ -174,6 +176,7 @@ lex ELSE -> { () }: 'else' !TAIL ;
 lex OR -> { () }: 'or' !TAIL ;
 lex AND -> { () }: 'and' !TAIL ;
 lex NOT -> { () }: 'not' !TAIL ;
+lex STEP -> { () }: 'step' !TAIL ;
 
 @(intern, memo)
 IDENT: [a-zA-Z_] TAIL* ;

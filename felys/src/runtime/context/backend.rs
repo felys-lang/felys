@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
 pub struct Global<'a> {
-    pub optim: &'a Optimizer,
+    pub optim: &'a mut Optimizer,
     pub intern: &'a Intern,
     pub timer: &'a Receiver<bool>,
 }

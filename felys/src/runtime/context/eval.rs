@@ -1,5 +1,5 @@
 use crate::ast::{Expr, Ident};
-use crate::nn::layers::{Add, Differentiable, Div, Dot, Mul, Neg, Sub};
+use crate::nn::layers::{Add, Differentiable, Div, Dot, Mul, Neg, Operator, Sub};
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::Signal;
 use std::rc::Rc;
@@ -46,6 +46,14 @@ impl Value {
             Ok((params, expr))
         } else {
             Err(Signal::Error("expect a `func` type".to_string()))
+        }
+    }
+    
+    pub fn operator(self) -> Result<Operator, Signal> {
+        if let Value::Operator(op) = self {
+            Ok(op)
+        } else {
+            Err(Signal::Error("expect a `operator` type".to_string()))
         }
     }
 }

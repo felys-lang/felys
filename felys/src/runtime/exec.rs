@@ -10,7 +10,13 @@ use std::thread;
 use std::time::Duration;
 
 impl Grammar {
-    pub fn exec(&self, mut intern: Intern, timeout: usize, depth: usize) -> Result<Value, String> {
+    pub fn exec(
+        &self,
+        mut intern: Intern,
+        mut optim: Optimizer,
+        timeout: usize,
+        depth: usize,
+    ) -> Result<Value, String> {
         let (tx, rx) = mpsc::channel();
         let limit = Duration::from_millis(timeout as u64);
         if !limit.is_zero() {
@@ -31,13 +37,11 @@ impl Grammar {
             ),
         ]);
 
-        let optim = Optimizer::new(vec![], 0.9);
         let mut global = Global {
-            optim: &optim,
+            optim: &mut optim,
             intern: &intern,
             timer: &rx,
         };
-
         let mut frame = Frame {
             depth: (0, depth),
             data: vec![base],

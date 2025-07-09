@@ -32,12 +32,16 @@ pub enum Expr {
     Call(Rc<Expr>, Option<BufVec<Expr, 1>>),
     /// identifier: `elysia`
     Ident(Ident),
+    /// loss backward and optimizer step: `step loss`
+    Step(Rc<Expr>),
     /// tuple: `(elysia, 11.11)`
     Tuple(BufVec<Expr, 2>),
-    /// tuple: `[elysia, 11.11]`
+    /// list: `[elysia, 11.11]`
     List(Option<BufVec<Expr, 1>>),
     /// literals: `"elysia"`, `11.11`, `true`
     Lit(Lit),
+    /// learnable parameter: `<10, 32>`
+    Param(Int, Int, usize),
     /// explicit precedence: `(1 + 2)`
     Paren(Rc<Expr>),
     /// unary operation: `-1`
