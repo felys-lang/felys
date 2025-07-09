@@ -1,13 +1,15 @@
-use crate::ast::Grammar;
-use crate::parser::{Intern, Packrat};
+use crate::parser::Packrat;
+use crate::program::Program;
 
 impl Packrat {
-    pub fn parse(mut self) -> Result<(Grammar, Intern), String> {
+    pub fn parse(mut self) -> Result<Program, String> {
         let result = self.grammar();
         if let Some((loc, msg)) = self.snapshot {
             return Err(format!("{msg} @ {loc}"));
         }
-        Ok((result.ok_or("unknown".to_string())?, self.intern))
+        let grammar = result.ok_or("unknown".to_string())?;
+        let program = Program::new(grammar, self.intern);
+        Ok(program)
     }
 
     pub fn ident(&mut self) -> Option<usize> {

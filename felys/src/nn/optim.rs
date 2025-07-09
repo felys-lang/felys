@@ -33,24 +33,22 @@ impl Gradients {
     }
 }
 
+pub type Parameters = HashMap<usize, (Matrix, Matrix)>;
+
 pub struct Optimizer {
-    parameters: HashMap<usize, (Matrix, Matrix)>,
+    parameters: Parameters,
     momentum: f64,
 }
 
 impl Optimizer {
-    pub fn new(parameters: HashMap<usize, Matrix>, momentum: f64) -> Self {
-        let params = parameters
-            .into_iter()
-            .map(|(id, x)| (id, (Matrix::full(0.0, x.shape), x)))
-            .collect();
+    pub fn new(parameters: Parameters, momentum: f64) -> Self {
         Self {
-            parameters: params,
+            parameters,
             momentum,
         }
     }
 
-    pub fn export(self) -> HashMap<usize, (Matrix, Matrix)> {
+    pub fn export(self) -> Parameters {
         self.parameters
     }
 

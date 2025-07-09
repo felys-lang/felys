@@ -12,11 +12,11 @@ use std::time::Duration;
 impl Grammar {
     pub fn exec(
         &self,
-        mut intern: Intern,
-        mut optim: Optimizer,
+        intern: &mut Intern,
+        optim: &mut Optimizer,
         timeout: usize,
         depth: usize,
-    ) -> Result<Value, String> {
+    ) -> Result<Vec<String>, String> {
         let (tx, rx) = mpsc::channel();
         let limit = Duration::from_millis(timeout as u64);
         if !limit.is_zero() {
@@ -39,9 +39,9 @@ impl Grammar {
         ]);
 
         let mut global = Global {
-            optim: &mut optim,
+            optim,
             stdout: &mut stdout,
-            intern: &intern,
+            intern,
             timer: &rx,
         };
         let mut frame = Frame {
@@ -50,8 +50,7 @@ impl Grammar {
         };
 
         match self.eval(&mut global, &mut frame) {
-            Ok(_) => Ok(Value::Void),
-            Err(Signal::Return(value)) => Ok(value),
+            Ok(_) => Ok(stdout),
             Err(Signal::Error(e)) => Err(e.to_string()),
             _ => Err("invalid signal".to_string()),
         }
