@@ -32,8 +32,8 @@ pub enum Expr {
     Call(Rc<Expr>, Option<BufVec<Expr, 1>>),
     /// identifier: `elysia`
     Ident(Ident),
-    /// loss backward and optimizer step: `step loss`
-    Step(Rc<Expr>),
+    /// loss backward and optimizer step: `step loss by 0.001`
+    Step(Rc<Expr>, Rc<Expr>),
     /// tuple: `(elysia, 11.11)`
     Tuple(BufVec<Expr, 2>),
     /// list: `[elysia, 11.11]`
@@ -44,6 +44,8 @@ pub enum Expr {
     Param(Int, Int, usize),
     /// explicit precedence: `(1 + 2)`
     Paren(Rc<Expr>),
+    /// display a value: `print "hello, world!"`
+    Print(Rc<Expr>),
     /// unary operation: `-1`
     Unary(UnaOp, Rc<Expr>),
 }

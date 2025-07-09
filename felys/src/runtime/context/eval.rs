@@ -48,12 +48,20 @@ impl Value {
             Err(Signal::Error("expect a `func` type".to_string()))
         }
     }
-    
+
     pub fn operator(self) -> Result<Operator, Signal> {
         if let Value::Operator(op) = self {
             Ok(op)
         } else {
             Err(Signal::Error("expect a `operator` type".to_string()))
+        }
+    }
+
+    pub fn float(self) -> Result<f64, Signal> {
+        if let Value::Float(float) = self {
+            Ok(float)
+        } else {
+            Err(Signal::Error("expect a `float` type".to_string()))
         }
     }
 }

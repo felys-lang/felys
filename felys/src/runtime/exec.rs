@@ -26,6 +26,7 @@ impl Grammar {
             });
         }
 
+        let mut stdout = Vec::new();
         let base = HashMap::from([
             (
                 intern.id("__elysia__"),
@@ -39,6 +40,7 @@ impl Grammar {
 
         let mut global = Global {
             optim: &mut optim,
+            stdout: &mut stdout,
             intern: &intern,
             timer: &rx,
         };

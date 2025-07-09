@@ -35,14 +35,15 @@ peg expr -> { Expr }:
     / block=block { Expr::Block(block) }
     / BREAK expr=expr? { Expr::Break(expr.map(Rc::new)) }
     / CONTINUE { Expr::Continue }
-    / FOR pat=#pat IN expr=#expr block=#block { Expr::For(pat, expr.into(), block) }
+    / FOR pat=#pat #IN expr=#expr block=#block { Expr::For(pat, expr.into(), block) }
     / IF expr=#expr block=#block otherwise=(ELSE expr=#expr)? {
         Expr::If(expr.into(), block, otherwise.map(Rc::new))
     }
     / LOOP block=#block { Expr::Loop(block) }
     / RETURN expr=expr? { Expr::Return(expr.map(Rc::new)) }
     / WHILE expr=#expr block=#block { Expr::While(expr.into(), block) }
-    / STEP expr=#expr { Expr::Step(expr.into()) }
+    / STEP loss=#expr #BY lr=#expr { Expr::Step(loss.into(), lr.into()) }
+    / PRINT expr=#expr { Expr::Print(expr.into()) }
     ;
 
 peg assignment -> { Expr }:
@@ -177,6 +178,8 @@ lex OR -> { () }: 'or' !TAIL ;
 lex AND -> { () }: 'and' !TAIL ;
 lex NOT -> { () }: 'not' !TAIL ;
 lex STEP -> { () }: 'step' !TAIL ;
+lex BY -> { () }: 'by' !TAIL ;
+lex PRINT -> { () }: 'print' !TAIL ;
 
 @(intern, memo)
 IDENT: [a-zA-Z_] TAIL* ;

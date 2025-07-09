@@ -23,12 +23,13 @@ impl Evaluation for Expr {
             Expr::Closure(params, expr) => __closure(global, frame, params, expr),
             Expr::Call(params, args) => __call(global, frame, params, args),
             Expr::Ident(ident) => frame.get(*ident),
-            Expr::Step(expr) => __step(global, frame, expr),
+            Expr::Step(loss, lr) => __step(global, frame, loss, lr),
             Expr::Tuple(tuple) => __tuple(global, frame, tuple),
             Expr::List(list) => __list(global, frame, list),
             Expr::Lit(lit) => lit.eval(global, frame),
             Expr::Param(rows, cols, id) => __parameter(global, frame, rows, cols, id),
             Expr::Paren(expr) => expr.eval(global, frame),
+            Expr::Print(expr) => __print(global, frame, expr),
             Expr::Unary(op, expr) => __unary(global, frame, op, expr),
         }
     }
@@ -190,13 +191,19 @@ fn __closure(
     Ok(Value::Closure(params, expr.clone()))
 }
 
-fn __step(global: &mut Global, frame: &mut Frame, expr: &Rc<Expr>) -> Result<Value, Signal> {
-    let grads = expr
+fn __step(
+    global: &mut Global,
+    frame: &mut Frame,
+    loss: &Rc<Expr>,
+    lr: &Rc<Expr>,
+) -> Result<Value, Signal> {
+    let grads = loss
         .eval(global, frame)?
         .operator()?
         .backward()
         .map_err(Signal::Error)?;
-    global.optim.step(grads, 0.001).map_err(Signal::Error)?;
+    let lr = lr.eval(global, frame)?.float()?;
+    global.optim.step(grads, lr).map_err(Signal::Error)?;
     Ok(Value::Void)
 }
 
@@ -292,6 +299,12 @@ fn __parameter(
     let matrix = global.optim.get(id).map_err(Signal::Error)?;
     let op = Operator::new(matrix, Layer::Learnable(*id));
     Ok(Value::Operator(op))
+}
+
+fn __print(global: &mut Global, frame: &mut Frame, expr: &Rc<Expr>) -> Result<Value, Signal> {
+    let string = expr.eval(global, frame)?.to_string();
+    global.stdout.push(string);
+    Ok(Value::Void)
 }
 
 fn __unary(
