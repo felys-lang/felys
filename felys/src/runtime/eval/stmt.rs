@@ -1,4 +1,4 @@
-use crate::ast::{Block, Ident, Stmt};
+use crate::ast::{Block, Grammar, Ident, Stmt};
 use crate::runtime::context::backend::{Frame, Global};
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::{Evaluation, Signal};
@@ -41,5 +41,14 @@ fn __eval(x: &Block, global: &mut Global, frame: &mut Frame) -> Result<Value, Si
     match x.0.last() {
         Some(stmt) => stmt.eval(global, frame),
         None => Ok(Value::Void),
+    }
+}
+
+impl Evaluation for Grammar {
+    fn __eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
+        for stmt in &self.0 {
+            stmt.eval(global, frame)?.void()?;
+        }
+        Ok(Value::Void)
     }
 }

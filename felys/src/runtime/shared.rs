@@ -8,6 +8,15 @@ pub enum Signal {
     Continue,
 }
 
+impl Signal {
+    pub fn error(&self) -> String {
+        match self {
+            Signal::Error(e) => e.to_string(),
+            _ => "invalid signal".to_string(),
+        }
+    }
+}
+
 pub trait Evaluation {
     fn __eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal>;
     fn eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
