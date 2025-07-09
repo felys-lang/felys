@@ -1,4 +1,4 @@
-use crate::runtime::context::backend::Backend;
+use crate::runtime::context::backend::{Frame, Global};
 use crate::runtime::context::value::Value;
 
 pub enum Signal {
@@ -9,11 +9,11 @@ pub enum Signal {
 }
 
 pub trait Evaluation {
-    fn __eval(&self, backend: &mut Backend) -> Result<Value, Signal>;
-    fn eval(&self, backend: &mut Backend) -> Result<Value, Signal> {
-        if backend.timer.try_recv().unwrap_or(false) {
+    fn __eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal>;
+    fn eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
+        if global.timer.try_recv().unwrap_or(false) {
             return Err(Signal::Error("timeout".to_string()));
         }
-        self.__eval(backend)
+        self.__eval(global, frame)
     }
 }

@@ -1,56 +1,66 @@
 use crate::ast::{AssOp, BinOp, Block, BufVec, Expr, Float, Ident, Pat, UnaOp};
 use crate::nn::layers::{Layer, Operator};
 use crate::nn::matrix::Matrix;
-use crate::runtime::context::backend::Backend;
+use crate::runtime::context::backend::{Frame, Global};
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::{Evaluation, Signal};
 use std::rc::Rc;
 
 impl Evaluation for Expr {
-    fn __eval(&self, backend: &mut Backend) -> Result<Value, Signal> {
+    fn __eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
         match self {
-            Expr::Assign(pat, op, expr) => __assign(backend, pat, op, expr),
-            Expr::Block(block) => block.eval(backend, vec![]),
-            Expr::Break(opt) => __break(backend, opt),
+            Expr::Assign(pat, op, expr) => __assign(global, frame, pat, op, expr),
+            Expr::Block(block) => block.eval(global, frame, vec![]),
+            Expr::Break(option) => __break(global, frame, option),
             Expr::Continue => Err(Signal::Continue),
-            Expr::For(pat, expr, block) => __for(backend, pat, expr, block),
-            Expr::If(expr, block, opt) => __if(backend, expr, block, opt),
-            Expr::Loop(block) => __loop(backend, block),
-            Expr::Matrix(matrix) => __matrix(backend, matrix),
-            Expr::Return(opt) => __return(backend, opt),
-            Expr::While(expr, block) => __while(backend, expr, block),
-            Expr::Binary(rhs, op, lhs) => __binary(backend, rhs, op, lhs),
-            Expr::Closure(params, expr) => __closure(backend, params, expr),
-            Expr::Call(params, args) => __call(backend, params, args),
-            Expr::Ident(ident) => backend.get(*ident),
-            Expr::Tuple(tuple) => __tuple(backend, tuple),
-            Expr::List(list) => __list(backend, list),
-            Expr::Lit(lit) => lit.eval(backend),
-            Expr::Paren(expr) => expr.eval(backend),
-            Expr::Unary(op, expr) => __unary(backend, op, expr),
+            Expr::For(pat, expr, block) => __for(global, frame, pat, expr, block),
+            Expr::If(expr, block, option) => __if(global, frame, expr, block, option),
+            Expr::Loop(block) => __loop(global, frame, block),
+            Expr::Matrix(matrix) => __matrix(global, frame, matrix),
+            Expr::Return(option) => __return(global, frame, option),
+            Expr::While(expr, block) => __while(global, frame, expr, block),
+            Expr::Binary(rhs, op, lhs) => __binary(global, frame, rhs, op, lhs),
+            Expr::Closure(params, expr) => __closure(global, frame, params, expr),
+            Expr::Call(params, args) => __call(global, frame, params, args),
+            Expr::Ident(ident) => frame.get(*ident),
+            Expr::Tuple(tuple) => __tuple(global, frame, tuple),
+            Expr::List(list) => __list(global, frame, list),
+            Expr::Lit(lit) => lit.eval(global, frame),
+            Expr::Paren(expr) => expr.eval(global, frame),
+            Expr::Unary(op, expr) => __unary(global, frame, op, expr),
         }
     }
 }
 
-fn __assign(backend: &mut Backend, pat: &Pat, op: &AssOp, expr: &Expr) -> Result<Value, Signal> {
-    let y = expr.eval(backend)?;
+fn __assign(
+    global: &mut Global,
+    frame: &mut Frame,
+    pat: &Pat,
+    op: &AssOp,
+    expr: &Expr,
+) -> Result<Value, Signal> {
+    let y = expr.eval(global, frame)?;
     let value = match op {
-        AssOp::AddEq => pat.eval(backend)?.add(y)?,
-        AssOp::SubEq => pat.eval(backend)?.sub(y)?,
-        AssOp::MulEq => pat.eval(backend)?.mul(y)?,
-        AssOp::DivEq => pat.eval(backend)?.div(y)?,
-        AssOp::ModEq => pat.eval(backend)?.rem(y)?,
+        AssOp::AddEq => pat.eval(global, frame)?.add(y)?,
+        AssOp::SubEq => pat.eval(global, frame)?.sub(y)?,
+        AssOp::MulEq => pat.eval(global, frame)?.mul(y)?,
+        AssOp::DivEq => pat.eval(global, frame)?.div(y)?,
+        AssOp::ModEq => pat.eval(global, frame)?.rem(y)?,
         AssOp::Eq => y,
     };
-    for (id, val) in pat.unpack(backend, value)? {
-        backend.put(id, val);
+    for (id, val) in pat.unpack(global, frame, value)? {
+        frame.put(id, val);
     }
     Ok(Value::Void)
 }
 
-fn __break(backend: &mut Backend, opt: &Option<Rc<Expr>>) -> Result<Value, Signal> {
-    let result = if let Some(expr) = opt {
-        let value = expr.eval(backend)?;
+fn __break(
+    global: &mut Global,
+    frame: &mut Frame,
+    option: &Option<Rc<Expr>>,
+) -> Result<Value, Signal> {
+    let result = if let Some(expr) = option {
+        let value = expr.eval(global, frame)?;
         Signal::Break(value)
     } else {
         Signal::Break(Value::Void)
@@ -58,10 +68,16 @@ fn __break(backend: &mut Backend, opt: &Option<Rc<Expr>>) -> Result<Value, Signa
     Err(result)
 }
 
-fn __for(backend: &mut Backend, pat: &Pat, expr: &Expr, block: &Block) -> Result<Value, Signal> {
-    for value in expr.eval(backend)?.list()? {
-        let default = pat.unpack(backend, value)?;
-        match block.eval(backend, default) {
+fn __for(
+    global: &mut Global,
+    frame: &mut Frame,
+    pat: &Pat,
+    expr: &Expr,
+    block: &Block,
+) -> Result<Value, Signal> {
+    for value in expr.eval(global, frame)?.list()? {
+        let default = pat.unpack(global, frame, value)?;
+        match block.eval(global, frame, default) {
             Err(Signal::Continue) => continue,
             Err(Signal::Break(_)) => break,
             other => {
@@ -73,23 +89,24 @@ fn __for(backend: &mut Backend, pat: &Pat, expr: &Expr, block: &Block) -> Result
 }
 
 fn __if(
-    backend: &mut Backend,
+    global: &mut Global,
+    frame: &mut Frame,
     expr: &Expr,
     block: &Block,
-    opt: &Option<Rc<Expr>>,
+    option: &Option<Rc<Expr>>,
 ) -> Result<Value, Signal> {
-    if expr.eval(backend)?.bool()? {
-        block.eval(backend, vec![])
-    } else if let Some(alter) = opt {
-        alter.eval(backend)
+    if expr.eval(global, frame)?.bool()? {
+        block.eval(global, frame, vec![])
+    } else if let Some(alter) = option {
+        alter.eval(global, frame)
     } else {
         Ok(Value::Void)
     }
 }
 
-fn __loop(backend: &mut Backend, block: &Block) -> Result<Value, Signal> {
+fn __loop(global: &mut Global, frame: &mut Frame, block: &Block) -> Result<Value, Signal> {
     loop {
-        match block.eval(backend, vec![]) {
+        match block.eval(global, frame, vec![]) {
             Err(Signal::Continue) => continue,
             Err(Signal::Break(value)) => break Ok(value),
             other => {
@@ -99,9 +116,13 @@ fn __loop(backend: &mut Backend, block: &Block) -> Result<Value, Signal> {
     }
 }
 
-fn __return(backend: &mut Backend, opt: &Option<Rc<Expr>>) -> Result<Value, Signal> {
-    let result = if let Some(expr) = opt {
-        let value = expr.eval(backend)?;
+fn __return(
+    global: &mut Global,
+    frame: &mut Frame,
+    option: &Option<Rc<Expr>>,
+) -> Result<Value, Signal> {
+    let result = if let Some(expr) = option {
+        let value = expr.eval(global, frame)?;
         Signal::Return(value)
     } else {
         Signal::Return(Value::Void)
@@ -109,9 +130,14 @@ fn __return(backend: &mut Backend, opt: &Option<Rc<Expr>>) -> Result<Value, Sign
     Err(result)
 }
 
-fn __while(backend: &mut Backend, expr: &Expr, block: &Block) -> Result<Value, Signal> {
-    while expr.eval(backend)?.bool()? {
-        match block.eval(backend, vec![]) {
+fn __while(
+    global: &mut Global,
+    frame: &mut Frame,
+    expr: &Expr,
+    block: &Block,
+) -> Result<Value, Signal> {
+    while expr.eval(global, frame)?.bool()? {
+        match block.eval(global, frame, vec![]) {
             Err(Signal::Continue) => continue,
             Err(Signal::Break(_)) => break,
             other => {
@@ -123,26 +149,27 @@ fn __while(backend: &mut Backend, expr: &Expr, block: &Block) -> Result<Value, S
 }
 
 fn __call(
-    backend: &mut Backend,
+    global: &mut Global,
+    frame: &mut Frame,
     func: &Expr,
     args: &Option<BufVec<Expr, 1>>,
 ) -> Result<Value, Signal> {
     let values = match args {
         Some(x) => x
             .iter()
-            .map(|x| x.eval(backend))
+            .map(|x| x.eval(global, frame))
             .collect::<Result<Vec<Value>, Signal>>()?,
         None => vec![],
     };
-    let (params, expr) = func.eval(backend)?.closure()?;
+    let (params, expr) = func.eval(global, frame)?.closure()?;
     if params.len() != values.len() {
         return Err(Signal::Error("incorrect numbers of arguments".to_string()));
     }
-    let mut sandbox = backend.sandbox()?;
+    let mut sandbox = frame.sandbox()?;
     for (param, value) in params.iter().zip(values) {
         sandbox.put(*param, value)
     }
-    match expr.eval(&mut sandbox) {
+    match expr.eval(global, &mut sandbox) {
         Err(Signal::Return(value)) => Ok(value),
         Err(Signal::Break(_)) | Err(Signal::Continue) => {
             Err(Signal::Error("invalid signal".to_string()))
@@ -152,7 +179,8 @@ fn __call(
 }
 
 fn __closure(
-    _: &mut Backend,
+    _: &mut Global,
+    _: &mut Frame,
     params: &Option<BufVec<Ident, 1>>,
     expr: &Rc<Expr>,
 ) -> Result<Value, Signal> {
@@ -160,26 +188,38 @@ fn __closure(
     Ok(Value::Closure(params, expr.clone()))
 }
 
-fn __tuple(backend: &mut Backend, tuple: &BufVec<Expr, 2>) -> Result<Value, Signal> {
+fn __tuple(
+    global: &mut Global,
+    frame: &mut Frame,
+    tuple: &BufVec<Expr, 2>,
+) -> Result<Value, Signal> {
     let result = tuple
         .iter()
-        .map(|x| x.eval(backend))
+        .map(|x| x.eval(global, frame))
         .collect::<Result<Vec<Value>, Signal>>()?;
     Ok(Value::Tuple(result))
 }
 
-fn __list(backend: &mut Backend, list: &Option<BufVec<Expr, 1>>) -> Result<Value, Signal> {
+fn __list(
+    global: &mut Global,
+    frame: &mut Frame,
+    list: &Option<BufVec<Expr, 1>>,
+) -> Result<Value, Signal> {
     let result = match list {
         Some(x) => x
             .iter()
-            .map(|x| x.eval(backend))
+            .map(|x| x.eval(global, frame))
             .collect::<Result<Vec<Value>, Signal>>()?,
         None => vec![],
     };
     Ok(Value::List(result))
 }
 
-fn __matrix(backend: &mut Backend, matrix: &BufVec<BufVec<Float, 1>, 1>) -> Result<Value, Signal> {
+fn __matrix(
+    global: &mut Global,
+    _: &mut Frame,
+    matrix: &BufVec<BufVec<Float, 1>, 1>,
+) -> Result<Value, Signal> {
     let rows = matrix.len();
     let cols = matrix.buffer()[0].len();
     let mut data = Vec::with_capacity(rows * cols);
@@ -188,7 +228,7 @@ fn __matrix(backend: &mut Backend, matrix: &BufVec<BufVec<Float, 1>, 1>) -> Resu
             return Err(Signal::Error("row length are not equal".to_string()));
         }
         for x in row.iter() {
-            let raw = backend
+            let raw = global
                 .intern
                 .get(x)
                 .ok_or(Signal::Error("id does not exist".to_string()))?;
@@ -203,9 +243,15 @@ fn __matrix(backend: &mut Backend, matrix: &BufVec<BufVec<Float, 1>, 1>) -> Resu
     Ok(Value::Operator(op))
 }
 
-fn __binary(backend: &mut Backend, lhs: &Expr, op: &BinOp, rhs: &Expr) -> Result<Value, Signal> {
-    let x = lhs.eval(backend)?;
-    let y = rhs.eval(backend)?;
+fn __binary(
+    global: &mut Global,
+    frame: &mut Frame,
+    lhs: &Expr,
+    op: &BinOp,
+    rhs: &Expr,
+) -> Result<Value, Signal> {
+    let x = lhs.eval(global, frame)?;
+    let y = rhs.eval(global, frame)?;
     match op {
         BinOp::Or => x.or(y),
         BinOp::And => x.and(y),
@@ -224,8 +270,13 @@ fn __binary(backend: &mut Backend, lhs: &Expr, op: &BinOp, rhs: &Expr) -> Result
     }
 }
 
-fn __unary(backend: &mut Backend, op: &UnaOp, expr: &Expr) -> Result<Value, Signal> {
-    let x = expr.eval(backend)?;
+fn __unary(
+    global: &mut Global,
+    frame: &mut Frame,
+    op: &UnaOp,
+    expr: &Expr,
+) -> Result<Value, Signal> {
+    let x = expr.eval(global, frame)?;
     match op {
         UnaOp::Not => x.not(),
         UnaOp::Pos => x.pos(),

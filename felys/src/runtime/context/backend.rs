@@ -1,4 +1,5 @@
 use crate::ast::Ident;
+use crate::nn::optim::Optimizer;
 use crate::parser::Intern;
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::Signal;
@@ -6,19 +7,21 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
-pub struct Backend<'a> {
+pub struct Global<'a> {
+    pub optim: &'a Optimizer,
     pub intern: &'a Intern,
     pub timer: &'a Receiver<bool>,
-    pub depth: (u64, u64),
+}
+
+pub struct Frame {
+    pub depth: (usize, usize),
     pub data: Vec<HashMap<usize, Value>>,
 }
 
-impl Backend<'_> {
+impl Frame {
     pub fn sandbox(&self) -> Result<Self, Signal> {
         if self.depth.0 < self.depth.1 {
             Ok(Self {
-                intern: self.intern,
-                timer: self.timer,
                 depth: (self.depth.0 + 1, self.depth.1),
                 data: vec![HashMap::new()],
             })
