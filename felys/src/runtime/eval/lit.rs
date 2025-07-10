@@ -6,34 +6,38 @@ use crate::runtime::shared::{Evaluation, Signal};
 impl Evaluation for Lit {
     fn __eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
         match self {
-            Lit::Int(x) => __int(global, frame, x),
-            Lit::Float(x) => __float(global, frame, x),
+            Lit::Int(x) => x.eval(global, frame),
+            Lit::Float(x) => x.eval(global, frame),
             Lit::Bool(x) => __bool(global, frame, x),
             Lit::Str(x) => __str(global, frame, x),
         }
     }
 }
 
-fn __int(global: &mut Global, _: &mut Frame, x: &Int) -> Result<Value, Signal> {
-    let raw = global
-        .intern
-        .get(x)
-        .ok_or(Signal::Error("id does not exist".to_string()))?;
-    let value = raw
-        .parse()
-        .map_err(|_| Signal::Error("parsing to `int` failed".to_string()))?;
-    Ok(Value::Int(value))
+impl Evaluation for Float {
+    fn __eval(&self, global: &mut Global, _: &mut Frame) -> Result<Value, Signal> {
+        let raw = global
+            .intern
+            .get(&self.0)
+            .ok_or(Signal::Error("id does not exist".to_string()))?;
+        let value = raw
+            .parse()
+            .map_err(|_| Signal::Error("parsing to `float` failed".to_string()))?;
+        Ok(Value::Float(value))
+    }
 }
 
-fn __float(global: &mut Global, _: &mut Frame, x: &Float) -> Result<Value, Signal> {
-    let raw = global
-        .intern
-        .get(x)
-        .ok_or(Signal::Error("id does not exist".to_string()))?;
-    let value = raw
-        .parse()
-        .map_err(|_| Signal::Error("parsing to `float` failed".to_string()))?;
-    Ok(Value::Float(value))
+impl Evaluation for Int {
+    fn __eval(&self, global: &mut Global, _: &mut Frame) -> Result<Value, Signal> {
+        let raw = global
+            .intern
+            .get(&self.0)
+            .ok_or(Signal::Error("id does not exist".to_string()))?;
+        let value = raw
+            .parse()
+            .map_err(|_| Signal::Error("parsing to `int` failed".to_string()))?;
+        Ok(Value::Int(value))
+    }
 }
 
 fn __bool(_: &mut Global, _: &mut Frame, x: &Bool) -> Result<Value, Signal> {

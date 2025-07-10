@@ -151,6 +151,10 @@ peg lit -> { Lit }:
     / bool=BOOL { Lit::Bool(bool) }
     ;
 
+lex FLOAT -> { Float }: float=F64 { Float(float) } ;
+
+lex INT -> { Int }: int=USIZE { Int(int) } ;
+
 lex STR -> { Vec<Chunk> }: '"' chunks=CHUNK* #'"' ;
 
 lex CHUNK -> { Chunk }:
@@ -186,8 +190,8 @@ IDENT: [a-zA-Z_] TAIL* ;
 TAIL: [a-zA-Z0-9_] ;
 
 @(intern) {
-    INT: '0' | [1-9][0-9]* ;
-    FLOAT: [1-9][0-9]* '.' [0-9]+ | '0.' [0-9]+;
+    USIZE: '0' | [1-9][0-9]* ;
+    F64: [1-9][0-9]* '.' [0-9]+ | '0.' [0-9]+;
     SLICE: [^"\\]+ ;
     HEX: [0-9a-f]* ;
     ESCAPE: ['ntr\\] ;

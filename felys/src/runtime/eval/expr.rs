@@ -236,7 +236,7 @@ fn __list(
 
 fn __matrix(
     global: &mut Global,
-    _: &mut Frame,
+    frame: &mut Frame,
     matrix: &BufVec<BufVec<Float, 1>, 1>,
 ) -> Result<Value, Signal> {
     let rows = matrix.len();
@@ -247,13 +247,7 @@ fn __matrix(
             return Err(Signal::Error("row length are not equal".to_string()));
         }
         for x in row.iter() {
-            let raw = global
-                .intern
-                .get(x)
-                .ok_or(Signal::Error("id does not exist".to_string()))?;
-            let value = raw
-                .parse()
-                .map_err(|_| Signal::Error("parsing to `float` failed".to_string()))?;
+            let value = x.eval(global, frame)?.float()?;
             data.push(value);
         }
     }
