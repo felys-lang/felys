@@ -1,4 +1,4 @@
-use crate::ast::{Alter, Assignment, Atom, Callable, Grammar, Item, Lookahead, Rule, Tag};
+use crate::ast::{Alter, Assignment, Atom, Callable, Expect, Grammar, Item, Lookahead, Rule, Tag};
 use crate::builder::common::{Builder, Tags};
 use crate::parser::Intern;
 use std::collections::{HashMap, HashSet};
@@ -233,7 +233,7 @@ impl Atom {
     fn left(&self) -> HashSet<usize> {
         match self {
             Atom::Name(name) => HashSet::from([*name]),
-            Atom::Keyword(_) => HashSet::new(),
+            Atom::Expect(_) => HashSet::new(),
             Atom::Nested(_) => HashSet::new(),
         }
     }
@@ -241,8 +241,17 @@ impl Atom {
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         match self {
             Atom::Name(_) => Vec::new(),
-            Atom::Keyword(keyword) => vec![intern.get(keyword).unwrap().to_string()],
+            Atom::Expect(expect) => expect.keywords(intern),
             Atom::Nested(rule) => rule.keywords(intern),
+        }
+    }
+}
+
+impl Expect {
+    fn keywords(&self, intern: &Intern) -> Vec<String> {
+        match self {
+            Expect::Once(_) => Vec::new(),
+            Expect::Keyword(x) => vec![intern.get(x).unwrap().to_string()],
         }
     }
 }

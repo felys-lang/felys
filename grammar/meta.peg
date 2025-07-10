@@ -64,7 +64,7 @@ peg item -> { Item }:
 
 peg atom -> { Atom }:
     / '(' rule=#rule #')' { Atom::Nested(rule) }
-    / keyword=KEYWORD { Atom::Keyword(keyword) }
+    / expect=EXPECT { Atom::Expect(expect) }
     / name=NAME { Atom::Name(name) }
     ;
 
@@ -101,13 +101,22 @@ lex SET -> { Primary }:
     / '[' set=#RANGE+ #']' { Primary::Include(set) }
     ;
 
-lex KEYWORD -> { usize }:
-    / '\'' keyword=#LCH+ #'\'' { {
-        let keyword = keyword
+lex EXPECT -> { Expect }:
+    / '\'' expect=#LCH+ #'\'' { {
+        let expect = expect
             .iter()
             .map(|c| s2c(x.intern.get(c).unwrap()))
             .collect::<String>();
-        x.intern.id(keyword.as_str())
+        let id = x.intern.id(expect.as_str());
+        Expect::Once(id)
+    } }
+    / '"' expect=#LCH+ #'"' { {
+        let expect = expect
+            .iter()
+            .map(|c| s2c(x.intern.get(c).unwrap()))
+            .collect::<String>();
+        let id = x.intern.id(expect.as_str());
+        Expect::Keyword(id)
     } }
     ;
 

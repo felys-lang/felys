@@ -61,8 +61,13 @@ pub enum Item {
 
 pub enum Atom {
     Name(usize),
-    Keyword(usize),
+    Expect(Expect),
     Nested(Rule),
+}
+
+pub enum Expect {
+    Once(usize),
+    Keyword(usize),
 }
 
 #[derive(Clone)]

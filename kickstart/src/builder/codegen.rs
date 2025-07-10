@@ -1,4 +1,4 @@
-use crate::ast::{Alter, Assignment, Atom, Item, Lookahead, Prefix, Rule};
+use crate::ast::{Alter, Assignment, Atom, Expect, Item, Lookahead, Prefix, Rule};
 use crate::builder::common::{Builder, Root};
 use crate::builder::dfa::common::{Automaton, Language};
 use crate::parser::Intern;
@@ -326,10 +326,7 @@ impl Atom {
                 let name = format_ident!("{}", intern.get(x).unwrap());
                 quote! { x.#name() }
             }
-            Atom::Keyword(x) => {
-                let keyword = intern.get(x).unwrap();
-                quote! { x.__expect(#keyword) }
-            }
+            Atom::Expect(x) => x.codegen(intern),
             Atom::Nested(x) => {
                 let rule = x.codegen(intern);
                 quote! { x.__peg(#rule) }
@@ -340,9 +337,25 @@ impl Atom {
     fn msg(&self, intern: &Intern) -> String {
         match self {
             Atom::Name(x) => format!("<{}>", intern.get(x).unwrap()),
-            Atom::Keyword(x) => format!("'{}'", intern.get(x).unwrap()),
+            Atom::Expect(x) => format!("'{}'", x.msg(intern)),
             Atom::Nested(_) => "???".to_string(),
         }
+    }
+}
+
+impl Expect {
+    fn codegen(&self, intern: &Intern) -> TokenStream {
+        let expect = match self {
+            Expect::Once(x) | Expect::Keyword(x) => intern.get(x).unwrap(),
+        };
+        quote! { x.__expect(#expect) }
+    }
+    
+    fn msg(&self, intern: &Intern) -> String {
+        let expect = match self {
+            Expect::Once(x) | Expect::Keyword(x) => intern.get(x).unwrap(),
+        };
+        format!("'{expect}'")
     }
 }
 
