@@ -13,6 +13,7 @@ impl Evaluation for Expr {
             Expr::Block(block) => block.eval(global, frame, vec![]),
             Expr::Break(option) => __break(global, frame, option),
             Expr::Continue => Err(Signal::Continue),
+            Expr::Extern(ident) => __extern(global, frame, ident),
             Expr::For(pat, expr, block) => __for(global, frame, pat, expr, block),
             Expr::If(expr, block, option) => __if(global, frame, expr, block, option),
             Expr::Loop(block) => __loop(global, frame, block),
@@ -69,6 +70,14 @@ fn __break(
         Signal::Break(Value::Void)
     };
     Err(result)
+}
+
+fn __extern(global: &mut Global, _: &mut Frame, ident: &Ident) -> Result<Value, Signal> {
+    global
+        .constants
+        .get(*ident)
+        .cloned()
+        .ok_or(Signal::Error("external identifier not found".to_string()))
 }
 
 fn __for(

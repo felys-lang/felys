@@ -12,6 +12,8 @@ pub enum Expr {
     Break(Option<Rc<Expr>>),
     /// skip to the next loop: `continue`
     Continue,
+    /// external identifier: `extern __elysia__`
+    Extern(Ident),
     /// for loop: `for x in array { block }`
     For(Pat, Rc<Expr>, Block),
     /// if statement with optional else: `if expr { block } else { block }`

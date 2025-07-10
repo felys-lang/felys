@@ -10,6 +10,7 @@ use std::sync::mpsc::Receiver;
 pub struct Global<'a> {
     pub optim: &'a mut Optimizer,
     pub stdout: &'a mut Vec<String>,
+    pub constants: &'a [Value],
     pub intern: &'a Intern,
     pub timer: &'a Receiver<bool>,
 }

@@ -126,6 +126,7 @@ peg args -> { BufVec<Expr, 1> }:
 peg primary -> { Expr }:
     / lit=lit { Expr::Lit(lit) }
     / ident=ident { Expr::Ident(ident) }
+    / EXTERN ident=#ident { Expr::Extern(ident) }
     / '(' expr=#expr ')' { Expr::Paren(expr.into()) }
     / '(' first=#expr #',' second=#expr more=(',' expr=#expr)* ','? #')' {
         Expr::Tuple(BufVec::new([first, second], more))
@@ -184,6 +185,7 @@ lex NOT -> { () }: "not" !TAIL ;
 lex STEP -> { () }: "step" !TAIL ;
 lex BY -> { () }: "by" !TAIL ;
 lex PRINT -> { () }: "print" !TAIL ;
+lex EXTERN -> { () }: "extern" !TAIL ;
 
 @(intern, memo)
 IDENT: [a-zA-Z_] TAIL* ;

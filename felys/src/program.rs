@@ -51,26 +51,23 @@ impl Executable {
         }
 
         let mut stdout = Vec::new();
-        let base = HashMap::from([
-            (
-                self.intern.id("__elysia__"),
-                Value::Str("粉色妖精小姐♪".to_string()),
-            ),
-            (
-                self.intern.id("__author__"),
-                Value::Str("jonny.jin@uwaterloo.ca".to_string()),
-            ),
-        ]);
+        let constants = [
+            Value::Str("粉色妖精小姐♪".to_string()),
+            Value::Str("jonny.jin@uwaterloo.ca".to_string()),
+        ];
+        self.intern.id("__elysia__");
+        self.intern.id("__author__");
 
         let mut global = Global {
             optim: &mut self.optimizer,
             stdout: &mut stdout,
+            constants: &constants,
             intern: &mut self.intern,
             timer: &rx,
         };
         let mut frame = Frame {
             depth: (0, self.depth),
-            data: vec![base],
+            data: vec![HashMap::new()],
         };
 
         self.grammar
