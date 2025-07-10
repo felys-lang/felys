@@ -41,14 +41,6 @@ impl Value {
         }
     }
 
-    pub fn closure(self) -> Result<(Vec<Ident>, Rc<Expr>), Signal> {
-        if let Value::Closure(params, expr) = self {
-            Ok((params, expr))
-        } else {
-            Err(Signal::Error("expect a `func` type".to_string()))
-        }
-    }
-
     pub fn operator(self) -> Result<Operator, Signal> {
         if let Value::Operator(op) = self {
             Ok(op)

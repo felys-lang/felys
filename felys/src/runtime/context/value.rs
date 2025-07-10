@@ -1,5 +1,7 @@
 use crate::ast::{Expr, Ident};
 use crate::nn::layers::Operator;
+use crate::runtime::context::backend::{Frame, Global};
+use crate::runtime::shared::Signal;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
@@ -13,6 +15,7 @@ pub enum Value {
     Tuple(Vec<Value>),
     List(Vec<Value>),
     Operator(Operator),
+    Rust(fn(&mut Global, &mut Frame, Vec<Value>) -> Result<Value, Signal>),
     Void,
 }
 
@@ -47,6 +50,7 @@ impl Display for Value {
                 write!(f, "]")
             }
             Value::Operator(_) => write!(f, "<operator>"),
+            Value::Rust(x) => write!(f, "{x:p}"),
             Value::Void => write!(f, "<void>"),
         }
     }

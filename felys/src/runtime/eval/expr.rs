@@ -173,15 +173,23 @@ fn __call(
             .collect::<Result<Vec<Value>, Signal>>()?,
         None => vec![],
     };
-    let (params, expr) = func.eval(global, frame)?.closure()?;
-    if params.len() != values.len() {
-        return Err(Signal::Error("incorrect numbers of arguments".to_string()));
-    }
-    let mut sandbox = frame.sandbox()?;
-    for (param, value) in params.iter().zip(values) {
-        sandbox.put(*param, value)
-    }
-    match expr.eval(global, &mut sandbox) {
+
+    let result = match func.eval(global, frame)? {
+        Value::Closure(params, expr) => {
+            if params.len() != values.len() {
+                return Err(Signal::Error("incorrect numbers of arguments".to_string()));
+            }
+            let mut sandbox = frame.sandbox()?;
+            for (param, value) in params.iter().zip(values) {
+                sandbox.put(*param, value)
+            }
+            expr.eval(global, &mut sandbox)
+        }
+        Value::Rust(f) => f(global, &mut frame.sandbox()?, values),
+        _ => return Err(Signal::Error("expect a callable type".to_string())),
+    };
+
+    match result {
         Err(Signal::Return(value)) => Ok(value),
         Err(Signal::Break(_)) | Err(Signal::Continue) => {
             Err(Signal::Error("invalid signal".to_string()))
