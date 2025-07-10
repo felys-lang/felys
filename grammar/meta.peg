@@ -102,7 +102,7 @@ lex SET -> { Primary }:
     ;
 
 lex EXPECT -> { Expect }:
-    / '\'' expect=#LCH+ #'\'' { {
+    / '\'' expect=#SQC+ #'\'' { {
         let expect = expect
             .iter()
             .map(|c| s2c(x.intern.get(c).unwrap()))
@@ -110,7 +110,7 @@ lex EXPECT -> { Expect }:
         let id = x.intern.id(expect.as_str());
         Expect::Once(id)
     } }
-    / '"' expect=#LCH+ #'"' { {
+    / '"' expect=#DQC+ #'"' { {
         let expect = expect
             .iter()
             .map(|c| s2c(x.intern.get(c).unwrap()))
@@ -121,12 +121,12 @@ lex EXPECT -> { Expect }:
     ;
 
 lex STRING -> { Vec<usize> }:
-    / '\'' string=#LCH+ #'\'' { string }
+    / '\'' string=#SQC+ #'\'' { string }
     ;
 
 lex RANGE -> { (usize, usize) }:
-    / start=SCH '-' end=#SCH { (start, end) }
-    / ch=SCH { (ch, ch) }
+    / start=BC '-' end=#BC { (start, end) }
+    / ch=BC { (ch, ch) }
     ;
 
 @(intern, memo)
@@ -134,8 +134,9 @@ NAME: [a-zA-Z_] TAIL* ;
 TAIL: [a-zA-Z0-9_] ;
 
 @(intern) {
-    LCH: UNICODE | ESCAPE | [^\'\\] ;
-    SCH: UNICODE | ESCAPE | [^\]\\] ;
+    DQC: UNICODE | ESCAPE | [^\"\\] ;
+    SQC: UNICODE | ESCAPE | [^\'\\] ;
+    BC: UNICODE | ESCAPE | [^\]\\] ;
 }
 
 @(ws) {
@@ -144,4 +145,4 @@ TAIL: [a-zA-Z0-9_] ;
 }
 
 UNICODE: '\\' 'u' '{' [0-9a-f]* '}' ;
-ESCAPE: '\\' [\'\[\]ntr\\] ;
+ESCAPE: '\\' [\'\"\[\]ntr\\] ;

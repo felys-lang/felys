@@ -350,12 +350,12 @@ impl Expect {
         };
         quote! { x.__expect(#expect) }
     }
-    
+
     fn msg(&self, intern: &Intern) -> String {
-        let expect = match self {
-            Expect::Once(x) | Expect::Keyword(x) => intern.get(x).unwrap(),
-        };
-        format!("'{expect}'")
+        match self {
+            Expect::Once(x) => format!("'{}'", intern.get(x).unwrap()),
+            Expect::Keyword(x) => format!("\"{}\"", intern.get(x).unwrap()),
+        }
     }
 }
 
