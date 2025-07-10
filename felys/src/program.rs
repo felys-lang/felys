@@ -19,12 +19,8 @@ impl Program {
         Self { grammar, intern }
     }
 
-    pub fn config(self, params: Option<Parameters>, timeout: usize, depth: usize) -> Executable {
-        let parameters = match params {
-            Some(x) => x,
-            None => todo!(),
-        };
-        let optimizer = Optimizer::new(parameters, 0.9);
+    pub fn config(self, params: Parameters, timeout: usize, depth: usize) -> Executable {
+        let optimizer = Optimizer::new(params, 0.9);
         Executable {
             grammar: self.grammar,
             intern: self.intern,
@@ -77,15 +73,17 @@ impl Executable {
             data: vec![base],
         };
 
-        self.grammar.eval(&mut global, &mut frame).map_err(|e| e.error())?;
+        self.grammar
+            .eval(&mut global, &mut frame)
+            .map_err(|e| e.error())?;
         Ok(Output {
             parameters: self.optimizer.export(),
-            stdout
+            stdout,
         })
     }
 }
 
 pub struct Output {
-    parameters: Parameters,
-    stdout: Vec<String>,
+    pub parameters: Parameters,
+    pub stdout: Vec<String>,
 }
