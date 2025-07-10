@@ -64,6 +64,14 @@ impl Value {
             Err(Signal::Error("expect a `float` type".to_string()))
         }
     }
+
+    pub fn int(self) -> Result<isize, Signal> {
+        if let Value::Int(int) = self {
+            Ok(int)
+        } else {
+            Err(Signal::Error("expect a `int` type".to_string()))
+        }
+    }
 }
 
 impl Value {

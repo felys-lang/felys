@@ -285,12 +285,15 @@ fn __binary(
 
 fn __parameter(
     global: &mut Global,
-    _: &mut Frame,
-    _: &Int,
-    _: &Int,
+    frame: &mut Frame,
+    rows: &Int,
+    cols: &Int,
     id: &usize,
 ) -> Result<Value, Signal> {
-    let matrix = global.optim.get(id).map_err(Signal::Error)?;
+    let rows = rows.eval(global, frame)?.int()? as usize;
+    let cols = cols.eval(global, frame)?.int()? as usize;
+    let shape = (rows, cols);
+    let matrix = global.optim.get(id, shape).map_err(Signal::Error)?;
     let op = Operator::new(matrix, Layer::Learnable(*id));
     Ok(Value::Operator(op))
 }

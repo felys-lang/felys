@@ -38,6 +38,7 @@ pub type Parameters = HashMap<usize, (Matrix, Matrix)>;
 pub struct Optimizer {
     parameters: Parameters,
     momentum: f64,
+    random: Random,
 }
 
 impl Optimizer {
@@ -45,6 +46,7 @@ impl Optimizer {
         Self {
             parameters,
             momentum,
+            random: Random::new(42),
         }
     }
 
@@ -52,13 +54,12 @@ impl Optimizer {
         self.parameters
     }
 
-    pub fn get(&self, id: &usize) -> Result<Matrix, String> {
+    pub fn get(&mut self, id: &usize, shape: (usize, usize)) -> Result<Matrix, String> {
         let (matrix, _) = self
             .parameters
-            .get(id)
-            .cloned()
-            .ok_or(format!("parameter {id} does not exist"))?;
-        Ok(matrix)
+            .entry(*id)
+            .or_insert((self.random.matrix(shape)?, Matrix::full(0.0, shape)));
+        Ok(matrix.clone())
     }
 
     pub fn step(&mut self, gradients: Gradients, lr: f64) -> Result<(), String> {
@@ -71,5 +72,29 @@ impl Optimizer {
             }
         }
         Ok(())
+    }
+}
+
+pub struct Random {
+    state: usize,
+}
+
+impl Random {
+    fn new(seed: usize) -> Self {
+        Random { state: seed }
+    }
+
+    fn signed(&mut self) -> f64 {
+        const A: usize = 1664525;
+        const C: usize = 1013904223;
+        const M: usize = 1 << 32;
+
+        self.state = (A.wrapping_mul(self.state).wrapping_add(C)) % M;
+        (self.state as f64) / (M as f64) * 2.0 - 1.0
+    }
+
+    fn matrix(&mut self, shape: (usize, usize)) -> Result<Matrix, String> {
+        let length = shape.0 * shape.1;
+        Matrix::new(vec![self.signed(); length], shape)
     }
 }
