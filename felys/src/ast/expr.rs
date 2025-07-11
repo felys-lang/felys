@@ -12,8 +12,6 @@ pub enum Expr {
     Break(Option<Rc<Expr>>),
     /// skip to the next loop: `continue`
     Continue,
-    /// external identifier: `extern __elysia__`
-    Extern(Ident),
     /// for loop: `for x in array { block }`
     For(Pat, Rc<Expr>, Block),
     /// if statement with optional else: `if expr { block } else { block }`
@@ -42,6 +40,8 @@ pub enum Expr {
     List(Option<BufVec<Expr, 1>>),
     /// literals: `"elysia"`, `11.11`, `true`
     Lit(Lit),
+    /// rust no side effect ffi: `rust __elysia__`
+    Rust(Ident),
     /// learnable parameter: `<10, 32>`
     Param(Int, Int, usize),
     /// explicit precedence: `(1 + 2)`

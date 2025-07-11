@@ -13,7 +13,7 @@ impl Evaluation for Expr {
             Expr::Block(block) => block.eval(global, frame, vec![]),
             Expr::Break(option) => __break(global, frame, option),
             Expr::Continue => Err(Signal::Continue),
-            Expr::Extern(ident) => __extern(global, frame, ident),
+            Expr::Rust(ident) => __extern(global, frame, ident),
             Expr::For(pat, expr, block) => __for(global, frame, pat, expr, block),
             Expr::If(expr, block, option) => __if(global, frame, expr, block, option),
             Expr::Loop(block) => __loop(global, frame, block),
@@ -185,7 +185,7 @@ fn __call(
             }
             expr.eval(global, &mut sandbox)
         }
-        Value::Rust(f) => f(global, &mut frame.sandbox()?, values),
+        Value::Rust(f) => f(values),
         _ => return Err(Signal::Error("expect a callable type".to_string())),
     };
 

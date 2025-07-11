@@ -3,6 +3,7 @@ mod nn;
 mod parser;
 mod runtime;
 mod program;
+mod rust;
 
 type Fxx = f64;
 

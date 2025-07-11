@@ -4,6 +4,7 @@ use crate::parser::Intern;
 use crate::runtime::context::backend::{Frame, Global};
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::Evaluation;
+use crate::rust::{ce, relu};
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::thread;
@@ -54,9 +55,13 @@ impl Executable {
         let constants = [
             Value::Str("粉色妖精小姐♪".to_string()),
             Value::Str("jonny.jin@uwaterloo.ca".to_string()),
+            Value::Rust(relu),
+            Value::Rust(ce),
         ];
         self.intern.id("__elysia__");
         self.intern.id("__author__");
+        self.intern.id("ReLU");
+        self.intern.id("CrossEntropy");
 
         let mut global = Global {
             optim: &mut self.optimizer,

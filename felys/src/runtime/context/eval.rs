@@ -1,8 +1,6 @@
-use crate::ast::{Expr, Ident};
 use crate::nn::layers::{Add, Differentiable, Div, Dot, Mul, Neg, Operator, Sub};
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::Signal;
-use std::rc::Rc;
 
 impl Value {
     pub fn bool(&self) -> Result<bool, Signal> {
