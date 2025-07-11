@@ -13,7 +13,7 @@ peg pat -> { Pat }:
     / UNDERSCORE { Pat::Any }
     / ident=ident { Pat::Ident(ident) }
     / lit=lit { Pat::Lit(lit) }
-    / '(' first=pat ',' second=#pat more=(',' pat=#pat)* ','? #')' {
+    / '(' first=pat ',' second=#pat more=(',' pat=pat)* ','? #')' {
         Pat::Tuple(BufVec::new([first, second], more))
     }
     ;
@@ -120,7 +120,7 @@ peg call -> { Expr }:
     ;
 
 peg args -> { BufVec<Expr, 1> }:
-    / first=expr more=(',' expr=#expr)* ','? { BufVec::new([first], more) }
+    / first=expr more=(',' expr=expr)* ','? { BufVec::new([first], more) }
     ;
 
 peg primary -> { Expr }:
@@ -128,7 +128,7 @@ peg primary -> { Expr }:
     / ident=ident { Expr::Ident(ident) }
     / RUST ident=#ident { Expr::Rust(ident) }
     / '(' expr=#expr ')' { Expr::Paren(expr.into()) }
-    / '(' first=#expr #',' second=#expr more=(',' expr=#expr)* ','? #')' {
+    / '(' first=#expr #',' second=#expr more=(',' expr=expr)* ','? #')' {
         Expr::Tuple(BufVec::new([first, second], more))
     }
     / '[' first=row more=row* #']' { Expr::Matrix(BufVec::new([first], more)) }
@@ -142,7 +142,7 @@ peg row -> { BufVec<Float, 1> }:
     ;
 
 peg params -> { BufVec<Ident, 1> }:
-    / first=ident more=(',' ident=#ident)* ','? { BufVec::new([first], more) }
+    / first=ident more=(',' ident=ident)* ','? { BufVec::new([first], more) }
     ;
 
 peg lit -> { Lit }:
