@@ -337,7 +337,7 @@ impl Atom {
     fn msg(&self, intern: &Intern) -> String {
         match self {
             Atom::Name(x) => format!("<{}>", intern.get(x).unwrap()),
-            Atom::Expect(x) => format!("'{}'", x.msg(intern)),
+            Atom::Expect(x) => x.msg(intern).to_string(),
             Atom::Nested(_) => "???".to_string(),
         }
     }

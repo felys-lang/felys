@@ -49,6 +49,11 @@ fn logical() {
 }
 
 #[test]
+fn nn() {
+    assert_eq!("<operator>", run("[1.0;]"));
+}
+
+#[test]
 fn combined() {
     assert_eq!("6", run("1 + 2 + 3"));
     assert_eq!("7", run("1 + 2 * 3"));
