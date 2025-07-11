@@ -75,7 +75,7 @@ fn __break(
 fn __extern(global: &mut Global, _: &mut Frame, ident: &Ident) -> Result<Value, Signal> {
     global
         .constants
-        .get(*ident)
+        .get(ident)
         .cloned()
         .ok_or(Signal::Error("external identifier not found".to_string()))
 }

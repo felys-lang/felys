@@ -42,11 +42,11 @@ pub struct Optimizer {
 }
 
 impl Optimizer {
-    pub fn new(parameters: Parameters, momentum: f64) -> Self {
+    pub fn new(parameters: Parameters, momentum: f64, seed: usize) -> Self {
         Self {
             parameters,
             momentum,
-            random: Random::new(42),
+            random: Random::new(seed),
         }
     }
 
@@ -95,6 +95,10 @@ impl Random {
 
     fn matrix(&mut self, shape: (usize, usize)) -> Result<Matrix, String> {
         let length = shape.0 * shape.1;
-        Matrix::new(vec![self.signed(); length], shape)
+        let mut data = Vec::with_capacity(length);
+        for _ in 0..length {
+            data.push(self.signed())
+        }
+        Matrix::new(data, shape)
     }
 }

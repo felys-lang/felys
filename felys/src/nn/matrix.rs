@@ -1,5 +1,5 @@
 use crate::Fxx;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Display, Formatter};
 
 pub struct Matrix {
     linear: Vec<Fxx>,
@@ -25,9 +25,19 @@ impl Clone for Matrix {
     }
 }
 
-impl Debug for Matrix {
+impl Display for Matrix {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}: {:?}", self.linear, self.shape)
+        writeln!(f, "[")?;
+        for row in 0..self.shape.0 {
+            let start = row * self.shape.1;
+            let end = start + self.shape.1;
+            write!(f, "  ")?;
+            for val in &self.linear[start..end] {
+                write!(f, "{val:.3} ")?;
+            }
+            writeln!(f, ";")?;
+        }
+        write!(f, "]")
     }
 }
 

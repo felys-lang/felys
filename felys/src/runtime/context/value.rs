@@ -48,7 +48,7 @@ impl Display for Value {
                 }
                 write!(f, "]")
             }
-            Value::Operator(_) => write!(f, "<operator>"),
+            Value::Operator(op) => write!(f, "{op}"),
             Value::Rust(x) => write!(f, "{x:p}"),
             Value::Void => write!(f, "<void>"),
         }

@@ -20,8 +20,15 @@ impl Program {
         Self { grammar, intern }
     }
 
-    pub fn config(self, params: Parameters, timeout: usize, depth: usize) -> Executable {
-        let optimizer = Optimizer::new(params, 0.9);
+    pub fn config(
+        self,
+        params: Parameters,
+        timeout: usize,
+        depth: usize,
+        momentum: f64,
+        seed: usize,
+    ) -> Executable {
+        let optimizer = Optimizer::new(params, momentum, seed);
         Executable {
             grammar: self.grammar,
             intern: self.intern,
@@ -52,16 +59,18 @@ impl Executable {
         }
 
         let mut stdout = Vec::new();
-        let constants = [
-            Value::Str("粉色妖精小姐♪".to_string()),
-            Value::Str("jonny.jin@uwaterloo.ca".to_string()),
-            Value::Rust(relu),
-            Value::Rust(ce),
-        ];
-        self.intern.id("__elysia__");
-        self.intern.id("__author__");
-        self.intern.id("ReLU");
-        self.intern.id("CrossEntropy");
+        let constants = HashMap::from([
+            (
+                self.intern.id("__elysia__"),
+                Value::Str("粉色妖精小姐♪".to_string()),
+            ),
+            (
+                self.intern.id("__author__"),
+                Value::Str("jonny.jin@uwaterloo.ca".to_string()),
+            ),
+            (self.intern.id("ReLU"), Value::Rust(relu)),
+            (self.intern.id("CrossEntropy"), Value::Rust(ce)),
+        ]);
 
         let mut global = Global {
             optim: &mut self.optimizer,

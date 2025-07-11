@@ -2,12 +2,33 @@ use crate::nn::layers::function::{CrossEntropy, ReLU};
 use crate::nn::layers::{Add, Div, Dot, Mul, Neg, Pow, Sub};
 use crate::nn::matrix::Matrix;
 use crate::nn::optim::Gradients;
+use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
 #[derive(Clone)]
 pub struct Operator {
     pub matrix: Matrix,
     pub layer: Layer,
+}
+
+impl Display for Operator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.matrix)?;
+        let backward = match self.layer {
+            Layer::Add(_) => "Add".to_string(),
+            Layer::Sub(_) => "Sub".to_string(),
+            Layer::Mul(_) => "Mul".to_string(),
+            Layer::Div(_) => "Div".to_string(),
+            Layer::Pow(_) => "Pow".to_string(),
+            Layer::Neg(_) => "Neg".to_string(),
+            Layer::Dot(_) => "Dot".to_string(),
+            Layer::ReLU(_) => "ReLU".to_string(),
+            Layer::CrossEntropy(_) => "CrossEntropy".to_string(),
+            Layer::Learnable(id) => format!("Learnable({id})"),
+            Layer::Fixed => "Fixed".to_string(),
+        };
+        write!(f, "(backward: {backward})")
+    }
 }
 
 impl Operator {

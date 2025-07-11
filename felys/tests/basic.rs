@@ -50,7 +50,29 @@ fn logical() {
 
 #[test]
 fn nn() {
-    assert_eq!("<operator>", run("[1.0;]"));
+    assert_eq!(
+        "[\n  1.000 1.000 ;\n  1.000 1.000 ;\n](backward: Fixed)",
+        run("[1.0, 1.0; 1.0, 1.0;]")
+    );
+    assert_eq!(
+        "[\n  -0.495 -0.824 ;\n  0.155 -0.555 ;\n](backward: Learnable(14))",
+        run("<2, 2>")
+    );
+    assert_eq!("[\n  0.495 ;\n](backward: Neg)", run("-<1, 1>"));
+    assert_eq!("[\n  -1.319 ;\n](backward: Add)", run("<1, 1> + <1, 1>"));
+    assert_eq!("[\n  0.328 ;\n](backward: Sub)", run("<1, 1> - <1, 1>"));
+    assert_eq!("[\n  0.408 ;\n](backward: Mul)", run("<1, 1> * <1, 1>"));
+    assert_eq!("[\n  0.601 ;\n](backward: Div)", run("<1, 1> / <1, 1>"));
+    assert_eq!("[\n  0.381 ;\n](backward: Dot)", run("<1, 2> @ <2, 1>"));
+    assert_eq!(
+        "[\n  0.000 0.000 0.155 ;\n](backward: ReLU)",
+        run("rust ReLU(<1, 3>)")
+    );
+    assert_eq!(
+        "[\n  1.619 ;\n](backward: CrossEntropy)",
+        run("rust CrossEntropy(<1, 3>, [0.0, 1.0, 0.0;])")
+    );
+    assert_eq!("<void>", run("step [1.0;] by 0.01"));
 }
 
 #[test]
@@ -71,7 +93,7 @@ fn run(code: &str) -> String {
     let wrapped = format!("print {{ {code} }};");
     let params = HashMap::new();
     let executable = match Packrat::from(wrapped).parse() {
-        Ok(program) => program.config(params, 100, 100),
+        Ok(program) => program.config(params, 100, 100, 0.9, 42),
         Err(msg) => return msg,
     };
     match executable.exec() {
