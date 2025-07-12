@@ -10,6 +10,32 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
+pub struct Config {
+    params: Parameters,
+    timeout: usize,
+    depth: usize,
+    momentum: f64,
+    seed: usize,
+}
+
+impl Config {
+    pub fn new(
+        params: Parameters,
+        timeout: usize,
+        depth: usize,
+        momentum: f64,
+        seed: usize,
+    ) -> Self {
+        Self {
+            params,
+            timeout,
+            depth,
+            momentum,
+            seed,
+        }
+    }
+}
+
 pub struct Program {
     grammar: Grammar,
     intern: Intern,
@@ -20,21 +46,14 @@ impl Program {
         Self { grammar, intern }
     }
 
-    pub fn config(
-        self,
-        params: Parameters,
-        timeout: usize,
-        depth: usize,
-        momentum: f64,
-        seed: usize,
-    ) -> Executable {
-        let optimizer = Optimizer::new(params, momentum, seed);
+    pub fn config(self, config: Config) -> Executable {
+        let optimizer = Optimizer::new(config.params, config.momentum, config.seed);
         Executable {
             grammar: self.grammar,
             intern: self.intern,
             optimizer,
-            timeout,
-            depth,
+            timeout: config.timeout,
+            depth: config.depth,
         }
     }
 }

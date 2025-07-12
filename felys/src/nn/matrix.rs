@@ -33,7 +33,7 @@ impl Display for Matrix {
             let end = start + self.shape.1;
             write!(f, "  ")?;
             for val in &self.linear[start..end] {
-                write!(f, "{val:.7} ")?;
+                write!(f, "{val:.5} ")?;
             }
             writeln!(f, ";")?;
         }

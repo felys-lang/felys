@@ -1,10 +1,11 @@
 mod ast;
 mod nn;
 mod parser;
-mod runtime;
 mod program;
+mod runtime;
 mod rust;
 
 type Fxx = f64;
 
 pub use parser::Packrat;
+pub use program::Config;
