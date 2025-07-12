@@ -10,56 +10,50 @@ impl Value {
             Value::Int(x) => *x != 0,
             Value::Str(x) => !x.is_empty(),
             Value::List(x) => !x.is_empty(),
-            _ => Err(Signal::Error("boolean value not available".to_string()))?,
+            x => Err(Signal::Error(format!("{x} does not have a boolean value")))?,
         };
         Ok(result)
     }
 
     pub fn tuple(self) -> Result<Vec<Value>, Signal> {
-        if let Value::Tuple(tuple) = self {
-            Ok(tuple)
-        } else {
-            Err(Signal::Error("expect a `tuple` type".to_string()))
+        match self {
+            Value::Tuple(tuple) => Ok(tuple),
+            x => Err(Signal::Error(format!("{x} is not a `tuple`"))),
         }
     }
 
     pub fn list(self) -> Result<Vec<Value>, Signal> {
-        if let Value::List(list) = self {
-            Ok(list)
-        } else {
-            Err(Signal::Error("expect a `list` type".to_string()))
+        match self {
+            Value::List(list) => Ok(list),
+            x => Err(Signal::Error(format!("{x} is not a `list`"))),
         }
     }
 
     pub fn void(self) -> Result<(), Signal> {
-        if let Value::Void = self {
-            Ok(())
-        } else {
-            Err(Signal::Error("expect a `void` type".to_string()))
+        match self {
+            Value::Void => Ok(()),
+            x => Err(Signal::Error(format!("{x} is not a `void`"))),
         }
     }
 
     pub fn operator(self) -> Result<Operator, Signal> {
-        if let Value::Operator(op) = self {
-            Ok(op)
-        } else {
-            Err(Signal::Error("expect a `operator` type".to_string()))
+        match self {
+            Value::Operator(op) => Ok(op),
+            x => Err(Signal::Error(format!("{x} is not a `operator`"))),
         }
     }
 
     pub fn float(self) -> Result<f64, Signal> {
-        if let Value::Float(float) = self {
-            Ok(float)
-        } else {
-            Err(Signal::Error("expect a `float` type".to_string()))
+        match self {
+            Value::Float(float) => Ok(float),
+            x => Err(Signal::Error(format!("{x} is not a `float`"))),
         }
     }
 
     pub fn int(self) -> Result<isize, Signal> {
-        if let Value::Int(int) = self {
-            Ok(int)
-        } else {
-            Err(Signal::Error("expect a `int` type".to_string()))
+        match self {
+            Value::Int(int) => Ok(int),
+            x => Err(Signal::Error(format!("{x} is not a `int`"))),
         }
     }
 }
@@ -118,7 +112,7 @@ impl Value {
                 }
                 true
             }
-            _ => Err(Signal::Error("operator `==` does not evaluate".to_string()))?,
+            (x, y) => Err(Signal::Error(format!("`{x} == {y}` does not evaluate")))?,
         };
         Ok(Value::Bool(value))
     }
@@ -151,7 +145,7 @@ impl Value {
                 }
                 false
             }
-            _ => Err(Signal::Error("operator `!=` does not evaluate".to_string()))?,
+            (x, y) => Err(Signal::Error(format!("`{x} != {y}` does not evaluate")))?,
         };
         Ok(Value::Bool(value))
     }
@@ -160,7 +154,7 @@ impl Value {
         let value = match (self, rhs) {
             (Value::Int(x), Value::Int(y)) => x > y,
             (Value::Float(x), Value::Float(y)) => x > y,
-            _ => Err(Signal::Error("operator `>` does not evaluate".to_string()))?,
+            (x, y) => Err(Signal::Error(format!("`{x} > {y}` does not evaluate")))?,
         };
         Ok(Value::Bool(value))
     }
@@ -169,7 +163,7 @@ impl Value {
         let value = match (self, rhs) {
             (Value::Int(x), Value::Int(y)) => x >= y,
             (Value::Float(x), Value::Float(y)) => x >= y,
-            _ => Err(Signal::Error("operator `>=` does not evaluate".to_string()))?,
+            (x, y) => Err(Signal::Error(format!("`{x} >= {y}` does not evaluate")))?,
         };
         Ok(Value::Bool(value))
     }
@@ -178,7 +172,7 @@ impl Value {
         let value = match (self, rhs) {
             (Value::Int(x), Value::Int(y)) => x < y,
             (Value::Float(x), Value::Float(y)) => x < y,
-            _ => Err(Signal::Error("operator `<` does not evaluate".to_string()))?,
+            (x, y) => Err(Signal::Error(format!("`{x} < {y}` does not evaluate")))?,
         };
         Ok(Value::Bool(value))
     }
@@ -187,7 +181,7 @@ impl Value {
         let value = match (self, rhs) {
             (Value::Int(x), Value::Int(y)) => x <= y,
             (Value::Float(x), Value::Float(y)) => x <= y,
-            _ => Err(Signal::Error("operator `<=` does not evaluate".to_string()))?,
+            (x, y) => Err(Signal::Error(format!("`{x} <= {y}` does not evaluate")))?,
         };
         Ok(Value::Bool(value))
     }
@@ -205,7 +199,7 @@ impl Value {
                 let op = Add::build([x, y]).map_err(Signal::Error)?;
                 Value::Operator(op)
             }
-            _ => Err(Signal::Error("operator `+` does not evaluate".to_string()))?,
+            (x, y) => Err(Signal::Error(format!("`{x} + {y}` does not evaluate")))?,
         };
         Ok(value)
     }
@@ -218,9 +212,7 @@ impl Value {
                 let op = Sub::build([x, y]).map_err(Signal::Error)?;
                 Value::Operator(op)
             }
-            _ => Err(Signal::Error(
-                "operator `-` does not evaluate for".to_string(),
-            ))?,
+            (x, y) => Err(Signal::Error(format!("`{x} - {y}` does not evaluate")))?,
         };
         Ok(value)
     }
@@ -233,7 +225,7 @@ impl Value {
                 let op = Mul::build([x, y]).map_err(Signal::Error)?;
                 Value::Operator(op)
             }
-            _ => Err(Signal::Error("operator `*` does not evaluate".to_string()))?,
+            (x, y) => Err(Signal::Error(format!("`{x} * {y}` does not evaluate")))?,
         };
         Ok(value)
     }
@@ -246,7 +238,7 @@ impl Value {
                 let op = Div::build([x, y]).map_err(Signal::Error)?;
                 Value::Operator(op)
             }
-            _ => Err(Signal::Error("operator `/` does not evaluate".to_string()))?,
+            (x, y) => Err(Signal::Error(format!("`{x} / {y}` does not evaluate")))?,
         };
         Ok(value)
     }
@@ -255,7 +247,7 @@ impl Value {
         let value = match (self, rhs) {
             (Value::Int(x), Value::Int(y)) => Value::Int(x % y),
             (Value::Float(x), Value::Float(y)) => Value::Float(x % y),
-            _ => Err(Signal::Error("operator `%` does not evaluate".to_string()))?,
+            (x, y) => Err(Signal::Error(format!("`{x} % {y}` does not evaluate")))?,
         };
         Ok(value)
     }
@@ -266,7 +258,7 @@ impl Value {
                 let op = Dot::build([x, y]).map_err(Signal::Error)?;
                 Value::Operator(op)
             }
-            _ => Err(Signal::Error("operator `@` does not evaluate".to_string()))?,
+            (x, y) => Err(Signal::Error(format!("`{x} @ {y}` does not evaluate")))?,
         };
         Ok(value)
     }
@@ -274,7 +266,7 @@ impl Value {
     pub fn pos(self) -> Result<Value, Signal> {
         let value = match self {
             Value::Int(_) | Value::Float(_) => self,
-            _ => Err(Signal::Error("operator `+` does not evaluate".to_string()))?,
+            x => Err(Signal::Error(format!("`+{x}` does not evaluate")))?,
         };
         Ok(value)
     }
@@ -287,7 +279,7 @@ impl Value {
                 let op = Neg::build([x]).map_err(Signal::Error)?;
                 Value::Operator(op)
             }
-            _ => Err(Signal::Error("operator `-` does not evaluate".to_string()))?,
+            x => Err(Signal::Error(format!("`-{x}` does not evaluate")))?,
         };
         Ok(value)
     }
