@@ -27,9 +27,11 @@ fn __tuple(
 ) -> Result<Vec<(Ident, Value)>, Signal> {
     let values = value.tuple()?;
     if tuple.len() != values.len() {
-        return Err(Signal::Error(
-            "incorrect numbers of value to unpack".to_string(),
-        ));
+        return Err(Signal::Error(format!(
+            "expect {} elements, saw {}",
+            tuple.len(),
+            values.len()
+        )));
     }
     let mut result = Vec::new();
     for (pat, val) in tuple.iter().zip(values) {

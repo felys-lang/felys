@@ -22,7 +22,7 @@ impl Evaluation for Float {
             .ok_or(Signal::Error("id does not exist".to_string()))?;
         let value = raw
             .parse()
-            .map_err(|_| Signal::Error("parsing to `float` failed".to_string()))?;
+            .map_err(|_| Signal::Error(format!("parse {raw} to `float` failed")))?;
         Ok(Value::Float(value))
     }
 }
@@ -35,7 +35,7 @@ impl Evaluation for Int {
             .ok_or(Signal::Error("id does not exist".to_string()))?;
         let value = raw
             .parse()
-            .map_err(|_| Signal::Error("parsing to `int` failed".to_string()))?;
+            .map_err(|_| Signal::Error(format!("parse {raw} to `int` failed")))?;
         Ok(Value::Int(value))
     }
 }

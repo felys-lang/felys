@@ -177,7 +177,11 @@ fn __call(
     let result = match func.eval(global, frame)? {
         Value::Closure(params, expr) => {
             if params.len() != values.len() {
-                return Err(Signal::Error("incorrect numbers of arguments".to_string()));
+                return Err(Signal::Error(format!(
+                    "expected {} arguments, saw {}",
+                    params.len(),
+                    values.len()
+                )));
             }
             let mut sandbox = frame.sandbox()?;
             for (param, value) in params.iter().zip(values) {
@@ -186,7 +190,7 @@ fn __call(
             expr.eval(global, &mut sandbox)
         }
         Value::Rust(f) => f(values),
-        _ => return Err(Signal::Error("expect a callable type".to_string())),
+        value => return Err(Signal::Error(format!("{value} is not callable"))),
     };
 
     match result {
@@ -261,7 +265,10 @@ fn __matrix(
     let mut data = Vec::with_capacity(rows * cols);
     for row in matrix.iter() {
         if row.len() != cols {
-            return Err(Signal::Error("row length are not equal".to_string()));
+            return Err(Signal::Error(format!(
+                "expected {cols} columns, saw {}",
+                row.len()
+            )));
         }
         for x in row.iter() {
             let value = x.eval(global, frame)?.float()?;
