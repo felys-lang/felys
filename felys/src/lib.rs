@@ -7,5 +7,6 @@ mod rust;
 
 type Fxx = f64;
 
+pub use nn::matrix::Matrix;
 pub use parser::Packrat;
 pub use program::Config;
