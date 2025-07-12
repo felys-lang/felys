@@ -1,4 +1,4 @@
-use crate::ast::{Block, Grammar, Ident, Stmt};
+use crate::ast::{Block, Grammar, Id, Stmt};
 use crate::runtime::context::backend::{Frame, Global};
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::{Evaluation, Signal};
@@ -21,7 +21,7 @@ impl Block {
         &self,
         global: &mut Global,
         frame: &mut Frame,
-        default: Vec<(Ident, Value)>,
+        default: Vec<(Id, Value)>,
     ) -> Result<Value, Signal> {
         frame.stack(default);
         let result = __block(self, global, frame);

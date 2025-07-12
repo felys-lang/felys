@@ -1,4 +1,4 @@
-use crate::ast::Ident;
+use crate::ast::Id;
 use crate::nn::optim::Optimizer;
 use crate::parser::Intern;
 use crate::runtime::context::value::Value;
@@ -9,13 +9,13 @@ use std::collections::HashMap;
 pub struct Global<'a> {
     pub optim: &'a mut Optimizer,
     pub stdout: &'a mut Vec<String>,
-    pub constants: &'a HashMap<usize, Value>,
+    pub constants: &'a HashMap<Id, Value>,
     pub intern: &'a Intern,
 }
 
 pub struct Frame {
     pub depth: (usize, usize),
-    pub data: Vec<HashMap<usize, Value>>,
+    pub data: Vec<HashMap<Id, Value>>,
 }
 
 impl Frame {
@@ -42,16 +42,16 @@ impl Frame {
         }
     }
 
-    pub fn get(&self, key: usize) -> Result<Value, Signal> {
+    pub fn get(&self, key: &usize) -> Option<Value> {
         for floor in self.data.iter().rev() {
-            if let Some(value) = floor.get(&key) {
-                return Ok(value.clone());
+            if let Some(value) = floor.get(key) {
+                return Some(value.clone());
             }
         }
-        Err(Signal::Error("id does not exist".to_string()))
+        None
     }
 
-    pub fn stack(&mut self, default: Vec<(Ident, Value)>) {
+    pub fn stack(&mut self, default: Vec<(Id, Value)>) {
         let mut data = HashMap::new();
         for (k, v) in default {
             data.insert(k, v);

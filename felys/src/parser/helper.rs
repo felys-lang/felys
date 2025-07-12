@@ -1,3 +1,4 @@
+use crate::ast::Ident;
 use crate::parser::Packrat;
 use crate::program::Program;
 
@@ -12,13 +13,13 @@ impl Packrat {
         Ok(program)
     }
 
-    pub fn ident(&mut self) -> Option<usize> {
+    pub fn ident(&mut self) -> Option<Ident> {
         let id = self.IDENT()?;
         let ident = self.intern.get(&id).unwrap();
         if self.keywords.contains(ident) {
             None
         } else {
-            Some(id)
+            Some(Ident(id))
         }
     }
 

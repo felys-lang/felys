@@ -13,7 +13,7 @@ impl Evaluation for Expr {
             Expr::Block(block) => block.eval(global, frame, vec![]),
             Expr::Break(option) => __break(global, frame, option),
             Expr::Continue => Err(Signal::Continue),
-            Expr::Rust(ident) => __rust(global, frame, ident),
+            Expr::Rust(ident) => ident.constant(global, frame),
             Expr::For(pat, expr, block) => __for(global, frame, pat, expr, block),
             Expr::If(expr, block, option) => __if(global, frame, expr, block, option),
             Expr::Loop(block) => __loop(global, frame, block),
@@ -23,7 +23,7 @@ impl Evaluation for Expr {
             Expr::Binary(rhs, op, lhs) => __binary(global, frame, rhs, op, lhs),
             Expr::Closure(params, expr) => __closure(global, frame, params, expr),
             Expr::Call(params, args) => __call(global, frame, params, args),
-            Expr::Ident(ident) => frame.get(*ident),
+            Expr::Ident(ident) => ident.local(global, frame),
             Expr::Step(loss, lr) => __step(global, frame, loss, lr),
             Expr::Tuple(tuple) => __tuple(global, frame, tuple),
             Expr::List(list) => __list(global, frame, list),
@@ -70,14 +70,6 @@ fn __break(
         Signal::Break(Value::Void)
     };
     Err(result)
-}
-
-fn __rust(global: &mut Global, _: &mut Frame, ident: &Ident) -> Result<Value, Signal> {
-    global
-        .constants
-        .get(ident)
-        .cloned()
-        .ok_or(Signal::Error("external identifier not found".to_string()))
 }
 
 fn __for(
@@ -185,7 +177,7 @@ fn __call(
             }
             let mut sandbox = frame.sandbox()?;
             for (param, value) in params.iter().zip(values) {
-                sandbox.put(*param, value)
+                sandbox.put(param.0, value)
             }
             expr.eval(global, &mut sandbox)
         }

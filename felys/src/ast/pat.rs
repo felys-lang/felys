@@ -12,4 +12,7 @@ pub enum Pat {
     Ident(Ident),
 }
 
-pub type Ident = usize;
+#[derive(Clone, Debug)]
+pub struct Ident(pub Id);
+
+pub type Id = usize;
