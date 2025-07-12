@@ -64,7 +64,7 @@ impl Optimizer {
 
     pub fn step(&mut self, gradients: Gradients, lr: f64) -> Result<(), String> {
         for (id, grad) in gradients.make()? {
-            if let Some((m, x)) = self.parameters.get_mut(&id) {
+            if let Some((x, m)) = self.parameters.get_mut(&id) {
                 m.broadcast(&grad, |mu, gt| self.momentum * mu - lr * gt)?;
                 x.broadcast(m, |theta, vt| theta + vt)?;
             } else {
@@ -97,7 +97,7 @@ impl Random {
         let length = shape.0 * shape.1;
         let mut data = Vec::with_capacity(length);
         for _ in 0..length {
-            data.push(self.signed())
+            data.push(self.signed() * 0.1)
         }
         Matrix::new(data, shape)
     }

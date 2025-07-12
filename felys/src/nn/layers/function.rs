@@ -42,12 +42,11 @@ impl Differentiable<2> for CrossEntropy {
     fn build(input: [Operator; 2]) -> Result<Operator, String> {
         let [x, y] = input;
         let mut logits = x.matrix.vec()?;
-        let label = y.matrix.vec()?;
-        if logits.len() != label.len() {
+        let label = y.matrix.item()? as usize;
+        if label > logits.len() {
             return Err(format!(
-                "logits length {} is not equal to label {} length",
+                "label {label} is greater than logits length {}",
                 logits.len(),
-                label.len()
             ));
         }
 
@@ -57,27 +56,10 @@ impl Differentiable<2> for CrossEntropy {
         logits.iter_mut().for_each(|v| *v /= sum);
 
         let mut softmax = logits;
-        let mut choice = None;
-        for (i, value) in label.iter().enumerate() {
-            if *value == 0.0 {
-                continue;
-            } else if *value != 1.0 {
-                return Err(format!("invalid one hot encoding value {value}"));
-            }
-            if choice.is_some() {
-                return Err(format!("another one found at {i}"));
-            } else {
-                choice = Some(i)
-            }
-        }
-        let Some(choice) = choice else {
-            return Err("invalid one hot encoding".to_string());
-        };
-
-        let loss = -softmax[choice].ln();
+        let loss = -softmax[label].ln();
         let matrix = Matrix::new(vec![loss], (1, 1))?;
 
-        softmax[choice] -= 1.0;
+        softmax[label] -= 1.0;
         let layer = Layer::CrossEntropy(
             Self {
                 subtree: [x.layer, y.layer],

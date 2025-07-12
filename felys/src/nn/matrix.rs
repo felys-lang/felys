@@ -33,7 +33,7 @@ impl Display for Matrix {
             let end = start + self.shape.1;
             write!(f, "  ")?;
             for val in &self.linear[start..end] {
-                write!(f, "{val:.3} ")?;
+                write!(f, "{val:.7} ")?;
             }
             writeln!(f, ";")?;
         }
@@ -72,6 +72,13 @@ impl Matrix {
             return Err(format!("{:?} is not a vector", self.shape));
         }
         Ok(self.linear)
+    }
+
+    pub fn item(self) -> Result<Fxx, String> {
+        if (self.shape) != (1, 1) {
+            return Err(format!("{:?} is not a scalar", self.shape));
+        }
+        Ok(self.linear[0])
     }
 
     pub fn t(&self) -> Result<Self, String> {
