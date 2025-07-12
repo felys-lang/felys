@@ -73,7 +73,7 @@ fn combined() -> Result<(), String> {
 fn print(code: &str) -> Result<String, String> {
     let wrapped = format!("print {{ {code} }};");
     let params = HashMap::new();
-    let config = Config::new(params, 100, 100, 0.9, 42);
+    let config = Config::new(params, 100, 0.9, 42);
     let output = Packrat::from(wrapped).parse()?.config(config).exec()?;
     Ok(output.stdout.join("\n"))
 }

@@ -5,14 +5,12 @@ use crate::runtime::context::value::Value;
 use crate::runtime::shared::Signal;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::sync::mpsc::Receiver;
 
 pub struct Global<'a> {
     pub optim: &'a mut Optimizer,
     pub stdout: &'a mut Vec<String>,
     pub constants: &'a HashMap<usize, Value>,
     pub intern: &'a Intern,
-    pub timer: &'a Receiver<bool>,
 }
 
 pub struct Frame {

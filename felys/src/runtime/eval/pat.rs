@@ -4,7 +4,7 @@ use crate::runtime::context::value::Value;
 use crate::runtime::shared::{Evaluation, Signal};
 
 impl Evaluation for Pat {
-    fn __eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
+    fn eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
         match self {
             Pat::Any => Err(Signal::Error("pattern `_` does not evaluated".to_string())),
             Pat::Lit(lit) => lit.eval(global, frame),

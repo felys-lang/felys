@@ -6,29 +6,18 @@ use crate::runtime::context::value::Value;
 use crate::runtime::shared::Evaluation;
 use crate::rust::{ce, relu};
 use std::collections::HashMap;
-use std::sync::mpsc;
-use std::thread;
-use std::time::Duration;
 
 pub struct Config {
     params: Parameters,
-    timeout: usize,
     depth: usize,
     momentum: f64,
     seed: usize,
 }
 
 impl Config {
-    pub fn new(
-        params: Parameters,
-        timeout: usize,
-        depth: usize,
-        momentum: f64,
-        seed: usize,
-    ) -> Self {
+    pub fn new(params: Parameters, depth: usize, momentum: f64, seed: usize) -> Self {
         Self {
             params,
-            timeout,
             depth,
             momentum,
             seed,
@@ -52,7 +41,6 @@ impl Program {
             grammar: self.grammar,
             intern: self.intern,
             optimizer,
-            timeout: config.timeout,
             depth: config.depth,
         }
     }
@@ -62,21 +50,11 @@ pub struct Executable {
     grammar: Grammar,
     intern: Intern,
     optimizer: Optimizer,
-    timeout: usize,
     depth: usize,
 }
 
 impl Executable {
     pub fn exec(mut self) -> Result<Output, String> {
-        let (tx, rx) = mpsc::channel();
-        let limit = Duration::from_millis(self.timeout as u64);
-        if !limit.is_zero() {
-            thread::spawn(move || {
-                thread::sleep(limit);
-                tx.send(true)
-            });
-        }
-
         let mut stdout = Vec::new();
         let constants = HashMap::from([
             (
@@ -96,7 +74,6 @@ impl Executable {
             stdout: &mut stdout,
             constants: &constants,
             intern: &mut self.intern,
-            timer: &rx,
         };
         let mut frame = Frame {
             depth: (0, self.depth),

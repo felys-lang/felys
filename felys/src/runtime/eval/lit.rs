@@ -4,7 +4,7 @@ use crate::runtime::context::value::Value;
 use crate::runtime::shared::{Evaluation, Signal};
 
 impl Evaluation for Lit {
-    fn __eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
+    fn eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
         match self {
             Lit::Int(x) => x.eval(global, frame),
             Lit::Float(x) => x.eval(global, frame),
@@ -15,7 +15,7 @@ impl Evaluation for Lit {
 }
 
 impl Evaluation for Float {
-    fn __eval(&self, global: &mut Global, _: &mut Frame) -> Result<Value, Signal> {
+    fn eval(&self, global: &mut Global, _: &mut Frame) -> Result<Value, Signal> {
         let raw = global
             .intern
             .get(&self.0)
@@ -28,7 +28,7 @@ impl Evaluation for Float {
 }
 
 impl Evaluation for Int {
-    fn __eval(&self, global: &mut Global, _: &mut Frame) -> Result<Value, Signal> {
+    fn eval(&self, global: &mut Global, _: &mut Frame) -> Result<Value, Signal> {
         let raw = global
             .intern
             .get(&self.0)

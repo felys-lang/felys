@@ -7,7 +7,7 @@ use crate::runtime::shared::{Evaluation, Signal};
 use std::rc::Rc;
 
 impl Evaluation for Expr {
-    fn __eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
+    fn eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
         match self {
             Expr::Assign(pat, op, expr) => __assign(global, frame, pat, op, expr),
             Expr::Block(block) => block.eval(global, frame, vec![]),
