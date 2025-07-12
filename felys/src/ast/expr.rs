@@ -1,3 +1,4 @@
+use crate::ast::utils::BufVec;
 use crate::ast::*;
 use std::rc::Rc;
 
@@ -17,6 +18,8 @@ pub enum Expr {
     If(Rc<Expr>, Block, Option<Rc<Expr>>),
     /// loop with not tests: `loop { block }`
     Loop(Block),
+    /// matlab like matrix: `[0.0, 0.0;]`
+    Matrix(BufVec<BufVec<Float, 1>, 1>),
     /// return value: `return elysia`
     Return(Option<Rc<Expr>>),
     /// while loop: `while expr { block }`
@@ -24,19 +27,27 @@ pub enum Expr {
     /// binary operation: `1 + 2`
     Binary(Rc<Expr>, BinOp, Rc<Expr>),
     /// closure: `|x| { x+1 }`, `|x| x+1`
-    Closure(Vec<Ident>, Rc<Expr>),
+    Closure(Option<BufVec<Ident, 1>>, Rc<Expr>),
     /// function call: `func(1, 2)`
-    Call(Rc<Expr>, Vec<Expr>),
+    Call(Rc<Expr>, Option<BufVec<Expr, 1>>),
     /// identifier: `elysia`
     Ident(Ident),
+    /// loss backward and optimizer step: `step loss by 0.001`
+    Step(Rc<Expr>, Rc<Expr>),
     /// tuple: `(elysia, 11.11)`
-    Tuple(Vec<Expr>),
-    /// tuple: `[elysia, 11.11]`
-    List(Vec<Expr>),
+    Tuple(BufVec<Expr, 2>),
+    /// list: `[elysia, 11.11]`
+    List(Option<BufVec<Expr, 1>>),
     /// literals: `"elysia"`, `11.11`, `true`
     Lit(Lit),
+    /// rust no side effect ffi: `rust __elysia__`
+    Rust(Ident),
+    /// learnable parameter: `<10, 32>`
+    Param(Int, Int, usize),
     /// explicit precedence: `(1 + 2)`
     Paren(Rc<Expr>),
+    /// display a value: `print "hello, world!"`
+    Print(Rc<Expr>),
     /// unary operation: `-1`
     Unary(UnaOp, Rc<Expr>),
 }
@@ -66,6 +77,7 @@ pub enum BinOp {
     Mul,
     Div,
     Mod,
+    Dot,
 }
 
 #[derive(Clone, Debug)]

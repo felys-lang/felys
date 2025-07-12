@@ -1,15 +1,15 @@
-use crate::ast::{Block, Ident, Stmt};
-use crate::runtime::context::backend::Backend;
+use crate::ast::{Block, Grammar, Id, Stmt};
+use crate::runtime::context::backend::{Frame, Global};
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::{Evaluation, Signal};
 
 impl Evaluation for Stmt {
-    fn __eval(&self, backend: &mut Backend) -> Result<Value, Signal> {
+    fn eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
         match self {
             Stmt::Empty => Ok(Value::Void),
-            Stmt::Expr(expr) => expr.eval(backend),
+            Stmt::Expr(expr) => expr.eval(global, frame),
             Stmt::Semi(expr) => {
-                expr.eval(backend)?;
+                expr.eval(global, frame)?;
                 Ok(Value::Void)
             }
         }
@@ -19,25 +19,33 @@ impl Evaluation for Stmt {
 impl Block {
     pub fn eval(
         &self,
-        backend: &mut Backend,
-        default: Vec<(Ident, Value)>,
+        global: &mut Global,
+        frame: &mut Frame,
+        default: Vec<(Id, Value)>,
     ) -> Result<Value, Signal> {
-        fn __eval(x: &Block, backend: &mut Backend) -> Result<Value, Signal> {
-            let length = x.0.len().saturating_sub(1);
-            for stmt in x.0.iter().take(length) {
-                stmt.eval(backend)?.void()?
-            }
-            match x.0.last() {
-                Some(stmt) => stmt.eval(backend),
-                None => Ok(Value::Void),
-            }
-        }
-        if backend.timer.try_recv().unwrap_or(false) {
-            return Err(Signal::Error("timeout"));
-        }
-        backend.stack(default);
-        let result = __eval(self, backend);
-        backend.unstack();
+        frame.stack(default);
+        let result = __block(self, global, frame);
+        frame.unstack();
         result
+    }
+}
+
+fn __block(x: &Block, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
+    let length = x.0.len().saturating_sub(1);
+    for stmt in x.0.iter().take(length) {
+        stmt.eval(global, frame)?.void()?
+    }
+    match x.0.last() {
+        Some(stmt) => stmt.eval(global, frame),
+        None => Ok(Value::Void),
+    }
+}
+
+impl Evaluation for Grammar {
+    fn eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal> {
+        for stmt in &self.0 {
+            stmt.eval(global, frame)?.void()?;
+        }
+        Ok(Value::Void)
     }
 }

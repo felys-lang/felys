@@ -7,9 +7,12 @@ pub enum Pat {
     /// literal: `11.11`
     Lit(Lit),
     /// unwrap a group: `(elysia, 11.11)`
-    Tuple(Vec<Pat>),
+    Tuple(BufVec<Pat, 2>),
     /// identifier
     Ident(Ident),
 }
 
-pub type Ident = usize;
+#[derive(Clone, Debug)]
+pub struct Ident(pub Id);
+
+pub type Id = usize;

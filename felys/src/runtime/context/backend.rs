@@ -1,29 +1,32 @@
-use crate::ast::Ident;
-use crate::rspegen::Intern;
+use crate::ast::Id;
+use crate::nn::optim::Optimizer;
+use crate::parser::Intern;
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::Signal;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::sync::mpsc::Receiver;
 
-pub struct Backend<'a> {
+pub struct Global<'a> {
+    pub optim: &'a mut Optimizer,
+    pub stdout: &'a mut Vec<String>,
+    pub constants: &'a HashMap<Id, Value>,
     pub intern: &'a Intern,
-    pub timer: &'a Receiver<bool>,
-    pub depth: (u64, u64),
-    pub data: Vec<HashMap<usize, Value>>,
 }
 
-impl Backend<'_> {
+pub struct Frame {
+    pub depth: (usize, usize),
+    pub data: Vec<HashMap<Id, Value>>,
+}
+
+impl Frame {
     pub fn sandbox(&self) -> Result<Self, Signal> {
         if self.depth.0 < self.depth.1 {
             Ok(Self {
-                intern: self.intern,
-                timer: self.timer,
                 depth: (self.depth.0 + 1, self.depth.1),
                 data: vec![HashMap::new()],
             })
         } else {
-            Err(Signal::Error("stack overflow"))
+            Err(Signal::Error("stack overflow".to_string()))
         }
     }
 
@@ -39,16 +42,16 @@ impl Backend<'_> {
         }
     }
 
-    pub fn get(&self, key: usize) -> Result<Value, Signal> {
+    pub fn get(&self, key: &usize) -> Option<Value> {
         for floor in self.data.iter().rev() {
-            if let Some(value) = floor.get(&key) {
-                return Ok(value.clone());
+            if let Some(value) = floor.get(key) {
+                return Some(value.clone());
             }
         }
-        Err(Signal::Error("id does not exist"))
+        None
     }
 
-    pub fn stack(&mut self, default: Vec<(Ident, Value)>) {
+    pub fn stack(&mut self, default: Vec<(Id, Value)>) {
         let mut data = HashMap::new();
         for (k, v) in default {
             data.insert(k, v);

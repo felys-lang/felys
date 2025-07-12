@@ -1,5 +1,12 @@
 mod ast;
-mod rspegen;
+mod nn;
+mod parser;
+mod program;
 mod runtime;
+mod rust;
 
-pub use rspegen::Packrat;
+type Fxx = f64;
+
+pub use nn::matrix::Matrix;
+pub use parser::Packrat;
+pub use program::Config;

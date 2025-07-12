@@ -1,5 +1,4 @@
-mod context;
+pub mod context;
 mod eval;
-mod exec;
-mod shared;
+pub mod shared;
 mod unpack;

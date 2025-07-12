@@ -1,4 +1,6 @@
 use crate::ast::{Expr, Ident};
+use crate::nn::layers::Operator;
+use crate::runtime::shared::Signal;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
@@ -11,25 +13,27 @@ pub enum Value {
     Closure(Vec<Ident>, Rc<Expr>),
     Tuple(Vec<Value>),
     List(Vec<Value>),
+    Operator(Operator),
+    Rust(fn(Vec<Value>) -> Result<Value, Signal>),
     Void,
 }
 
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Bool(x) => write!(f, "{}", x),
-            Value::Float(x) => write!(f, "{}", x),
-            Value::Int(x) => write!(f, "{}", x),
-            Value::Str(x) => write!(f, "{}", x),
-            Value::Closure(_, x) => write!(f, "<{:p}>", x),
+            Value::Bool(x) => write!(f, "{x}"),
+            Value::Float(x) => write!(f, "{x}"),
+            Value::Int(x) => write!(f, "{x}"),
+            Value::Str(x) => write!(f, "{x}"),
+            Value::Closure(_, x) => write!(f, "<{x:p}>"),
             Value::Tuple(x) => {
                 write!(f, "(")?;
                 let mut x = x.iter();
                 if let Some(first) = x.next() {
-                    write!(f, "{}", first)?;
+                    write!(f, "{first}")?;
                 }
                 for val in x {
-                    write!(f, ", {}", val)?
+                    write!(f, ", {val}")?
                 }
                 write!(f, ")")
             }
@@ -37,13 +41,15 @@ impl Display for Value {
                 write!(f, "[")?;
                 let mut x = x.iter();
                 if let Some(first) = x.next() {
-                    write!(f, "{}", first)?;
+                    write!(f, "{first}")?;
                 }
                 for val in x {
-                    write!(f, ", {}", val)?
+                    write!(f, ", {val}")?
                 }
                 write!(f, "]")
             }
+            Value::Operator(op) => write!(f, "{op}"),
+            Value::Rust(x) => write!(f, "{x:p}"),
             Value::Void => write!(f, "<void>"),
         }
     }

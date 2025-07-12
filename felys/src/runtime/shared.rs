@@ -1,19 +1,22 @@
-use crate::runtime::context::backend::Backend;
+use crate::runtime::context::backend::{Frame, Global};
 use crate::runtime::context::value::Value;
 
 pub enum Signal {
-    Error(&'static str),
+    Error(String),
     Return(Value),
     Break(Value),
     Continue,
 }
 
-pub trait Evaluation {
-    fn __eval(&self, backend: &mut Backend) -> Result<Value, Signal>;
-    fn eval(&self, backend: &mut Backend) -> Result<Value, Signal> {
-        if backend.timer.try_recv().unwrap_or(false) {
-            return Err(Signal::Error("timeout"));
+impl Signal {
+    pub fn error(&self) -> String {
+        match self {
+            Signal::Error(e) => e.to_string(),
+            _ => "invalid signal".to_string(),
         }
-        self.__eval(backend)
     }
+}
+
+pub trait Evaluation {
+    fn eval(&self, global: &mut Global, frame: &mut Frame) -> Result<Value, Signal>;
 }

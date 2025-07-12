@@ -4,54 +4,49 @@
     use std::rc::Rc;
 }
 
-grammar -> { Grammar }:
+peg grammar -> { Grammar }:
     / stmts=(stmt=stmt $)* #eof { Grammar(stmts) }
     ;
 
 @(memo)
-pat -> { Pat }:
-    / @(token)('_' !IB) { Pat::Any }
+peg pat -> { Pat }:
+    / UNDERSCORE { Pat::Any }
     / ident=ident { Pat::Ident(ident) }
     / lit=lit { Pat::Lit(lit) }
-    / '(' first=pat ',' second=#pat more=(',' pat=#pat)* #')' { {
-        let mut elements = more;
-        elements.insert(0, second);
-        elements.insert(0, first);
-        Pat::Tuple(elements)
-    } }
+    / '(' first=pat ',' second=#pat more=(',' pat=pat)* ','? #')' {
+        Pat::Tuple(BufVec::new([first, second], more))
+    }
     ;
 
-stmt -> { Stmt }:
+peg stmt -> { Stmt }:
     / expr=expr ';' { Stmt::Semi(expr) }
     / expr=expr { Stmt::Expr(expr) }
     / ';' { Stmt::Empty }
     ;
 
-block -> { Block }:
+peg block -> { Block }:
     / '{' stmts=stmt* #'}' { Block(stmts) }
     ;
 
 @(memo)
-expr -> { Expr }:
+peg expr -> { Expr }:
     / assignment=assignment
     / disjunction=disjunction
     / block=block { Expr::Block(block) }
-    / @(token)('break' !IB) expr=expr? { Expr::Break(expr.map(Rc::new)) }
-    / @(token)('continue' !IB) { Expr::Continue }
-    / @(token)('for' !IB) pat=#pat @(token)(#'in' !IB) expr=#expr block=#block {
-        Expr::For(pat, expr.into(), block)
-    }
-    / @(token)('if' !IB) expr=#expr block=#block otherwise=otherwise? {
+    / BREAK expr=expr? { Expr::Break(expr.map(Rc::new)) }
+    / CONTINUE { Expr::Continue }
+    / FOR pat=#pat #IN expr=#expr block=#block { Expr::For(pat, expr.into(), block) }
+    / IF expr=#expr block=#block otherwise=(ELSE expr=#expr)? {
         Expr::If(expr.into(), block, otherwise.map(Rc::new))
     }
-    / @(token)('loop' !IB) block=#block { Expr::Loop(block) }
-    / @(token)('return' !IB) expr=expr? { Expr::Return(expr.map(Rc::new)) }
-    / @(token)('while' !IB) expr=#expr block=#block { Expr::While(expr.into(), block) }
+    / LOOP block=#block { Expr::Loop(block) }
+    / RETURN expr=expr? { Expr::Return(expr.map(Rc::new)) }
+    / WHILE expr=#expr block=#block { Expr::While(expr.into(), block) }
+    / STEP loss=#expr #BY lr=#expr { Expr::Step(loss.into(), lr.into()) }
+    / PRINT expr=#expr { Expr::Print(expr.into()) }
     ;
 
-otherwise -> { Expr }: @(token)('else' !IB) expr=#expr ;
-
-assignment -> { Expr }:
+peg assignment -> { Expr }:
     / pat=pat '=' !'=' expr=#expr { Expr::Assign(pat, AssOp::Eq, expr.into()) }
     / pat=pat '+=' expr=#expr { Expr::Assign(pat, AssOp::AddEq, expr.into()) }
     / pat=pat '-=' expr=#expr { Expr::Assign(pat, AssOp::SubEq, expr.into()) }
@@ -60,32 +55,32 @@ assignment -> { Expr }:
     / pat=pat '%=' expr=#expr { Expr::Assign(pat, AssOp::ModEq, expr.into()) }
     ;
 
-disjunction -> { Expr }:
-    / lhs=disjunction @(token)('or' !IB) rhs=#conjunction {
+peg disjunction -> { Expr }:
+    / lhs=disjunction OR rhs=#conjunction {
         Expr::Binary(lhs.into(), BinOp::Or, rhs.into())
     }
     / conjunction=conjunction
     ;
 
-conjunction -> { Expr }:
-    / lhs=conjunction @(token)('and' !IB) rhs=#inversion {
+peg conjunction -> { Expr }:
+    / lhs=conjunction AND rhs=#inversion {
         Expr::Binary(lhs.into(), BinOp::And, rhs.into())
     }
     / inversion=inversion
     ;
 
-inversion -> { Expr }:
-    / @(token)('not' !IB) inversion=#inversion { Expr::Unary(UnaOp::Not, inversion.into()) }
+peg inversion -> { Expr }:
+    / NOT inversion=#inversion { Expr::Unary(UnaOp::Not, inversion.into()) }
     / equality=equality
     ;
 
-equality -> { Expr }:
+peg equality -> { Expr }:
     / lhs=equality '==' rhs=#comparison { Expr::Binary(lhs.into(), BinOp::Eq, rhs.into()) }
     / lhs=equality '!=' rhs=#comparison { Expr::Binary(lhs.into(), BinOp::Ne, rhs.into()) }
     / comparison=comparison
     ;
 
-comparison -> { Expr }:
+peg comparison -> { Expr }:
     / lhs=comparison '>=' rhs=#term { Expr::Binary(lhs.into(), BinOp::Ge, rhs.into()) }
     / lhs=comparison '<=' rhs=#term { Expr::Binary(lhs.into(), BinOp::Le, rhs.into()) }
     / lhs=comparison '>' rhs=#term { Expr::Binary(lhs.into(), BinOp::Gt, rhs.into()) }
@@ -93,93 +88,112 @@ comparison -> { Expr }:
     / term=term
     ;
 
-term -> { Expr }:
+peg term -> { Expr }:
     / lhs=term '+' rhs=#factor { Expr::Binary(lhs.into(), BinOp::Add, rhs.into()) }
     / lhs=term '-' rhs=#factor { Expr::Binary(lhs.into(), BinOp::Sub, rhs.into()) }
     / factor=factor
     ;
 
-factor -> { Expr }:
-    / lhs=factor '*' rhs=#unary { Expr::Binary(lhs.into(), BinOp::Mul, rhs.into()) }
-    / lhs=factor '/' rhs=#unary { Expr::Binary(lhs.into(), BinOp::Div, rhs.into()) }
-    / lhs=factor '%' rhs=#unary { Expr::Binary(lhs.into(), BinOp::Mod, rhs.into()) }
+peg factor -> { Expr }:
+    / lhs=factor '*' rhs=#dot { Expr::Binary(lhs.into(), BinOp::Mul, rhs.into()) }
+    / lhs=factor '/' rhs=#dot { Expr::Binary(lhs.into(), BinOp::Div, rhs.into()) }
+    / lhs=factor '%' rhs=#dot { Expr::Binary(lhs.into(), BinOp::Mod, rhs.into()) }
+    / dot=dot
+    ;
+
+peg dot -> { Expr }:
+    / lhs=dot '@' rhs=#unary { Expr::Binary(lhs.into(), BinOp::Dot, rhs.into()) }
     / unary=unary
     ;
 
-unary -> { Expr }:
+peg unary -> { Expr }:
     / '+' unary=#unary { Expr::Unary(UnaOp::Pos, unary.into()) }
     / '-' unary=#unary { Expr::Unary(UnaOp::Neg, unary.into()) }
     / call=call
     ;
 
-call -> { Expr }:
+peg call -> { Expr }:
     / call=call '(' args=args? #')' {
-        Expr::Call(call.into(), args.unwrap_or_default())
+        Expr::Call(call.into(), args)
     }
     / primary=primary
     ;
 
-args -> { Vec<Expr> }:
-    / first=expr more=(',' expr=#expr)* { {
-      let mut elements = more;
-      elements.insert(0, first);
-      elements
-    } }
+peg args -> { BufVec<Expr, 1> }:
+    / first=expr more=(',' expr=expr)* ','? { BufVec::new([first], more) }
     ;
 
-primary -> { Expr }:
+peg primary -> { Expr }:
     / lit=lit { Expr::Lit(lit) }
     / ident=ident { Expr::Ident(ident) }
+    / RUST ident=#ident { Expr::Rust(ident) }
     / '(' expr=#expr ')' { Expr::Paren(expr.into()) }
-    / '(' first=#expr #',' second=#expr more=(',' expr=#expr)* #')' { {
-        let mut elements = more;
-        elements.insert(0, second);
-        elements.insert(0, first);
-        Expr::Tuple(elements)
-    } }
-    / '[' args=args? #']' { Expr::List(args.unwrap_or_default()) }
-    / '|' params=params? #'|' expr=#expr {
-        Expr::Closure(params.unwrap_or_default(), expr.into())
+    / '(' first=#expr #',' second=#expr more=(',' expr=expr)* ','? #')' {
+        Expr::Tuple(BufVec::new([first, second], more))
     }
+    / '[' first=row more=row* #']' { Expr::Matrix(BufVec::new([first], more)) }
+    / '[' args=args? #']' { Expr::List(args) }
+    / '|' params=params? #'|' expr=#expr { Expr::Closure(params, expr.into()) }
+    / '<' rows=#INT #',' cols=#INT #'>' { Expr::Param(rows, cols, x.stream.cursor) }
     ;
 
-params -> { Vec<Ident> }:
-    / first=ident more=(',' ident=#ident)* { {
-        let mut elements = more;
-        elements.insert(0, first);
-        elements
-    } }
+peg row -> { BufVec<Float, 1> }:
+    / first=FLOAT more=(',' f=FLOAT)* ';' { BufVec::new([first], more) }
     ;
 
-lit -> { Lit }:
+peg params -> { BufVec<Ident, 1> }:
+    / first=ident more=(',' ident=ident)* ','? { BufVec::new([first], more) }
+    ;
+
+peg lit -> { Lit }:
     / float=FLOAT { Lit::Float(float) }
     / int=INT { Lit::Int(int) }
-    / str=str { Lit::Str(str) }
-    / bool=bool { Lit::Bool(bool) }
+    / str=STR { Lit::Str(str) }
+    / bool=BOOL { Lit::Bool(bool) }
     ;
 
-@(token)
-str -> { Vec<Chunk> }: '"' chunks=chunk* #'"' ;
+lex FLOAT -> { Float }: float=F64 { Float(float) } ;
 
-@(token)
-chunk -> { Chunk }:
+lex INT -> { Int }: int=USIZE { Int(int) } ;
+
+lex STR -> { Vec<Chunk> }: '"' chunks=CHUNK* #'"' ;
+
+lex CHUNK -> { Chunk }:
     / slice=SLICE { Chunk::Slice(slice) }
     / '\\u{' hex=#HEX #'}' { Chunk::Unicode(hex) }
     / '\\' escape=#ESCAPE { Chunk::Escape(escape) }
     ;
 
-@(token)
-bool -> { Bool }:
-    / 'true' !IB { Bool::True }
-    / 'false' !IB { Bool::False }
+lex BOOL -> { Bool }:
+    / "true" !TAIL { Bool::True }
+    / "false" !TAIL { Bool::False }
     ;
 
-IB: [a-zA-Z0-9_] ;
+lex UNDERSCORE -> { () }: "_" !TAIL ;
+lex BREAK -> { () }: "break" !TAIL ;
+lex CONTINUE -> { () }: "continue" !TAIL ;
+lex FOR -> { () }: "for" !TAIL ;
+lex IN -> { () }: "in" !TAIL ;
+lex IF -> { () }: "if" !TAIL ;
+lex LOOP -> { () }: "loop" !TAIL ;
+lex RETURN -> { () }: "return" !TAIL ;
+lex WHILE -> { () }: "while" !TAIL ;
+lex ELSE -> { () }: "else" !TAIL ;
+lex OR -> { () }: "or" !TAIL ;
+lex AND -> { () }: "and" !TAIL ;
+lex NOT -> { () }: "not" !TAIL ;
+lex STEP -> { () }: "step" !TAIL ;
+lex BY -> { () }: "by" !TAIL ;
+lex PRINT -> { () }: "print" !TAIL ;
+lex RUST -> { () }: "rust" !TAIL ;
+
+@(intern, memo)
+IDENT: [a-zA-Z_] TAIL* ;
+TAIL: [a-zA-Z0-9_] ;
 
 @(intern) {
-    INT: '0' | [1-9][0-9]* ;
-    FLOAT: [1-9][0-9]* '.' [0-9]+ | '0.' [0-9]+;
-    IDENT: [a-zA-Z_] IB* ;
+    USIZE: '0' | [1-9][0-9]* ;
+    F64: [1-9][0-9]* '.' [0-9]+ | '0.' [0-9]+;
     SLICE: [^"\\]+ ;
     HEX: [0-9a-f]* ;
     ESCAPE: ['ntr\\] ;

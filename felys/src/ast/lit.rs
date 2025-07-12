@@ -10,9 +10,11 @@ pub enum Lit {
     Str(Str),
 }
 
-pub type Int = usize;
+#[derive(Clone, Debug)]
+pub struct Int(pub usize);
 
-pub type Float = usize;
+#[derive(Clone, Debug)]
+pub struct Float(pub usize);
 
 #[derive(Clone, Debug)]
 pub enum Bool {
