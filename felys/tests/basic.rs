@@ -53,6 +53,20 @@ fn logical() -> Result<(), String> {
 }
 
 #[test]
+fn assignment()-> Result<(), String> {
+    assert_eq!("0", print("x = 0; x")?);
+    assert_eq!("(1, 2)", print("(x, y) = (1, 2); (x, y)")?);
+    assert_eq!("(1, 2)", print("(x, y) = (1, 1 + 1); (x, y)")?);
+    assert_eq!("(1, (2, 3))", print("(x, (y, z)) = (1, (2, 3)); (x, (y, z))")?);
+    assert_eq!("4", print("x = 2; x += 2; x")?);
+    assert_eq!("0", print("x = 2; x -= 2; x")?);
+    assert_eq!("4", print("x = 2; x *= 2; x")?);
+    assert_eq!("1", print("x = 2; x /= 2; x")?);
+    assert_eq!("0", print("x = 2; x %= 2; x")?);
+    Ok(())
+}
+
+#[test]
 fn combined() -> Result<(), String> {
     assert_eq!("6", print("1 + 2 + 3")?);
     assert_eq!("7", print("1 + 2 * 3")?);

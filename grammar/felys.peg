@@ -13,7 +13,7 @@ peg pat -> { Pat }:
     / UNDERSCORE { Pat::Any }
     / ident=ident { Pat::Ident(ident) }
     / lit=lit { Pat::Lit(lit) }
-    / '(' first=pat ',' second=#pat more=(',' pat=pat)* ','? #')' {
+    / '(' first=pat ',' second=pat more=(',' pat=pat)* ','? ')' {
         Pat::Tuple(BufVec::new([first, second], more))
     }
     ;
