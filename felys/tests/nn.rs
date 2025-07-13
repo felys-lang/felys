@@ -236,7 +236,7 @@ fn classification() -> Result<(), String> {
     for line in output.stdout {
         println!("{line}");
     }
-    for (id, (params, momentum)) in output.parameters {
+    for (id, (params, momentum)) in output.params {
         println!("{id}: {params} {momentum}");
     }
     Ok(())

@@ -84,13 +84,13 @@ impl Executable {
             .eval(&mut global, &mut frame)
             .map_err(|e| e.error())?;
         Ok(Output {
-            parameters: self.optimizer.export(),
+            params: self.optimizer.export(),
             stdout,
         })
     }
 }
 
 pub struct Output {
-    pub parameters: Parameters,
+    pub params: Parameters,
     pub stdout: Vec<String>,
 }
