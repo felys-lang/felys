@@ -10,7 +10,7 @@ impl Value {
             Value::Int(x) => *x != 0,
             Value::Str(x) => !x.is_empty(),
             Value::List(x) => !x.is_empty(),
-            x => Err(Signal::Error(format!("{x} does not have a boolean value")))?,
+            x => Err(Signal::Error(format!("`{x}` does not have a boolean value")))?,
         };
         Ok(result)
     }
@@ -18,42 +18,42 @@ impl Value {
     pub fn tuple(self) -> Result<Vec<Value>, Signal> {
         match self {
             Value::Tuple(tuple) => Ok(tuple),
-            x => Err(Signal::Error(format!("{x} is not a `tuple`"))),
+            x => Err(Signal::Error(format!("`{x}` is not a `tuple`"))),
         }
     }
 
     pub fn list(self) -> Result<Vec<Value>, Signal> {
         match self {
             Value::List(list) => Ok(list),
-            x => Err(Signal::Error(format!("{x} is not a `list`"))),
+            x => Err(Signal::Error(format!("`{x}` is not a `list`"))),
         }
     }
 
     pub fn void(self) -> Result<(), Signal> {
         match self {
             Value::Void => Ok(()),
-            x => Err(Signal::Error(format!("{x} is not a `void`"))),
+            x => Err(Signal::Error(format!("`{x}` is not a `void`"))),
         }
     }
 
     pub fn operator(self) -> Result<Operator, Signal> {
         match self {
             Value::Operator(op) => Ok(op),
-            x => Err(Signal::Error(format!("{x} is not a `operator`"))),
+            x => Err(Signal::Error(format!("`{x}` is not a `operator`"))),
         }
     }
 
     pub fn float(self) -> Result<f64, Signal> {
         match self {
             Value::Float(float) => Ok(float),
-            x => Err(Signal::Error(format!("{x} is not a `float`"))),
+            x => Err(Signal::Error(format!("`{x}` is not a `float`"))),
         }
     }
 
     pub fn int(self) -> Result<isize, Signal> {
         match self {
             Value::Int(int) => Ok(int),
-            x => Err(Signal::Error(format!("{x} is not a `int`"))),
+            x => Err(Signal::Error(format!("`{x}` is not a `int`"))),
         }
     }
 }
