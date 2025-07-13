@@ -2,7 +2,7 @@ use crate::Fxx;
 use std::fmt::{Display, Formatter};
 
 pub struct Matrix {
-    linear: Vec<Fxx>,
+    pub linear: Vec<Fxx>,
     pub shape: (usize, usize),
 }
 
