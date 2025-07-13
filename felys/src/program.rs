@@ -54,7 +54,7 @@ pub struct Executable {
 }
 
 impl Executable {
-    pub fn exec(mut self) -> Result<Output, String> {
+    pub fn exec(mut self) -> Output {
         let mut stdout = Vec::new();
         let constants = HashMap::from([
             (
@@ -80,17 +80,28 @@ impl Executable {
             data: vec![HashMap::new()],
         };
 
-        self.grammar
+        let result = self
+            .grammar
             .eval(&mut global, &mut frame)
-            .map_err(|e| e.error())?;
-        Ok(Output {
-            params: self.optimizer.export(),
-            stdout,
-        })
+            .map_err(|e| e.error());
+        let params = self.optimizer.export();
+        match result {
+            Ok(_) => Output {
+                params,
+                stdout,
+                stderr: String::new(),
+            },
+            Err(stderr) => Output {
+                params,
+                stdout,
+                stderr,
+            },
+        }
     }
 }
 
 pub struct Output {
     pub params: Parameters,
     pub stdout: Vec<String>,
+    pub stderr: String,
 }

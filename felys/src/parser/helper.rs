@@ -6,9 +6,9 @@ impl Packrat {
     pub fn parse(mut self) -> Result<Program, String> {
         let result = self.grammar();
         if let Some((loc, msg)) = self.snapshot {
-            return Err(format!("{msg} @ {loc}"));
+            return Err(format!("expect {msg} @ {loc}"));
         }
-        let grammar = result.ok_or("unknown".to_string())?;
+        let grammar = result.ok_or("unknown parser error".to_string())?;
         let program = Program::new(grammar, self.intern);
         Ok(program)
     }
