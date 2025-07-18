@@ -3,7 +3,7 @@ use crate::nn::optim::{Optimizer, Parameters};
 use crate::parser::Intern;
 use crate::runtime::context::backend::{Frame, Global};
 use crate::runtime::context::value::Value;
-use crate::runtime::shared::Evaluation;
+use crate::runtime::shared::{Evaluation, Signal};
 use crate::rust::{ce, relu};
 use std::collections::HashMap;
 
@@ -80,21 +80,23 @@ impl Executable {
             data: vec![HashMap::new()],
         };
 
-        let result = self
-            .grammar
-            .eval(&mut global, &mut frame)
-            .map_err(|e| e.error());
+        let result = match self.grammar.eval(&mut global, &mut frame) {
+            Ok(x) | Err(Signal::Return(x)) => Ok(x),
+            Err(e) => Err(e.error()),
+        };
         let params = self.optimizer.export();
         match result {
-            Ok(_) => Output {
+            Ok(exit) => Output {
                 params,
                 stdout,
                 stderr: String::new(),
+                exit,
             },
             Err(stderr) => Output {
                 params,
                 stdout,
                 stderr,
+                exit: Value::Void,
             },
         }
     }
@@ -104,4 +106,5 @@ pub struct Output {
     pub params: Parameters,
     pub stdout: Vec<String>,
     pub stderr: String,
+    pub exit: Value,
 }
