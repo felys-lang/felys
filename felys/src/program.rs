@@ -5,17 +5,18 @@ use crate::runtime::context::backend::{Frame, Global};
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::{Evaluation, Signal};
 use crate::rust::{ce, relu};
+use crate::Fxx;
 use std::collections::HashMap;
 
 pub struct Config {
     params: Parameters,
     depth: usize,
-    momentum: f64,
+    momentum: Fxx,
     seed: usize,
 }
 
 impl Config {
-    pub fn new(params: Parameters, depth: usize, momentum: f64, seed: usize) -> Self {
+    pub fn new(params: Parameters, depth: usize, momentum: Fxx, seed: usize) -> Self {
         Self {
             params,
             depth,

@@ -1,4 +1,5 @@
 use crate::nn::matrix::Matrix;
+use crate::Fxx;
 use std::collections::HashMap;
 
 pub struct Gradients {
@@ -37,12 +38,12 @@ pub type Parameters = HashMap<usize, (Matrix, Matrix)>;
 
 pub struct Optimizer {
     parameters: Parameters,
-    momentum: f64,
+    momentum: Fxx,
     random: Random,
 }
 
 impl Optimizer {
-    pub fn new(parameters: Parameters, momentum: f64, seed: usize) -> Self {
+    pub fn new(parameters: Parameters, momentum: Fxx, seed: usize) -> Self {
         Self {
             parameters,
             momentum,
@@ -62,7 +63,7 @@ impl Optimizer {
         Ok(matrix.clone())
     }
 
-    pub fn step(&mut self, gradients: Gradients, lr: f64) -> Result<(), String> {
+    pub fn step(&mut self, gradients: Gradients, lr: Fxx) -> Result<(), String> {
         for (id, grad) in gradients.make()? {
             if let Some((x, m)) = self.parameters.get_mut(&id) {
                 m.broadcast(&grad, |mu, gt| self.momentum * mu - lr * gt)?;
@@ -84,13 +85,13 @@ impl Random {
         Random { state: seed }
     }
 
-    fn signed(&mut self) -> f64 {
+    fn signed(&mut self) -> Fxx {
         const A: usize = 1664525;
         const C: usize = 1013904223;
         const M: usize = 1 << 32;
 
         self.state = (A.wrapping_mul(self.state).wrapping_add(C)) % M;
-        (self.state as f64) / (M as f64) * 2.0 - 1.0
+        (self.state as Fxx) / (M as Fxx) * 2.0 - 1.0
     }
 
     fn matrix(&mut self, shape: (usize, usize)) -> Result<Matrix, String> {

@@ -143,6 +143,9 @@ iris = [
     ([ 6.9, 3.1, 4.9, 1.5; ], [ 1.0; ]),
     ([ 6.5, 3.2, 5.1, 2.0; ], [ 2.0; ]),
     ([ 6.9, 3.2, 5.7, 2.3; ], [ 2.0; ]),
+];
+
+test = [
     ([ 6.3, 2.9, 5.6, 1.8; ], [ 2.0; ]),
     ([ 5.5, 4.2, 1.4, 0.2; ], [ 0.0; ]),
     ([ 4.9, 2.5, 4.5, 1.7; ], [ 2.0; ]),
@@ -201,32 +204,41 @@ fn operator() -> Result<(), String> {
 #[test]
 fn classification() -> Result<(), String> {
     const CODE: &str = r#"
-    sequential = [
-        |x| x @ <4, 8> + <1, 8>,
-        |x| rust ReLU(x),
-        |x| x @ <8, 8> + <1, 8>,
-        |x| rust ReLU(x),
-        |x| x @ <8, 3> + <1, 3>,
-    ];
+    forward = |x| {
+        sequential = [
+            |x| x @ <4, 8> + <1, 8>,
+            |x| rust ReLU(x),
+            |x| x @ <8, 8> + <1, 8>,
+            |x| rust ReLU(x),
+            |x| x @ <8, 3> + <1, 3>,
+        ];
+
+        for fn in sequential {
+            x = fn(x);
+        }
+        x
+    };
 
     epoch = 0;
     while epoch < 50 {
         loss = [ 0.0; ];
         counter = 0;
         for (x, y) in iris {
-            for fn in sequential {
-                x = fn(x);
-            }
+            x = forward(x);
             loss += rust CrossEntropy(x, y);
-            counter += 1;
 
-            if counter == 15 {
-                step loss by 0.01 / 15.0;
+            if counter % 20 == 0 {
+                step loss by 0.001;
                 loss = [ 0.0; ];
-                counter = 0;
             }
+            counter += 1;
         }
         epoch += 1;
+    }
+
+    for (x, y) in test {
+        x = forward(x);
+        print (x, y)
     }
     "#;
     let code = format!("{IRIS}{CODE}");

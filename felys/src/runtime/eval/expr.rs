@@ -4,6 +4,7 @@ use crate::nn::matrix::Matrix;
 use crate::runtime::context::backend::{Frame, Global};
 use crate::runtime::context::value::Value;
 use crate::runtime::shared::{Evaluation, Signal};
+use crate::Fxx;
 use std::rc::Rc;
 
 impl Evaluation for Expr {
@@ -216,7 +217,7 @@ fn __step(
         .backward()
         .map_err(Signal::Error)?;
     let lr = lr.eval(global, frame)?.float()?;
-    global.optim.step(grads, lr).map_err(Signal::Error)?;
+    global.optim.step(grads, lr as Fxx).map_err(Signal::Error)?;
     Ok(Value::Void)
 }
 
@@ -264,7 +265,7 @@ fn __matrix(
         }
         for x in row.iter() {
             let value = x.eval(global, frame)?.float()?;
-            data.push(value);
+            data.push(value as Fxx);
         }
     }
     let mat = Matrix::new(data, (rows, cols)).map_err(Signal::Error)?;

@@ -5,7 +5,7 @@ mod program;
 mod runtime;
 mod rust;
 
-pub type Fxx = f64;
+pub type Fxx = f32;
 
 pub use nn::matrix::Matrix;
 pub use parser::Packrat;

@@ -10,7 +10,9 @@ impl Value {
             Value::Int(x) => *x != 0,
             Value::Str(x) => !x.is_empty(),
             Value::List(x) => !x.is_empty(),
-            x => Err(Signal::Error(format!("`{x}` does not have a boolean value")))?,
+            x => Err(Signal::Error(format!(
+                "`{x}` does not have a boolean value"
+            )))?,
         };
         Ok(result)
     }
