@@ -14,7 +14,10 @@ pub enum Lit {
 pub struct Int(pub usize);
 
 #[derive(Clone, Debug)]
-pub struct Float(pub usize);
+pub enum Float {
+    Positive(usize),
+    Negative(usize),
+}
 
 #[derive(Clone, Debug)]
 pub enum Bool {

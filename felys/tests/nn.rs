@@ -159,8 +159,8 @@ iris = [
 #[test]
 fn operator() -> Result<(), String> {
     assert_eq!(
-        "[\n  1.00000 1.00000 ;\n  1.00000 1.00000 ;\n](backward: Fixed)",
-        print("[1.0, 1.0; 1.0, 1.0;]")?
+        "[\n  1.00000 1.00000 ;\n  -1.00000 -1.00000 ;\n](backward: Fixed)",
+        print("[1.0, 1.0; -1.0, -1.0;]")?
     );
     assert_eq!(
         "[\n  -0.04953 -0.08237 ;\n  0.01546 -0.05549 ;\n](backward: Learnable(14))",

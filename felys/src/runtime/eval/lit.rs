@@ -16,13 +16,20 @@ impl Evaluation for Lit {
 
 impl Evaluation for Float {
     fn eval(&self, global: &mut Global, _: &mut Frame) -> Result<Value, Signal> {
+        let (neg, ufx) = match self {
+            Float::Positive(x) => (false, x),
+            Float::Negative(x) => (true, x),
+        };
         let raw = global
             .intern
-            .get(&self.0)
+            .get(ufx)
             .ok_or(Signal::Error("id does not exist".to_string()))?;
-        let value = raw
+        let mut value = raw
             .parse()
             .map_err(|_| Signal::Error(format!("parse {raw} to `float` failed")))?;
+        if neg {
+            value *= -1.0;
+        }
         Ok(Value::Float(value))
     }
 }
