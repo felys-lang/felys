@@ -139,16 +139,9 @@ impl Builder {
             };
             (ty, constant, body)
         } else if let Some(language) = self.languages.get(id) {
-            let ty = if self.tags.intern.contains(id) {
-                quote! { usize }
-            } else {
-                quote! { () }
-            };
-            let body = quote! { self.stream.dfa(transition, ACCEPTANCE) };
-            let body = if self.tags.intern.contains(id) {
-                quote! { #body.map(|s| self.intern.id(s)) }
-            } else {
-                quote! { #body.and(Some(())) }
+            let ty = quote! { usize };
+            let body = quote! {
+                self.stream.dfa(transition, ACCEPTANCE).map(|s| self.intern.id(s))
             };
             let body = if self.tags.memo.contains(id) {
                 quote! {

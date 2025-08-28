@@ -8,7 +8,6 @@ pub struct Grammar {
 pub enum Callable {
     Rule(Option<Decorator>, Prefix, usize, usize, Rule),
     Regex(Option<Decorator>, usize, Regex),
-    Shared(Decorator, Vec<(usize, Regex)>),
 }
 
 pub enum Prefix {
@@ -31,7 +30,6 @@ pub struct Decorator {
 pub enum Tag {
     Memo,
     Left,
-    Intern,
     Whitespace,
 }
 

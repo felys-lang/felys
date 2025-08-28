@@ -8,7 +8,6 @@ impl Tags {
         match tag {
             Tag::Memo => self.memo.insert(name),
             Tag::Left => self.left.insert(name),
-            Tag::Intern => self.intern.insert(name),
             Tag::Whitespace => self.ws.insert(name),
         };
     }
@@ -24,7 +23,6 @@ impl Builder {
         let mut tags = Tags {
             memo: HashSet::new(),
             left: HashSet::new(),
-            intern: HashSet::new(),
             ws: HashSet::new(),
         };
 
@@ -38,17 +36,6 @@ impl Builder {
                 Callable::Regex(deco, name, regex) => {
                     regexes.insert(name, regex);
                     (name, deco)
-                }
-                Callable::Shared(deco, shared) => {
-                    for (name, regex) in shared {
-                        sequence.push(name);
-                        regexes.insert(name, regex);
-                        tags.add(&deco.first, name);
-                        for tag in &deco.more {
-                            tags.add(tag, name);
-                        }
-                    }
-                    continue;
                 }
             };
             sequence.push(name);

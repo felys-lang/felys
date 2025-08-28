@@ -17,9 +17,6 @@ peg callable -> { Callable }:
     / decorator=decorator? name=NAME #':' regex=#union #';' {
         Callable::Regex(decorator, name, regex)
     }
-    / decorator=decorator #'{' shared=#(name=NAME #':' regex=#union #';')+ #'}' {
-        Callable::Shared(decorator, shared)
-    }
     ;
 
 peg decorator -> { Decorator }:
@@ -29,7 +26,6 @@ peg decorator -> { Decorator }:
 peg tag -> { Tag }:
     / 'memo' { Tag::Memo }
     / 'left' { Tag::Left }
-    / 'intern' { Tag::Intern }
     / 'ws' { Tag::Whitespace }
     ;
 
@@ -129,20 +125,18 @@ lex RANGE -> { (usize, usize) }:
     / ch=BC { (ch, ch) }
     ;
 
-@(intern, memo)
+@(memo)
 NAME: [a-zA-Z_] TAIL* ;
+
 TAIL: [a-zA-Z0-9_] ;
-
-@(intern) {
-    DQC: UNICODE | ESCAPE | [^\"\\] ;
-    SQC: UNICODE | ESCAPE | [^\'\\] ;
-    BC: UNICODE | ESCAPE | [^\]\\] ;
-}
-
-@(ws) {
-    WS: [\u{20}\n\t\r]+ ;
-    COMMENT: '//' [^\n]* ;
-}
-
+DQC: UNICODE | ESCAPE | [^\"\\] ;
+SQC: UNICODE | ESCAPE | [^\'\\] ;
+BC: UNICODE | ESCAPE | [^\]\\] ;
 UNICODE: '\\' 'u' '{' [0-9a-f]* '}' ;
 ESCAPE: '\\' [\'\"\[\]ntr\\] ;
+
+@(ws)
+WS: [\u{20}\n\t\r]+ ;
+
+@(ws)
+COMMENT: '//' [^\n]* ;

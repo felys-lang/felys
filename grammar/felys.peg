@@ -190,19 +190,18 @@ lex BY -> { () }: "by" !TAIL ;
 lex PRINT -> { () }: "print" !TAIL ;
 lex RUST -> { () }: "rust" !TAIL ;
 
-@(intern, memo)
+@(memo)
 IDENT: [a-zA-Z_] TAIL* ;
+
 TAIL: [a-zA-Z0-9_] ;
+USIZE: '0' | [1-9][0-9]* ;
+UFX: [1-9][0-9]* '.' [0-9]+ | '0.' [0-9]+;
+SLICE: [^"\\]+ ;
+HEX: [0-9a-f]* ;
+ESCAPE: ['ntr\\] ;
 
-@(intern) {
-    USIZE: '0' | [1-9][0-9]* ;
-    UFX: [1-9][0-9]* '.' [0-9]+ | '0.' [0-9]+;
-    SLICE: [^"\\]+ ;
-    HEX: [0-9a-f]* ;
-    ESCAPE: ['ntr\\] ;
-}
+@(ws)
+WS: [\u{20}\n\t\r]+ ;
 
-@(ws) {
-    WS: [\u{20}\n\t\r]+ ;
-    COMMENT: '//' [^\n]* ;
-}
+@(ws)
+COMMENT: '//' [^\n]* ;
