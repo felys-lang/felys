@@ -29,7 +29,7 @@ pub enum Tag {
 }
 
 pub struct Alter {
-    pub assignments: Vec<Assignment>,
+    pub assignments: BufVec<Assignment, 1>,
     pub action: Option<usize>,
 }
 

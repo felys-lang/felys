@@ -36,7 +36,12 @@ peg rule -> { Rule }:
     ;
 
 peg alter -> { Alter }:
-    / assignments=#assignment+ action=action? { Alter { assignments, action } }
+    / first=#assignment more=assignment* action=action? {
+        Alter {
+            assignments: BufVec::new([first], more),
+            action,
+        }
+    }
     ;
 
 peg assignment -> { Assignment }:

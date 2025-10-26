@@ -115,7 +115,7 @@ impl Rule {
 impl Alter {
     fn left(&self) -> HashSet<usize> {
         let mut left = HashSet::new();
-        for assignment in &self.assignments {
+        for assignment in self.assignments.iter() {
             left.extend(assignment.left());
             if assignment.truncated() {
                 break;
@@ -126,7 +126,7 @@ impl Alter {
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         let mut keywords = Vec::new();
-        for assignment in &self.assignments {
+        for assignment in self.assignments.iter() {
             keywords.extend(assignment.keywords(intern));
         }
         keywords
