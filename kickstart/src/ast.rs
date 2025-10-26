@@ -48,7 +48,6 @@ pub enum Lookahead {
 pub enum Item {
     Optional(Atom),
     ZeroOrMore(Atom),
-    OnceOrMore(bool, Atom),
     Name(bool, Atom),
 }
 

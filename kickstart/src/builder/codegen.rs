@@ -257,30 +257,6 @@ impl Lookahead {
 impl Item {
     fn codegen(&self, intern: &Intern) -> TokenStream {
         match self {
-            Item::OnceOrMore(e, x) => {
-                let atom = x.codegen(intern);
-                let first = if e.to_owned() {
-                    let msg = x.msg(intern);
-                    quote! {
-                        match #atom {
-                            Some(value) => value,
-                            None => return x.__error(#msg),
-                        }
-                    }
-                } else {
-                    quote! { #atom? }
-                };
-                quote! {
-                    {
-                        let first = #first;
-                        let mut body = Vec::from([first]);
-                        while let Some(data) = #atom {
-                            body.push(data)
-                        }
-                        body
-                    }
-                }
-            }
             Item::ZeroOrMore(x) => {
                 let atom = x.codegen(intern);
                 quote! {

@@ -59,7 +59,6 @@ peg lookahead -> { Lookahead }:
 peg item -> { Item }:
     / atom=atom '?' { Item::Optional(atom) }
     / atom=atom '*' { Item::ZeroOrMore(atom) }
-    / eager='#'? atom=atom '+' { Item::OnceOrMore(eager.is_some(), atom) }
     / eager='#'? atom=atom { Item::Name(eager.is_some(), atom) }
     ;
 

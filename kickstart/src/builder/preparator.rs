@@ -188,7 +188,6 @@ impl Lookahead {
 impl Item {
     fn left(&self) -> HashSet<usize> {
         match self {
-            Item::OnceOrMore(_, x) => x.left(),
             Item::ZeroOrMore(x) => x.left(),
             Item::Optional(x) => x.left(),
             Item::Name(_, x) => x.left(),
@@ -197,7 +196,6 @@ impl Item {
 
     fn truncated(&self) -> bool {
         match self {
-            Item::OnceOrMore(_, _) => true,
             Item::ZeroOrMore(_) => false,
             Item::Optional(_) => false,
             Item::Name(_, _) => true,
@@ -206,7 +204,6 @@ impl Item {
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         match self {
-            Item::OnceOrMore(_, x) => x.keywords(intern),
             Item::ZeroOrMore(x) => x.keywords(intern),
             Item::Optional(x) => x.keywords(intern),
             Item::Name(_, x) => x.keywords(intern),
