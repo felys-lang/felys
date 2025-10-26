@@ -75,8 +75,8 @@ pub enum Regex {
 #[derive(Clone)]
 pub enum Primary {
     Parentheses(Rc<Regex>),
-    Exclude(Vec<(usize, usize)>),
-    Include(Vec<(usize, usize)>),
+    Exclude(BufVec<(usize, usize), 1>),
+    Include(BufVec<(usize, usize), 1>),
     Literal(BufVec<usize, 1>),
     Name(usize),
 }

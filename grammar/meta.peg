@@ -93,8 +93,8 @@ lex PREFIX -> { Prefix }:
     ;
 
 lex SET -> { Primary }:
-    / '[' '^' set=#RANGE+ #']' { Primary::Exclude(set) }
-    / '[' set=#RANGE+ #']' { Primary::Include(set) }
+    / '[' '^' first=#RANGE more=RANGE* #']' { Primary::Exclude(BufVec::new([first], more)) }
+    / '[' first=#RANGE more=RANGE* #']' { Primary::Include(BufVec::new([first], more)) }
     ;
 
 lex EXPECT -> { Expect }:
