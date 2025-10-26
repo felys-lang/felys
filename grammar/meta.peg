@@ -1,7 +1,6 @@
 {
     use crate::ast::*;
-    #[allow(unused_imports)]
-    use crate::builder::common::s2c;
+    use crate::utils::*;
 }
 
 peg grammar -> { Grammar }:
@@ -98,22 +97,8 @@ lex SET -> { Primary }:
     ;
 
 lex EXPECT -> { Expect }:
-    / '\'' expect=#SQC+ #'\'' { {
-        let expect = expect
-            .iter()
-            .map(|c| s2c(x.intern.get(c).unwrap()))
-            .collect::<String>();
-        let id = x.intern.id(expect.as_str());
-        Expect::Once(id)
-    } }
-    / '"' expect=#DQC+ #'"' { {
-        let expect = expect
-            .iter()
-            .map(|c| s2c(x.intern.get(c).unwrap()))
-            .collect::<String>();
-        let id = x.intern.id(expect.as_str());
-        Expect::Keyword(id)
-    } }
+    / '\'' ch=#SQC more=SQC* #'\'' { Expect::Once(BufVec::new([ch], more)) }
+    / '"' ch=#DQC more=DQC* #'"' { Expect::Keyword(BufVec::new([ch], more)) }
     ;
 
 lex STRING -> { Vec<usize> }:

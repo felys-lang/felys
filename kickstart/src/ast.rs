@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use crate::utils::BufVec;
 
 pub struct Grammar {
     pub import: Option<usize>,
@@ -64,8 +65,8 @@ pub enum Atom {
 }
 
 pub enum Expect {
-    Once(usize),
-    Keyword(usize),
+    Once(BufVec<usize, 1>),
+    Keyword(BufVec<usize, 1>),
 }
 
 #[derive(Clone)]

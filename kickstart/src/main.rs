@@ -7,6 +7,7 @@ use std::path::PathBuf;
 mod ast;
 mod builder;
 mod parser;
+mod utils;
 
 #[derive(Parser)]
 struct Args {

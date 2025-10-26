@@ -238,7 +238,7 @@ impl Expect {
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         match self {
             Expect::Once(_) => Vec::new(),
-            Expect::Keyword(x) => vec![intern.get(x).unwrap().to_string()],
+            Expect::Keyword(x) => vec![x.squeeze(intern)],
         }
     }
 }

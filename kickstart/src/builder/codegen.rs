@@ -3,7 +3,7 @@ use crate::builder::common::{Builder, Root};
 use crate::builder::dfa::common::{Automaton, Language};
 use crate::parser::Intern;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote, ToTokens};
+use quote::{ToTokens, format_ident, quote};
 use std::iter::once;
 use syn::parse_str;
 
@@ -339,15 +339,15 @@ impl Atom {
 impl Expect {
     fn codegen(&self, intern: &Intern) -> TokenStream {
         let expect = match self {
-            Expect::Once(x) | Expect::Keyword(x) => intern.get(x).unwrap(),
+            Expect::Once(x) | Expect::Keyword(x) => x.squeeze(intern),
         };
         quote! { x.__expect(#expect) }
     }
 
     fn msg(&self, intern: &Intern) -> String {
         match self {
-            Expect::Once(x) => format!("'{}'", intern.get(x).unwrap()),
-            Expect::Keyword(x) => format!("\"{}\"", intern.get(x).unwrap()),
+            Expect::Once(x) => format!("'{}'", x.squeeze(intern)),
+            Expect::Keyword(x) => format!("\"{}\"", x.squeeze(intern)),
         }
     }
 }
