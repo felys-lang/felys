@@ -257,7 +257,7 @@ impl Lookahead {
 impl Item {
     fn codegen(&self, intern: &Intern) -> TokenStream {
         match self {
-            Item::ZeroOrMore(x) => {
+            Item::Repetition(x) => {
                 let atom = x.codegen(intern);
                 quote! {
                     {
