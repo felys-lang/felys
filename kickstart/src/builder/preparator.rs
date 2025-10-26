@@ -39,12 +39,10 @@ impl Builder {
                 }
             };
             sequence.push(name);
-            let Some(decorator) = deco else {
-                continue;
-            };
-            tags.add(&decorator.first, name);
-            for tag in &decorator.more {
-                tags.add(tag, name);
+            if let Some(decorator) = deco {
+                for tag in decorator.iter() {
+                    tags.add(tag, name);
+                }
             }
         }
 

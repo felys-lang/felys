@@ -19,8 +19,8 @@ peg callable -> { Callable }:
     }
     ;
 
-peg decorator -> { Decorator }:
-    / '@' #'(' first=#tag more=(',' tag=#tag)* #')' { Decorator { first, more } }
+peg decorator -> { BufVec<Tag, 1> }:
+    / '@' #'(' first=#tag more=(',' tag=#tag)* #')' { BufVec::new([first], more) }
     ;
 
 peg tag -> { Tag }:

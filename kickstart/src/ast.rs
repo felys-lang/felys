@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use crate::utils::BufVec;
+use std::rc::Rc;
 
 pub struct Grammar {
     pub import: Option<usize>,
@@ -7,8 +7,8 @@ pub struct Grammar {
 }
 
 pub enum Callable {
-    Rule(Option<Decorator>, Prefix, usize, usize, Rule),
-    Regex(Option<Decorator>, usize, Regex),
+    Rule(Option<BufVec<Tag, 1>>, Prefix, usize, usize, Rule),
+    Regex(Option<BufVec<Tag, 1>>, usize, Regex),
 }
 
 pub enum Prefix {
@@ -19,12 +19,6 @@ pub enum Prefix {
 pub struct Rule {
     pub first: Alter,
     pub more: Vec<Alter>,
-}
-
-#[derive(Debug)]
-pub struct Decorator {
-    pub first: Tag,
-    pub more: Vec<Tag>,
 }
 
 #[derive(Debug)]
