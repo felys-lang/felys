@@ -1,5 +1,6 @@
 {
     use crate::ast::*;
+    #[allow(unused)]
     use crate::utils::*;
 }
 
@@ -101,8 +102,8 @@ lex EXPECT -> { Expect }:
     / '"' ch=#DQC more=DQC* #'"' { Expect::Keyword(BufVec::new([ch], more)) }
     ;
 
-lex STRING -> { Vec<usize> }:
-    / '\'' string=#SQC+ #'\'' { string }
+lex STRING -> { BufVec<usize, 1> }:
+    / '\'' ch=#SQC more=SQC* #'\'' { BufVec::new([ch], more) }
     ;
 
 lex RANGE -> { (usize, usize) }:

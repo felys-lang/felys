@@ -83,6 +83,6 @@ pub enum Primary {
     Parentheses(Rc<Regex>),
     Exclude(Vec<(usize, usize)>),
     Include(Vec<(usize, usize)>),
-    Literal(Vec<usize>),
+    Literal(BufVec<usize, 1>),
     Name(usize),
 }
