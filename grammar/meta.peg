@@ -98,12 +98,12 @@ lex SET -> { Primary }:
     ;
 
 lex EXPECT -> { Expect }:
-    / '\'' ch=#SQC more=SQC* #'\'' { Expect::Once(BufVec::new([ch], more)) }
-    / '"' ch=#DQC more=DQC* #'"' { Expect::Keyword(BufVec::new([ch], more)) }
+    / '\'' first=#SQC more=SQC* #'\'' { Expect::Once(BufVec::new([first], more)) }
+    / '"' first=#DQC more=DQC* #'"' { Expect::Keyword(BufVec::new([first], more)) }
     ;
 
 lex STRING -> { BufVec<usize, 1> }:
-    / '\'' ch=#SQC more=SQC* #'\'' { BufVec::new([ch], more) }
+    / '\'' first=#SQC more=SQC* #'\'' { BufVec::new([first], more) }
     ;
 
 lex RANGE -> { (usize, usize) }:
