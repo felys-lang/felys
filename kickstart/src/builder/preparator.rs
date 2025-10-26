@@ -39,12 +39,10 @@ impl Builder {
                 }
             };
             sequence.push(name);
-            let Some(decorator) = deco else {
-                continue;
-            };
-            tags.add(&decorator.first, name);
-            for tag in &decorator.more {
-                tags.add(tag, name);
+            if let Some(decorator) = deco {
+                for tag in decorator.iter() {
+                    tags.add(tag, name);
+                }
             }
         }
 
@@ -117,7 +115,7 @@ impl Rule {
 impl Alter {
     fn left(&self) -> HashSet<usize> {
         let mut left = HashSet::new();
-        for assignment in &self.assignments {
+        for assignment in self.assignments.iter() {
             left.extend(assignment.left());
             if assignment.truncated() {
                 break;
@@ -128,7 +126,7 @@ impl Alter {
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         let mut keywords = Vec::new();
-        for assignment in &self.assignments {
+        for assignment in self.assignments.iter() {
             keywords.extend(assignment.keywords(intern));
         }
         keywords
@@ -190,7 +188,6 @@ impl Lookahead {
 impl Item {
     fn left(&self) -> HashSet<usize> {
         match self {
-            Item::OnceOrMore(_, x) => x.left(),
             Item::ZeroOrMore(x) => x.left(),
             Item::Optional(x) => x.left(),
             Item::Name(_, x) => x.left(),
@@ -199,7 +196,6 @@ impl Item {
 
     fn truncated(&self) -> bool {
         match self {
-            Item::OnceOrMore(_, _) => true,
             Item::ZeroOrMore(_) => false,
             Item::Optional(_) => false,
             Item::Name(_, _) => true,
@@ -208,7 +204,6 @@ impl Item {
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         match self {
-            Item::OnceOrMore(_, x) => x.keywords(intern),
             Item::ZeroOrMore(x) => x.keywords(intern),
             Item::Optional(x) => x.keywords(intern),
             Item::Name(_, x) => x.keywords(intern),
@@ -238,7 +233,7 @@ impl Expect {
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         match self {
             Expect::Once(_) => Vec::new(),
-            Expect::Keyword(x) => vec![intern.get(x).unwrap().to_string()],
+            Expect::Keyword(x) => vec![x.squeeze(intern)],
         }
     }
 }

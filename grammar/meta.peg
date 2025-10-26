@@ -1,7 +1,7 @@
 {
     use crate::ast::*;
-    #[allow(unused_imports)]
-    use crate::builder::common::s2c;
+    #[allow(unused)]
+    use crate::utils::*;
 }
 
 peg grammar -> { Grammar }:
@@ -19,8 +19,8 @@ peg callable -> { Callable }:
     }
     ;
 
-peg decorator -> { Decorator }:
-    / '@' #'(' first=#tag more=(',' tag=#tag)* #')' { Decorator { first, more } }
+peg decorator -> { BufVec<Tag, 1> }:
+    / '@' #'(' first=#tag more=(',' tag=#tag)* #')' { BufVec::new([first], more) }
     ;
 
 peg tag -> { Tag }:
@@ -36,7 +36,12 @@ peg rule -> { Rule }:
     ;
 
 peg alter -> { Alter }:
-    / assignments=#assignment+ action=action? { Alter { assignments, action } }
+    / first=#assignment more=assignment* action=action? {
+        Alter {
+            assignments: BufVec::new([first], more),
+            action,
+        }
+    }
     ;
 
 peg assignment -> { Assignment }:
@@ -54,7 +59,6 @@ peg lookahead -> { Lookahead }:
 peg item -> { Item }:
     / atom=atom '?' { Item::Optional(atom) }
     / atom=atom '*' { Item::ZeroOrMore(atom) }
-    / eager='#'? atom=atom '+' { Item::OnceOrMore(eager.is_some(), atom) }
     / eager='#'? atom=atom { Item::Name(eager.is_some(), atom) }
     ;
 
@@ -93,31 +97,17 @@ lex PREFIX -> { Prefix }:
     ;
 
 lex SET -> { Primary }:
-    / '[' '^' set=#RANGE+ #']' { Primary::Exclude(set) }
-    / '[' set=#RANGE+ #']' { Primary::Include(set) }
+    / '[' '^' first=#RANGE more=RANGE* #']' { Primary::Exclude(BufVec::new([first], more)) }
+    / '[' first=#RANGE more=RANGE* #']' { Primary::Include(BufVec::new([first], more)) }
     ;
 
 lex EXPECT -> { Expect }:
-    / '\'' expect=#SQC+ #'\'' { {
-        let expect = expect
-            .iter()
-            .map(|c| s2c(x.intern.get(c).unwrap()))
-            .collect::<String>();
-        let id = x.intern.id(expect.as_str());
-        Expect::Once(id)
-    } }
-    / '"' expect=#DQC+ #'"' { {
-        let expect = expect
-            .iter()
-            .map(|c| s2c(x.intern.get(c).unwrap()))
-            .collect::<String>();
-        let id = x.intern.id(expect.as_str());
-        Expect::Keyword(id)
-    } }
+    / '\'' first=#SQC more=SQC* #'\'' { Expect::Once(BufVec::new([first], more)) }
+    / '"' first=#DQC more=DQC* #'"' { Expect::Keyword(BufVec::new([first], more)) }
     ;
 
-lex STRING -> { Vec<usize> }:
-    / '\'' string=#SQC+ #'\'' { string }
+lex STRING -> { BufVec<usize, 1> }:
+    / '\'' first=#SQC more=SQC* #'\'' { BufVec::new([first], more) }
     ;
 
 lex RANGE -> { (usize, usize) }:

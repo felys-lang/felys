@@ -1,3 +1,4 @@
+use crate::utils::BufVec;
 use std::rc::Rc;
 
 pub struct Grammar {
@@ -6,8 +7,8 @@ pub struct Grammar {
 }
 
 pub enum Callable {
-    Rule(Option<Decorator>, Prefix, usize, usize, Rule),
-    Regex(Option<Decorator>, usize, Regex),
+    Rule(Option<BufVec<Tag, 1>>, Prefix, usize, usize, Rule),
+    Regex(Option<BufVec<Tag, 1>>, usize, Regex),
 }
 
 pub enum Prefix {
@@ -21,12 +22,6 @@ pub struct Rule {
 }
 
 #[derive(Debug)]
-pub struct Decorator {
-    pub first: Tag,
-    pub more: Vec<Tag>,
-}
-
-#[derive(Debug)]
 pub enum Tag {
     Memo,
     Left,
@@ -34,7 +29,7 @@ pub enum Tag {
 }
 
 pub struct Alter {
-    pub assignments: Vec<Assignment>,
+    pub assignments: BufVec<Assignment, 1>,
     pub action: Option<usize>,
 }
 
@@ -53,7 +48,6 @@ pub enum Lookahead {
 pub enum Item {
     Optional(Atom),
     ZeroOrMore(Atom),
-    OnceOrMore(bool, Atom),
     Name(bool, Atom),
 }
 
@@ -64,8 +58,8 @@ pub enum Atom {
 }
 
 pub enum Expect {
-    Once(usize),
-    Keyword(usize),
+    Once(BufVec<usize, 1>),
+    Keyword(BufVec<usize, 1>),
 }
 
 #[derive(Clone)]
@@ -80,8 +74,8 @@ pub enum Regex {
 #[derive(Clone)]
 pub enum Primary {
     Parentheses(Rc<Regex>),
-    Exclude(Vec<(usize, usize)>),
-    Include(Vec<(usize, usize)>),
-    Literal(Vec<usize>),
+    Exclude(BufVec<(usize, usize), 1>),
+    Include(BufVec<(usize, usize), 1>),
+    Literal(BufVec<usize, 1>),
     Name(usize),
 }
