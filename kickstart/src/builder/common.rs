@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 pub struct Builder {
     pub intern: Intern,
     pub tags: Tags,
-    pub rules: HashMap<usize, (Prefix, usize, Rule)>,
+    pub rules: HashMap<usize, (Prefix, Option<usize>, Rule)>,
     pub languages: HashMap<usize, Language>,
     pub sequence: Vec<usize>,
     pub keywords: Vec<String>,

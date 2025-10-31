@@ -7,7 +7,7 @@ pub struct Grammar {
 }
 
 pub enum Callable {
-    Rule(Option<BufVec<Tag, 1>>, Prefix, usize, usize, Rule),
+    Rule(Option<BufVec<Tag, 1>>, Prefix, usize, Option<usize>, Rule),
     Regex(Option<BufVec<Tag, 1>>, usize, Regex),
 }
 

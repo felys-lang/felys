@@ -11,7 +11,7 @@ peg grammar -> { Grammar }:
     ;
 
 peg callable -> { Callable }:
-    / decorator=decorator? prefix=PREFIX name=#NAME #'->' ty=#action #':' rule=#rule #';' {
+    / decorator=decorator? prefix=PREFIX name=#NAME ty=('->' ty=#action)? #':' rule=#rule #';' {
         Callable::Rule(decorator, prefix, name, ty, rule)
     }
     / decorator=decorator? name=NAME #':' regex=#union #';' {
