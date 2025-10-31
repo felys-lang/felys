@@ -172,23 +172,23 @@ lex BOOL -> { Bool }:
     / "false" !TAIL { Bool::False }
     ;
 
-lex UNDERSCORE -> { () }: "_" !TAIL ;
-lex BREAK -> { () }: "break" !TAIL ;
-lex CONTINUE -> { () }: "continue" !TAIL ;
-lex FOR -> { () }: "for" !TAIL ;
-lex IN -> { () }: "in" !TAIL ;
-lex IF -> { () }: "if" !TAIL ;
-lex LOOP -> { () }: "loop" !TAIL ;
-lex RETURN -> { () }: "return" !TAIL ;
-lex WHILE -> { () }: "while" !TAIL ;
-lex ELSE -> { () }: "else" !TAIL ;
-lex OR -> { () }: "or" !TAIL ;
-lex AND -> { () }: "and" !TAIL ;
-lex NOT -> { () }: "not" !TAIL ;
-lex STEP -> { () }: "step" !TAIL ;
-lex BY -> { () }: "by" !TAIL ;
-lex PRINT -> { () }: "print" !TAIL ;
-lex RUST -> { () }: "rust" !TAIL ;
+lex UNDERSCORE: "_" !TAIL ;
+lex BREAK: "break" !TAIL ;
+lex CONTINUE: "continue" !TAIL ;
+lex FOR: "for" !TAIL ;
+lex IN: "in" !TAIL ;
+lex IF: "if" !TAIL ;
+lex LOOP: "loop" !TAIL ;
+lex RETURN: "return" !TAIL ;
+lex WHILE: "while" !TAIL ;
+lex ELSE: "else" !TAIL ;
+lex OR: "or" !TAIL ;
+lex AND: "and" !TAIL ;
+lex NOT: "not" !TAIL ;
+lex STEP: "step" !TAIL ;
+lex BY: "by" !TAIL ;
+lex PRINT: "print" !TAIL ;
+lex RUST: "rust" !TAIL ;
 
 @(memo)
 IDENT: [a-zA-Z_] TAIL* ;
