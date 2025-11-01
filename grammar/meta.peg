@@ -104,7 +104,7 @@ lex SET -> { Primary }:
 
 lex EXPECT -> { Expect }:
     / '\'' first=[SQC] more=SQC* ['\''] { Expect::Once(BufVec::new([first], more)) }
-    / '"' first=[DQC] more=DQC* ['"'] { Expect::Keyword(BufVec::new([first], more)) }
+    / '\"' first=[DQC] more=DQC* ['\"'] { Expect::Keyword(BufVec::new([first], more)) }
     ;
 
 lex STRING -> { BufVec<usize, 1> }:
