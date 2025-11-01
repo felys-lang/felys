@@ -5,22 +5,22 @@
 }
 
 peg grammar -> { Grammar }:
-    / import=action? $ callables=(callable=callable $)* #eof {
+    / import=action? $ callables=(callable=callable $)* [eof] {
         Grammar { import, callables }
     }
     ;
 
 peg callable -> { Callable }:
-    / decorator=decorator? prefix=PREFIX name=#NAME ty=('->' ty=#action)? #':' rule=#rule #';' {
+    / decorator=decorator? prefix=PREFIX name=[NAME] ty=('->' ty=[action])? [':'] rule=[rule] [';'] {
         Callable::Rule(decorator, prefix, name, ty, rule)
     }
-    / decorator=decorator? name=NAME #':' regex=#union #';' {
+    / decorator=decorator? name=NAME [':'] regex=[union] [';'] {
         Callable::Regex(decorator, name, regex)
     }
     ;
 
 peg decorator -> { BufVec<Tag, 1> }:
-    / '@' #'(' first=#tag more=(',' tag=#tag)* #')' { BufVec::new([first], more) }
+    / '@' ['('] first=[tag] more=(',' tag=[tag])* [')'] { BufVec::new([first], more) }
     ;
 
 peg tag -> { Tag }:
@@ -30,13 +30,13 @@ peg tag -> { Tag }:
     ;
 
 peg rule -> { Rule }:
-    / '/'? first=#alter more=('/' alter=#alter)* {
+    / '/'? first=[alter] more=('/' alter=[alter])* {
         Rule { first, more }
     }
     ;
 
 peg alter -> { Alter }:
-    / first=#assignment more=assignment* action=action? {
+    / first=[assignment] more=assignment* action=action? {
         Alter {
             assignments: BufVec::new([first], more),
             action,
@@ -45,31 +45,32 @@ peg alter -> { Alter }:
     ;
 
 peg assignment -> { Assignment }:
-    / name=NAME '=' item=#item { Assignment::Named(name, item) }
+    / name=NAME '=' item=[item] { Assignment::Named(name, item) }
     / lookahead=lookahead { Assignment::Lookahead(lookahead) }
     / item=item { Assignment::Anonymous(item) }
     / '$' { Assignment::Clean }
     ;
 
 peg lookahead -> { Lookahead }:
-    / '&' atom=#atom { Lookahead::Positive(atom) }
-    / '!' atom=#atom { Lookahead::Negative(atom) }
+    / '&' atom=[atom] { Lookahead::Positive(atom) }
+    / '!' atom=[atom] { Lookahead::Negative(atom) }
     ;
 
 peg item -> { Item }:
+    / '[' atom=[atom] [']'] { Item::Name(true, atom) }
     / atom=atom '?' { Item::Optional(atom) }
     / atom=atom '*' { Item::Repetition(atom) }
-    / eager='#'? atom=atom { Item::Name(eager.is_some(), atom) }
+    / atom=atom { Item::Name(false, atom) }
     ;
 
 peg atom -> { Atom }:
-    / '(' rule=#rule #')' { Atom::Nested(rule) }
+    / '(' rule=[rule] [')'] { Atom::Nested(rule) }
     / expect=EXPECT { Atom::Expect(expect) }
     / name=NAME { Atom::Name(name) }
     ;
 
 peg union -> { Regex }:
-    / lhs=union '|' rhs=#concat { Regex::Union(lhs.into(), rhs.into()) }
+    / lhs=union '|' rhs=[concat] { Regex::Union(lhs.into(), rhs.into()) }
     / concat=concat { concat }
     ;
 
@@ -85,7 +86,7 @@ peg repeat -> { Regex }:
     ;
 
 peg primary -> { Primary }:
-    / '(' regex=#union #')' { Primary::Parentheses(regex.into()) }
+    / '(' regex=[union] [')'] { Primary::Parentheses(regex.into()) }
     / string=STRING { Primary::Literal(string) }
     / name=NAME { Primary::Name(name) }
     / set=SET { set }
@@ -97,21 +98,21 @@ lex PREFIX -> { Prefix }:
     ;
 
 lex SET -> { Primary }:
-    / '[' '^' first=#RANGE more=RANGE* #']' { Primary::Exclude(BufVec::new([first], more)) }
-    / '[' first=#RANGE more=RANGE* #']' { Primary::Include(BufVec::new([first], more)) }
+    / '[' '^' first=[RANGE] more=RANGE* [']'] { Primary::Exclude(BufVec::new([first], more)) }
+    / '[' first=[RANGE] more=RANGE* [']'] { Primary::Include(BufVec::new([first], more)) }
     ;
 
 lex EXPECT -> { Expect }:
-    / '\'' first=#SQC more=SQC* #'\'' { Expect::Once(BufVec::new([first], more)) }
-    / '"' first=#DQC more=DQC* #'"' { Expect::Keyword(BufVec::new([first], more)) }
+    / '\'' first=[SQC] more=SQC* ['\''] { Expect::Once(BufVec::new([first], more)) }
+    / '"' first=[DQC] more=DQC* ['"'] { Expect::Keyword(BufVec::new([first], more)) }
     ;
 
 lex STRING -> { BufVec<usize, 1> }:
-    / '\'' first=#SQC more=SQC* #'\'' { BufVec::new([first], more) }
+    / '\'' first=[SQC] more=SQC* ['\''] { BufVec::new([first], more) }
     ;
 
 lex RANGE -> { (usize, usize) }:
-    / start=BC '-' end=#BC { (start, end) }
+    / start=BC '-' end=[BC] { (start, end) }
     / ch=BC { (ch, ch) }
     ;
 
