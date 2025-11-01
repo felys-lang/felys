@@ -11,15 +11,15 @@ peg grammar -> { Grammar }:
     ;
 
 peg callable -> { Callable }:
-    / decorator=decorator? prefix=PREFIX name=[NAME] ty=('->' ty=[action])? [':'] rule=[rule] [';'] {
-        Callable::Rule(decorator, prefix, name, ty, rule)
+    / deco=deco? prefix=PREFIX name=[NAME] ty=('->' ty=[action])? [':'] rule=[rule] [';'] {
+        Callable::Rule(deco, prefix, name, ty, rule)
     }
-    / decorator=decorator? name=NAME [':'] regex=[union] [';'] {
-        Callable::Regex(decorator, name, regex)
+    / deco=deco? name=NAME [':'] regex=[union] [';'] {
+        Callable::Regex(deco, name, regex)
     }
     ;
 
-peg decorator -> { BufVec<Tag, 1> }:
+peg deco -> { BufVec<Tag, 1> }:
     / '@' ['('] first=[tag] more=(',' tag=[tag])* [')'] { BufVec::new([first], more) }
     ;
 
@@ -57,7 +57,7 @@ peg lookahead -> { Lookahead }:
     ;
 
 peg item -> { Item }:
-    / '[' atom=[atom] [']'] { Item::Eager(atom) }
+    / '[' atom=[atom] [']'] msg=MESSAGE? { Item::Eager(atom, msg) }
     / atom=atom '?' { Item::Optional(atom) }
     / atom=atom '*' { Item::Repetition(atom) }
     / atom=atom { Item::Name(atom) }
@@ -116,15 +116,24 @@ lex RANGE -> { (usize, usize) }:
     / ch=BC { (ch, ch) }
     ;
 
+lex MESSAGE -> { Message }: '(' msg=MSG* [')'] { Message::Parentheses(msg) } ;
+
+lex MSG -> { Message }:
+    / '(' msg=MSG* [')'] { Message::Parentheses(msg) }
+    / msg=PS { Message::Segment(msg) }
+    ;
+
 @(memo)
 NAME: [a-zA-Z_] TAIL* ;
-
 TAIL: [a-zA-Z0-9_] ;
+
 DQC: UNICODE | ESCAPE | [^\"\\] ;
 SQC: UNICODE | ESCAPE | [^\'\\] ;
 BC: UNICODE | ESCAPE | [^\]\\] ;
 UNICODE: '\\' 'u' '{' [0-9a-f]* '}' ;
 ESCAPE: '\\' [\'\"\[\]ntr\\] ;
+
+PS: [^()]+ ;
 
 @(ws)
 WS: [\u{20}\n\t\r]+ ;

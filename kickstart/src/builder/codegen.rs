@@ -1,4 +1,4 @@
-use crate::ast::{Alter, Assignment, Atom, Expect, Item, Lookahead, Prefix, Rule};
+use crate::ast::{Alter, Assignment, Atom, Expect, Item, Lookahead, Message, Prefix, Rule};
 use crate::builder::common::{Builder, Root};
 use crate::builder::dfa::common::{Automaton, Language};
 use crate::parser::Intern;
@@ -271,9 +271,13 @@ impl Lookahead {
 impl Item {
     fn codegen(&self, intern: &Intern) -> TokenStream {
         match self {
-            Item::Eager(x) => {
+            Item::Eager(x, m) => {
                 let atom = x.codegen(intern);
-                let msg = x.msg(intern);
+                let msg = if let Some(m) = m {
+                    m.msg(intern)
+                } else {
+                    x.msg(intern)
+                };
                 quote! {
                     match #atom {
                         Some(value) => value,
@@ -298,6 +302,15 @@ impl Item {
                 let atom = x.codegen(intern);
                 quote! { #atom? }
             }
+        }
+    }
+}
+
+impl Message {
+    fn msg(&self, intern: &Intern) -> String {
+        match self {
+            Message::Parentheses(x) => x.iter().map(|v| v.msg(intern)).collect(),
+            Message::Segment(x) => intern.get(x).unwrap().to_string(),
         }
     }
 }

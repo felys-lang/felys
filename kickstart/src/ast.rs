@@ -46,10 +46,15 @@ pub enum Lookahead {
 }
 
 pub enum Item {
-    Eager(Atom),
+    Eager(Atom, Option<Message>),
     Optional(Atom),
     Repetition(Atom),
     Name(Atom),
+}
+
+pub enum Message {
+    Parentheses(Vec<Message>),
+    Segment(usize),
 }
 
 pub enum Atom {
