@@ -57,10 +57,10 @@ peg lookahead -> { Lookahead }:
     ;
 
 peg item -> { Item }:
-    / '[' atom=[atom] [']'] { Item::Name(true, atom) }
+    / '[' atom=[atom] [']'] { Item::Eager(atom) }
     / atom=atom '?' { Item::Optional(atom) }
     / atom=atom '*' { Item::Repetition(atom) }
-    / atom=atom { Item::Name(false, atom) }
+    / atom=atom { Item::Name(atom) }
     ;
 
 peg atom -> { Atom }:

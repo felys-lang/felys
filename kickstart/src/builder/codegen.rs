@@ -271,6 +271,16 @@ impl Lookahead {
 impl Item {
     fn codegen(&self, intern: &Intern) -> TokenStream {
         match self {
+            Item::Eager(x) => {
+                let atom = x.codegen(intern);
+                let msg = x.msg(intern);
+                quote! {
+                    match #atom {
+                        Some(value) => value,
+                        None => return x.__error(#msg),
+                    }
+                }
+            }
             Item::Repetition(x) => {
                 let atom = x.codegen(intern);
                 quote! {
@@ -284,19 +294,9 @@ impl Item {
                 }
             }
             Item::Optional(x) => x.codegen(intern),
-            Item::Name(e, x) => {
+            Item::Name(x) => {
                 let atom = x.codegen(intern);
-                if e.to_owned() {
-                    let msg = x.msg(intern);
-                    quote! {
-                        match #atom {
-                            Some(value) => value,
-                            None => return x.__error(#msg),
-                        }
-                    }
-                } else {
-                    quote! { #atom? }
-                }
+                quote! { #atom? }
             }
         }
     }

@@ -46,9 +46,10 @@ pub enum Lookahead {
 }
 
 pub enum Item {
+    Eager(Atom),
     Optional(Atom),
     Repetition(Atom),
-    Name(bool, Atom),
+    Name(Atom),
 }
 
 pub enum Atom {
