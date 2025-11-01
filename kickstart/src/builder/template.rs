@@ -1,14 +1,14 @@
 use crate::builder::common::{Builder, Common, Root};
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
-use syn::parse_str;
+use quote::{ToTokens, quote};
 
 impl Builder {
     pub fn template(&self, core: TokenStream, memo: Vec<(TokenStream, TokenStream)>) -> Root {
-        let import = match &self.import {
-            Some(x) => parse_str::<TokenStream>(self.intern.get(x).unwrap()).unwrap(),
-            None => quote! {},
-        };
+        let import = self
+            .import
+            .as_ref()
+            .map(|x| x.parse(&self.intern))
+            .unwrap_or_default();
         let keywords = self.keywords.iter().map(|x| x.to_token_stream()).collect();
 
         Root {

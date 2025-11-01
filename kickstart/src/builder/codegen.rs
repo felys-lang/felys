@@ -1,4 +1,6 @@
-use crate::ast::{Alter, Assignment, Atom, Expect, Item, Lookahead, Message, Prefix, Rule};
+use crate::ast::{
+    Action, Alter, Assignment, Atom, Expect, Item, Lookahead, Message, Nested, Prefix, Rule,
+};
 use crate::builder::common::{Builder, Root};
 use crate::builder::dfa::common::{Automaton, Language};
 use crate::parser::Intern;
@@ -50,10 +52,11 @@ impl Builder {
             quote! {}
         };
 
-        let import = match &self.import {
-            Some(x) => parse_str(self.intern.get(x).unwrap()).unwrap(),
-            None => quote! {},
-        };
+        let import = self
+            .import
+            .as_ref()
+            .map(|x| x.parse(&self.intern))
+            .unwrap_or_default();
         let core = quote! {
             #import
 
@@ -95,10 +98,10 @@ impl Builder {
     fn peg(&self, id: &usize) -> Option<(TokenStream, TokenStream, TokenStream)> {
         let (prefix, ty, rule) = self.rules.get(id)?;
         let name = format_ident!("{}", self.intern.get(id).unwrap());
-        let ty = match ty {
-            Some(x) => parse_str::<TokenStream>(self.intern.get(x).unwrap()).unwrap(),
-            None => quote! { () },
-        };
+        let ty = ty
+            .as_ref()
+            .map(|x| x.parse(&self.intern))
+            .unwrap_or_else(|| quote! { () });
         let body = match prefix {
             Prefix::Peg => quote! { self.__peg(RULES) },
             Prefix::Lex => quote! { self.__lex(RULES) },
@@ -164,7 +167,6 @@ impl Builder {
     fn regex(&self, id: &usize) -> Option<(TokenStream, TokenStream, TokenStream)> {
         let language = self.languages.get(id)?;
         let name = format_ident!("{}", self.intern.get(id).unwrap());
-        let ty = quote! { usize };
         let body = quote! {
             self.stream.dfa(transition, ACCEPTANCE).map(|s| self.intern.id(s))
         };
@@ -191,7 +193,30 @@ impl Builder {
             }
         };
         let constant = language.clone().pounded().build().codegen();
-        Some((ty, constant, body))
+        Some((quote! { usize }, constant, body))
+    }
+}
+
+impl Action {
+    pub fn parse(&self, intern: &Intern) -> TokenStream {
+        let action = self
+            .0
+            .iter()
+            .map(|x| x.restore(intern, ('{', '}')))
+            .collect::<String>();
+        parse_str::<TokenStream>(action.as_str()).unwrap()
+    }
+}
+
+impl Nested {
+    fn restore(&self, intern: &Intern, wrapper: (char, char)) -> String {
+        match self {
+            Nested::Inner(x) => x
+                .iter()
+                .map(|v| format!("{}{}{}", wrapper.0, v.restore(intern, wrapper), wrapper.1))
+                .collect(),
+            Nested::Segment(x) => intern.get(x).unwrap().to_string(),
+        }
     }
 }
 
@@ -208,8 +233,7 @@ impl Alter {
     fn codegen(&self, intern: &Intern) -> TokenStream {
         let items = self.assignments.iter().map(|x| x.codegen(intern));
         let product = if let Some(action) = &self.action {
-            let result = intern.get(action).unwrap();
-            parse_str::<TokenStream>(result).unwrap()
+            action.parse(intern)
         } else {
             let names = self.assignments.iter().filter_map(|x| {
                 if let Assignment::Named(name, _) = x {
@@ -308,10 +332,10 @@ impl Item {
 
 impl Message {
     fn msg(&self, intern: &Intern) -> String {
-        match self {
-            Message::Parentheses(x) => x.iter().map(|v| v.msg(intern)).collect(),
-            Message::Segment(x) => intern.get(x).unwrap().to_string(),
-        }
+        self.0
+            .iter()
+            .map(|x| x.restore(intern, ('(', ')')))
+            .collect()
     }
 }
 

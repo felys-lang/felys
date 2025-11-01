@@ -5,13 +5,13 @@
 }
 
 peg grammar -> { Grammar }:
-    / import=action? $ callables=(callable=callable $)* [eof] {
+    / import=ACTION? $ callables=(callable=callable $)* [eof] {
         Grammar { import, callables }
     }
     ;
 
 peg callable -> { Callable }:
-    / deco=deco? prefix=PREFIX name=[NAME] ty=('->' ty=[action])? [':'] rule=[rule] [';'] {
+    / deco=deco? prefix=PREFIX name=[NAME] ty=('->' ty=[ACTION])? [':'] rule=[rule] [';'] {
         Callable::Rule(deco, prefix, name, ty, rule)
     }
     / deco=deco? name=NAME [':'] regex=[union] [';'] {
@@ -36,7 +36,7 @@ peg rule -> { Rule }:
     ;
 
 peg alter -> { Alter }:
-    / first=[assignment] more=assignment* action=action? {
+    / first=[assignment] more=assignment* action=ACTION? {
         Alter {
             assignments: BufVec::new([first], more),
             action,
@@ -116,11 +116,18 @@ lex RANGE -> { (usize, usize) }:
     / ch=BC { (ch, ch) }
     ;
 
-lex MESSAGE -> { Message }: '(' msg=MSG* [')'] { Message::Parentheses(msg) } ;
+lex MESSAGE -> { Message }: '(' msg=MSG* [')'] { Message(msg) } ;
 
-lex MSG -> { Message }:
-    / '(' msg=MSG* [')'] { Message::Parentheses(msg) }
-    / msg=PS { Message::Segment(msg) }
+lex MSG -> { Nested }:
+    / '(' msg=MSG* [')'] { Nested::Inner(msg) }
+    / msg=PS { Nested::Segment(msg) }
+    ;
+
+lex ACTION -> { Action }: '{' act=ACT* ['}'] { Action(act) } ;
+
+lex ACT -> { Nested }:
+    / '{' act=ACT* ['}'] { Nested::Inner(act) }
+    / act=BS { Nested::Segment(act) }
     ;
 
 @(memo)
@@ -134,6 +141,7 @@ UNICODE: '\\' 'u' '{' [0-9a-f]* '}' ;
 ESCAPE: '\\' [\'\"\[\]ntr\\] ;
 
 PS: [^()]+ ;
+BS: [^{}]+ ;
 
 @(ws)
 WS: [\u{20}\n\t\r]+ ;

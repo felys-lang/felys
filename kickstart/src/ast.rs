@@ -2,12 +2,14 @@ use crate::utils::BufVec;
 use std::rc::Rc;
 
 pub struct Grammar {
-    pub import: Option<usize>,
+    pub import: Option<Action>,
     pub callables: Vec<Callable>,
 }
 
+pub struct Action(pub Vec<Nested>);
+
 pub enum Callable {
-    Rule(Option<BufVec<Tag, 1>>, Prefix, usize, Option<usize>, Rule),
+    Rule(Option<BufVec<Tag, 1>>, Prefix, usize, Option<Action>, Rule),
     Regex(Option<BufVec<Tag, 1>>, usize, Regex),
 }
 
@@ -30,7 +32,7 @@ pub enum Tag {
 
 pub struct Alter {
     pub assignments: BufVec<Assignment, 1>,
-    pub action: Option<usize>,
+    pub action: Option<Action>,
 }
 
 pub enum Assignment {
@@ -52,8 +54,10 @@ pub enum Item {
     Name(Atom),
 }
 
-pub enum Message {
-    Parentheses(Vec<Message>),
+pub struct Message(pub Vec<Nested>);
+
+pub enum Nested {
+    Inner(Vec<Nested>),
     Segment(usize),
 }
 

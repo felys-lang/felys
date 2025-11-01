@@ -1,4 +1,4 @@
-use crate::ast::{Prefix, Rule};
+use crate::ast::{Action, Prefix, Rule};
 use crate::builder::dfa::common::Language;
 use crate::parser::Intern;
 use proc_macro2::TokenStream;
@@ -7,11 +7,11 @@ use std::collections::{HashMap, HashSet};
 pub struct Builder {
     pub intern: Intern,
     pub tags: Tags,
-    pub rules: HashMap<usize, (Prefix, Option<usize>, Rule)>,
+    pub rules: HashMap<usize, (Prefix, Option<Action>, Rule)>,
     pub languages: HashMap<usize, Language>,
     pub sequence: Vec<usize>,
     pub keywords: Vec<String>,
-    pub import: Option<usize>,
+    pub import: Option<Action>,
 }
 
 pub struct Tags {
