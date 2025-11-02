@@ -134,7 +134,7 @@ peg primary -> { Expr }:
     / '[' first=row more=row* [']'] { Expr::Matrix(BufVec::new([first], more)) }
     / '[' args=args? [']'] { Expr::List(args) }
     / '|' params=params? ['|'] expr=[expr] { Expr::Closure(params, expr.into()) }
-    / '<' rows=[INT] [','] cols=[INT] ['>'] { Expr::Param(rows, cols, x.stream.cursor) }
+    / '<' rows=[INT] [','] cols=[INT] ['>'] { Expr::Param(rows, cols, x.__stream.cursor) }
     ;
 
 peg row -> { BufVec<Float, 1> }:
