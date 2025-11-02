@@ -1,4 +1,6 @@
-use crate::ast::{Alter, Assignment, Atom, Callable, Expect, Grammar, Item, Lookahead, Rule, Tag};
+use crate::ast::{
+    Alter, Assignment, Atom, Callable, Expect, Grammar, Item, Lookahead, Prefix, Rule, Tag,
+};
 use crate::builder::common::{Builder, Tags};
 use crate::parser::Intern;
 use std::collections::{HashMap, HashSet};
@@ -27,12 +29,17 @@ impl Builder {
 
         for callable in grammar.callables {
             let (name, deco) = match callable {
-                Callable::Rule(deco, prefix, name, ty, rule) => {
+                Callable::Peg(deco, name, ty, rule) => {
                     keywords.append(&mut rule.keywords(&intern));
-                    rules.insert(name, (prefix, ty, rule));
+                    rules.insert(name, (Prefix::Peg, ty, rule));
                     (name, deco)
                 }
-                Callable::Regex(deco, name, regex) => {
+                Callable::Lex(deco, name, ty, rule) => {
+                    keywords.append(&mut rule.keywords(&intern));
+                    rules.insert(name, (Prefix::Lex, ty, rule));
+                    (name, deco)
+                }
+                Callable::Rex(deco, name, regex) => {
                     regexes.insert(name, regex);
                     (name, deco)
                 }

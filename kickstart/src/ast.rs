@@ -9,8 +9,9 @@ pub struct Grammar {
 pub struct Action(pub Vec<Nested>);
 
 pub enum Callable {
-    Rule(Option<BufVec<Tag, 1>>, Prefix, usize, Option<Action>, Rule),
-    Regex(Option<BufVec<Tag, 1>>, usize, Regex),
+    Peg(Option<BufVec<Tag, 1>>, usize, Option<Action>, Rule),
+    Lex(Option<BufVec<Tag, 1>>, usize, Option<Action>, Rule),
+    Rex(Option<BufVec<Tag, 1>>, usize, Regex),
 }
 
 pub enum Prefix {

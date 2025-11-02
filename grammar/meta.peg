@@ -11,11 +11,14 @@ peg grammar -> { Grammar }:
     ;
 
 peg callable -> { Callable }:
-    / deco=deco? prefix=PREFIX name=[NAME] ty=('->' ty=[ACTION])? [':'] rule=[rule] [';'] {
-        Callable::Rule(deco, prefix, name, ty, rule)
+    / deco=deco? PEG name=[NAME] ty=('->' ty=[ACTION])? [':'] rule=[rule] [';'] {
+        Callable::Peg(deco, name, ty, rule)
     }
-    / deco=deco? name=NAME [':'] regex=[union] [';'] {
-        Callable::Regex(deco, name, regex)
+    / deco=deco? LEX name=[NAME] ty=('->' ty=[ACTION])? [':'] rule=[rule] [';'] {
+        Callable::Lex(deco, name, ty, rule)
+    }
+    / deco=deco? REX name=NAME [':'] regex=[union] [';'] {
+        Callable::Rex(deco, name, regex)
     }
     ;
 
@@ -92,11 +95,6 @@ peg primary -> { Primary }:
     / set=SET { set }
     ;
 
-lex PREFIX -> { Prefix }:
-    / 'peg' !TAIL { Prefix::Peg }
-    / 'lex' !TAIL { Prefix::Lex }
-    ;
-
 lex SET -> { Primary }:
     / '[' '^' first=[RANGE] more=RANGE* [']'] { Primary::Exclude(BufVec::new([first], more)) }
     / '[' first=[RANGE] more=RANGE* [']'] { Primary::Include(BufVec::new([first], more)) }
@@ -130,21 +128,25 @@ lex ACT -> { Nested }:
     / act=BS { Nested::Segment(act) }
     ;
 
+lex PEG: 'peg' !TAIL ;
+lex LEX: 'lex' !TAIL ;
+lex REX: 'rex' !TAIL ;
+
 @(memo)
-NAME: [a-zA-Z_] TAIL* ;
-TAIL: [a-zA-Z0-9_] ;
+rex NAME: [a-zA-Z_] TAIL* ;
+rex TAIL: [a-zA-Z0-9_] ;
 
-DQC: UNICODE | ESCAPE | [^\"\\] ;
-SQC: UNICODE | ESCAPE | [^\'\\] ;
-BC: UNICODE | ESCAPE | [^\]\\] ;
-UNICODE: '\\' 'u' '{' [0-9a-f]* '}' ;
-ESCAPE: '\\' [\'\"\[\]ntr\\] ;
+rex DQC: UNICODE | ESCAPE | [^\"\\] ;
+rex SQC: UNICODE | ESCAPE | [^\'\\] ;
+rex BC: UNICODE | ESCAPE | [^\]\\] ;
+rex UNICODE: '\\' 'u' '{' [0-9a-f]* '}' ;
+rex ESCAPE: '\\' [\'\"\[\]ntr\\] ;
 
-PS: [^()]+ ;
-BS: [^{}]+ ;
-
-@(ws)
-WS: [\u{20}\n\t\r]+ ;
+rex PS: [^()]+ ;
+rex BS: [^{}]+ ;
 
 @(ws)
-COMMENT: '//' [^\n]* ;
+rex WS: [\u{20}\n\t\r]+ ;
+
+@(ws)
+rex COMMENT: '//' [^\n]* ;
