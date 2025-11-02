@@ -146,7 +146,7 @@ impl Assignment {
     fn truncated(&self) -> bool {
         match self {
             Assignment::Named(_, x) => x.truncated(),
-            Assignment::Lookahead(x) => x.truncated(),
+            Assignment::Lookahead(_) => true,
             Assignment::Anonymous(x) => x.truncated(),
             Assignment::Clean => false,
         }
@@ -167,13 +167,6 @@ impl Lookahead {
         match self {
             Lookahead::Positive(x) => x.left(),
             Lookahead::Negative(x) => x.left(),
-        }
-    }
-
-    fn truncated(&self) -> bool {
-        match self {
-            Lookahead::Positive(_) => true,
-            Lookahead::Negative(_) => true,
         }
     }
 
