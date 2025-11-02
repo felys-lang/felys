@@ -14,11 +14,6 @@ pub enum Callable {
     Rex(Option<BufVec<Tag, 1>>, usize, Regex),
 }
 
-pub enum Prefix {
-    Peg,
-    Lex,
-}
-
 pub struct Rule {
     pub first: Alter,
     pub more: Vec<Alter>,
@@ -64,6 +59,7 @@ pub enum Nested {
 
 pub enum Atom {
     Name(usize),
+    External(usize),
     Expect(Expect),
     Nested(Rule),
 }

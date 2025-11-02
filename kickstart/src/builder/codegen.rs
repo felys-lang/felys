@@ -1,6 +1,4 @@
-use crate::ast::{
-    Action, Alter, Assignment, Atom, Expect, Item, Lookahead, Message, Nested, Prefix, Rule,
-};
+use crate::ast::{Action, Alter, Assignment, Atom, Expect, Item, Lookahead, Message, Nested, Rule};
 use crate::builder::common::{Builder, Root};
 use crate::builder::dfa::common::{Automaton, Language};
 use crate::parser::Intern;
@@ -78,9 +76,10 @@ impl Builder {
     }
 
     fn method(&self, id: &usize) -> (TokenStream, TokenStream, TokenStream) {
-        let (ty, constant, body) = match (self.peg(id), self.regex(id)) {
-            (Some(segments), None) => segments,
-            (None, Some(segments)) => segments,
+        let segments = (self.rule(id), self.regex(id));
+        let (ty, constant, body) = match segments {
+            (Some(inner), None) => inner,
+            (None, Some(inner)) => inner,
             _ => panic!(),
         };
 
@@ -95,16 +94,17 @@ impl Builder {
         (name.to_token_stream(), ty, body)
     }
 
-    fn peg(&self, id: &usize) -> Option<(TokenStream, TokenStream, TokenStream)> {
-        let (prefix, ty, rule) = self.rules.get(id)?;
+    fn rule(&self, id: &usize) -> Option<(TokenStream, TokenStream, TokenStream)> {
+        let (std, ty, rule) = self.rules.get(id)?;
         let name = format_ident!("{}", self.intern.get(id).unwrap());
         let ty = ty
             .as_ref()
             .map(|x| x.parse(&self.intern))
             .unwrap_or_else(|| quote! { () });
-        let body = match prefix {
-            Prefix::Peg => quote! { self.__peg(RULES) },
-            Prefix::Lex => quote! { self.__lex(RULES) },
+        let body = if *std {
+            quote! { self.__peg(RULES) }
+        } else {
+            quote! { self.__lex(RULES) }
         };
 
         let body = if self.tags.left.contains(id) {
@@ -342,7 +342,7 @@ impl Message {
 impl Atom {
     fn codegen(&self, intern: &Intern) -> TokenStream {
         match self {
-            Atom::Name(x) => {
+            Atom::Name(x) | Atom::External(x) => {
                 let name = format_ident!("{}", intern.get(x).unwrap());
                 quote! { x.#name() }
             }
@@ -357,6 +357,7 @@ impl Atom {
     fn msg(&self, intern: &Intern) -> String {
         match self {
             Atom::Name(x) => format!("<{}>", intern.get(x).unwrap()),
+            Atom::External(x) => format!("#{}", intern.get(x).unwrap()),
             Atom::Expect(x) => x.msg(intern).to_string(),
             Atom::Nested(_) => "???".to_string(),
         }

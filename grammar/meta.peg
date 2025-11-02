@@ -5,7 +5,7 @@
 }
 
 peg grammar -> { Grammar }:
-    / import=ACTION? $ callables=(callable=callable $)* [eof] {
+    / import=ACTION? $ callables=(callable=callable $)* [#eof] {
         Grammar { import, callables }
     }
     ;
@@ -68,8 +68,9 @@ peg item -> { Item }:
 
 peg atom -> { Atom }:
     / '(' rule=[rule] [')'] { Atom::Nested(rule) }
-    / expect=EXPECT { Atom::Expect(expect) }
+    / '#' name=[NAME] { Atom::External(name) }
     / name=NAME { Atom::Name(name) }
+    / expect=EXPECT { Atom::Expect(expect) }
     ;
 
 peg union -> { Regex }:
