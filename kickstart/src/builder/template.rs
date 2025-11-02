@@ -122,21 +122,21 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
 
         #[allow(unused)]
         pub struct Packrat {
-            pub intern: super::Intern,
-            pub memo: super::Memo,
-            pub stream: super::Stream,
-            pub keywords: HashSet<&'static str>,
-            pub snapshot: Option<(usize, &'static str)>,
+            pub __intern: super::Intern,
+            pub __memo: super::Memo,
+            pub __stream: super::Stream,
+            pub __keywords: HashSet<&'static str>,
+            pub __snapshot: Option<(usize, &'static str)>,
         }
 
         impl From<String> for Packrat {
             fn from(value: String) -> Self {
                 Self {
-                    intern: super::Intern::default(),
-                    memo: super::Memo::default(),
-                    stream: super::Stream::from(value),
-                    keywords: HashSet::from([#(#keywords),*]),
-                    snapshot: None,
+                    __intern: super::Intern::default(),
+                    __memo: super::Memo::default(),
+                    __stream: super::Stream::from(value),
+                    __keywords: HashSet::from([#(#keywords),*]),
+                    __snapshot: None,
                 }
             }
         }
@@ -146,26 +146,26 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
         #[allow(unused)]
         impl Packrat {
             pub fn __expect(&mut self, s: &'static str) -> Option<&'static str> {
-                if self.snapshot.is_some() {
+                if self.__snapshot.is_some() {
                     return None;
                 }
-                let start = self.stream.cursor;
-                self.stream.trim();
+                let start = self.__stream.cursor;
+                self.__stream.trim();
                 let result = s
                     .chars()
-                    .all(|c| self.stream.next() == Some(c))
+                    .all(|c| self.__stream.next() == Some(c))
                     .then_some(s);
                 if result.is_none() {
-                    self.stream.cursor = start;
+                    self.__stream.cursor = start;
                 }
                 result
             }
 
             pub fn __attempt<T>(&mut self, f: fn(&mut Packrat) -> Option<T>) -> Option<T> {
-                let start = self.stream.cursor;
+                let start = self.__stream.cursor;
                 let result = f(self);
                 if result.is_none() {
-                    self.stream.cursor = start;
+                    self.__stream.cursor = start;
                 }
                 result
             }
@@ -175,29 +175,29 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
             }
 
             pub fn __lex<T, const S: usize>(&mut self, rules: Rules<T, S>) -> Option<T> {
-                self.stream.trim();
-                let strict = self.stream.strict;
-                self.stream.strict = true;
+                self.__stream.trim();
+                let strict = self.__stream.strict;
+                self.__stream.strict = true;
                 let result = self.__peg(rules);
-                self.stream.strict = strict;
+                self.__stream.strict = strict;
                 result
             }
 
             pub fn __error<T>(&mut self, msg: &'static str) -> Option<T> {
-                if self.snapshot.is_some() {
+                if self.__snapshot.is_some() {
                     return None;
                 }
-                let cursor = self.stream.cursor;
-                self.snapshot = Some((cursor, msg));
+                let cursor = self.__stream.cursor;
+                self.__snapshot = Some((cursor, msg));
                 None
             }
 
             pub fn __lookahead<T>(&mut self, f: fn(&mut Packrat) -> Option<T>, behavior: bool) -> Option<()> {
-                let start = self.stream.cursor;
-                let snapshot = self.snapshot;
+                let start = self.__stream.cursor;
+                let snapshot = self.__snapshot;
                 let result = f(self);
-                self.stream.cursor = start;
-                self.snapshot = snapshot;
+                self.__stream.cursor = start;
+                self.__snapshot = snapshot;
                 if result.is_some() == behavior {
                     Some(())
                 } else {

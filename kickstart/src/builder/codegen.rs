@@ -86,7 +86,7 @@ impl Builder {
 
         let name = format_ident!("{}", self.intern.get(id).unwrap());
         let body = quote! {
-            if self.snapshot.is_some() {
+            if self.__snapshot.is_some() {
                 return None;
             }
             #constant
@@ -109,10 +109,10 @@ impl Builder {
 
         let body = if self.tags.left.contains(id) {
             quote! {
-                let start = self.stream.cursor;
-                let strict = self.stream.strict;
-                if let Some((end, cache)) = self.memo.#name.get(&(start, strict)) {
-                    self.stream.cursor = end.to_owned();
+                let start = self.__stream.cursor;
+                let strict = self.__stream.strict;
+                if let Some((end, cache)) = self.__memo.#name.get(&(start, strict)) {
+                    self.__stream.cursor = end.to_owned();
                     return cache.clone();
                 }
 
@@ -120,36 +120,36 @@ impl Builder {
                 let mut end = start;
                 loop {
                     let cache = result.clone();
-                    self.memo.#name.insert((start, strict), (end, cache));
+                    self.__memo.#name.insert((start, strict), (end, cache));
                     let temp = #body;
-                    if end < self.stream.cursor {
+                    if end < self.__stream.cursor {
                         result = temp;
-                        end = self.stream.cursor;
-                        self.stream.cursor = start;
+                        end = self.__stream.cursor;
+                        self.__stream.cursor = start;
                     } else {
-                        self.stream.cursor = end;
+                        self.__stream.cursor = end;
                         break;
                     }
                 }
 
                 let cache = result.clone();
-                self.memo.#name.insert((start, strict), (end, cache));
+                self.__memo.#name.insert((start, strict), (end, cache));
                 result
             }
         } else if self.tags.memo.contains(id) {
             quote! {
-                let start = self.stream.cursor;
-                let strict = self.stream.strict;
-                if let Some((end, cache)) = self.memo.#name.get(&(start, strict)) {
-                    self.stream.cursor = end.to_owned();
+                let start = self.__stream.cursor;
+                let strict = self.__stream.strict;
+                if let Some((end, cache)) = self.__memo.#name.get(&(start, strict)) {
+                    self.__stream.cursor = end.to_owned();
                     return cache.clone();
                 }
 
                 let result = #body;
 
-                let end = self.stream.cursor;
+                let end = self.__stream.cursor;
                 let cache = result.clone();
-                self.memo.#name.insert((start, strict), (end, cache));
+                self.__memo.#name.insert((start, strict), (end, cache));
                 result
             }
         } else {
@@ -168,27 +168,27 @@ impl Builder {
         let language = self.languages.get(id)?;
         let name = format_ident!("{}", self.intern.get(id).unwrap());
         let body = quote! {
-            self.stream.dfa(transition, ACCEPTANCE).map(|s| self.intern.id(s))
+            self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
         };
         let body = if self.tags.memo.contains(id) {
             quote! {
-                let start = self.stream.cursor;
-                let strict = self.stream.strict;
-                if let Some(&(end, cache)) = self.memo.#name.get(&(start, strict)) {
-                    self.stream.cursor = end;
+                let start = self.__stream.cursor;
+                let strict = self.__stream.strict;
+                if let Some(&(end, cache)) = self.__memo.#name.get(&(start, strict)) {
+                    self.__stream.cursor = end;
                     return cache;
                 }
 
-                self.stream.trim();
+                self.__stream.trim();
                 let result = #body;
 
-                let end = self.stream.cursor;
-                self.memo.#name.insert((start, strict), (end, result));
+                let end = self.__stream.cursor;
+                self.__memo.#name.insert((start, strict), (end, result));
                 result
             }
         } else {
             quote! {
-                self.stream.trim();
+                self.__stream.trim();
                 #body
             }
         };
@@ -271,7 +271,7 @@ impl Assignment {
                 quote! { let _ = #item; }
             }
             Assignment::Clean => {
-                quote! { x.memo.clean(); }
+                quote! { x.__memo.clean(); }
             }
         }
     }

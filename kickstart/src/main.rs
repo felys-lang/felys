@@ -23,8 +23,8 @@ fn main() {
     let mut packrat = Packrat::from(code);
     let grammar = packrat.grammar();
 
-    if let Some((cursor, msg)) = &packrat.snapshot {
-        let data = &packrat.stream.data;
+    if let Some((cursor, msg)) = &packrat.__snapshot {
+        let data = &packrat.__stream.data;
         let before = data[..*cursor]
             .rfind('\n')
             .map_or(&data[..*cursor], |n| &data[n + 1..*cursor]);
@@ -42,7 +42,7 @@ fn main() {
         return;
     }
 
-    Builder::new(grammar.unwrap(), packrat.intern)
+    Builder::new(grammar.unwrap(), packrat.__intern)
         .codegen()
         .write(&args.target, "parser");
 }
