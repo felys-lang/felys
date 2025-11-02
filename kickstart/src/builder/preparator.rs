@@ -57,7 +57,7 @@ impl Builder {
                     && !lex.contains_key(&name)
                     && !regexes.contains_key(&name)
                 {
-                    panic!()
+                    panic!("rule <{}> is not defined", intern.get(&name).unwrap());
                 }
             }
         }
@@ -65,7 +65,7 @@ impl Builder {
         for (_, _, rule) in lex.values() {
             for name in rule.called() {
                 if !lex.contains_key(&name) && !regexes.contains_key(&name) {
-                    panic!()
+                    panic!("rule <{}> is not defined", intern.get(&name).unwrap());
                 }
             }
         }
