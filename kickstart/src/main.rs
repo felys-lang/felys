@@ -34,11 +34,20 @@ fn main() {
 
         let x = before.chars().count();
         let y = data[..*cursor].chars().filter(|c| *c == '\n').count() + 1;
+        let padding = y.to_string().len();
 
-        println!("Error @ {}:{}:{}", args.grammar.to_str().unwrap(), x, y);
-        println!("{}{}", before, after);
-        println!("{}^", " ".repeat(x));
-        println!("Hint: {}", msg);
+        println!("error: {}", msg);
+        println!(
+            "{}--> {}:{}:{}",
+            " ".repeat(padding),
+            args.grammar.to_str().unwrap(),
+            y,
+            x
+        );
+        println!("{} |", " ".repeat(padding));
+        println!("{} | {}{}", y, before, after);
+        println!("{} | {}^", " ".repeat(padding), " ".repeat(x));
+
         return;
     }
 
