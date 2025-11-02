@@ -16,7 +16,7 @@ impl Tags {
 impl Builder {
     pub fn new(grammar: Grammar, intern: Intern) -> Self {
         let mut rules = HashMap::new();
-        let mut languages = HashMap::new();
+        let mut regexes = HashMap::new();
         let mut keywords = Vec::new();
         let mut sequence = Vec::new();
         let mut tags = Tags {
@@ -25,7 +25,6 @@ impl Builder {
             ws: HashSet::new(),
         };
 
-        let mut regexes = HashMap::new();
         for callable in grammar.callables {
             let (name, deco) = match callable {
                 Callable::Rule(deco, prefix, name, ty, rule) => {
@@ -75,6 +74,7 @@ impl Builder {
             }
         }
 
+        let mut languages = HashMap::new();
         for (name, regex) in &regexes {
             if !languages.contains_key(name) {
                 let language = regex.desugar(&regexes, &mut languages, &intern);
