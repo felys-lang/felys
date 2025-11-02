@@ -22,10 +22,26 @@ fn main() {
     let code = fs::read_to_string(&args.grammar).expect("file not found");
     let mut packrat = Packrat::from(code);
     let grammar = packrat.grammar();
+
     if let Some((cursor, msg)) = &packrat.snapshot {
-        println!("Error: {msg} @ {cursor}");
+        let data = &packrat.stream.data;
+        let before = data[..*cursor]
+            .rfind('\n')
+            .map_or(&data[..*cursor], |n| &data[n + 1..*cursor]);
+        let after = data[*cursor..]
+            .find('\n')
+            .map_or(&data[*cursor..], |n| &data[*cursor..*cursor + n]);
+
+        let x = before.chars().count();
+        let y = data[..*cursor].chars().filter(|c| *c == '\n').count() + 1;
+
+        println!("Error @ {}:{}:{}", args.grammar.to_str().unwrap(), x, y);
+        println!("{}{}", before, after);
+        println!("{}^", " ".repeat(x));
+        println!("Hint: {}", msg);
         return;
     }
+
     Builder::new(grammar.unwrap(), packrat.intern)
         .codegen()
         .write(&args.target, "parser");
