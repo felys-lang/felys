@@ -5,18 +5,18 @@ use crate::program::Program;
 impl Packrat {
     pub fn parse(mut self) -> Result<Program, String> {
         let result = self.grammar();
-        if let Some((loc, msg)) = self.snapshot {
+        if let Some((loc, msg)) = self.__snapshot {
             return Err(format!("expect {msg} @ {loc}"));
         }
         let grammar = result.ok_or("unknown parser error".to_string())?;
-        let program = Program::new(grammar, self.intern);
+        let program = Program::new(grammar, self.__intern);
         Ok(program)
     }
 
     pub fn ident(&mut self) -> Option<Ident> {
         let id = self.IDENT()?;
-        let ident = self.intern.get(&id).unwrap();
-        if self.keywords.contains(ident) {
+        let ident = self.__intern.get(&id).unwrap();
+        if self.__keywords.contains(ident) {
             None
         } else {
             Some(Ident(id))
@@ -24,8 +24,8 @@ impl Packrat {
     }
 
     pub fn eof(&mut self) -> Option<()> {
-        self.stream.trim();
-        if self.stream.next().is_none() {
+        self.__stream.trim();
+        if self.__stream.next().is_none() {
             Some(())
         } else {
             None

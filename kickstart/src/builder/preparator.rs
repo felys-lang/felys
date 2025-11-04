@@ -15,8 +15,8 @@ impl Tags {
 
 impl Builder {
     pub fn new(grammar: Grammar, intern: Intern) -> Self {
-        let mut rules = HashMap::new();
-        let mut languages = HashMap::new();
+        let mut peg = HashMap::new();
+        let mut lex = HashMap::new();
         let mut regexes = HashMap::new();
         let mut keywords = Vec::new();
         let mut sequence = Vec::new();
@@ -28,12 +28,17 @@ impl Builder {
 
         for callable in grammar.callables {
             let (name, deco) = match callable {
-                Callable::Rule(deco, prefix, name, ty, rule) => {
+                Callable::Peg(deco, name, ty, rule) => {
                     keywords.append(&mut rule.keywords(&intern));
-                    rules.insert(name, (prefix, ty, rule));
+                    peg.insert(name, (true, ty, rule));
                     (name, deco)
                 }
-                Callable::Regex(deco, name, regex) => {
+                Callable::Lex(deco, name, ty, rule) => {
+                    keywords.append(&mut rule.keywords(&intern));
+                    lex.insert(name, (false, ty, rule));
+                    (name, deco)
+                }
+                Callable::Rex(deco, name, regex) => {
                     regexes.insert(name, regex);
                     (name, deco)
                 }
@@ -45,6 +50,29 @@ impl Builder {
                 }
             }
         }
+
+        for (_, _, rule) in peg.values() {
+            for name in rule.called() {
+                if !peg.contains_key(&name)
+                    && !lex.contains_key(&name)
+                    && !regexes.contains_key(&name)
+                {
+                    panic!("rule <{}> is not defined", intern.get(&name).unwrap());
+                }
+            }
+        }
+
+        for (_, _, rule) in lex.values() {
+            for name in rule.called() {
+                if !lex.contains_key(&name) && !regexes.contains_key(&name) {
+                    panic!("rule <{}> is not defined", intern.get(&name).unwrap());
+                }
+            }
+        }
+
+        let mut rules = HashMap::new();
+        rules.extend(peg);
+        rules.extend(lex);
 
         let mut graph = HashMap::new();
         for (name, (_, _, rule)) in &rules {
@@ -75,6 +103,7 @@ impl Builder {
             }
         }
 
+        let mut languages = HashMap::new();
         for (name, regex) in &regexes {
             if !languages.contains_key(name) {
                 let language = regex.desugar(&regexes, &mut languages, &intern);
@@ -103,6 +132,14 @@ impl Rule {
         left
     }
 
+    fn called(&self) -> HashSet<usize> {
+        let mut called = self.first.called();
+        for alter in &self.more {
+            called.extend(alter.called());
+        }
+        called
+    }
+
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         let mut keywords = self.first.keywords(intern);
         for alter in &self.more {
@@ -122,6 +159,14 @@ impl Alter {
             }
         }
         left
+    }
+
+    fn called(&self) -> HashSet<usize> {
+        let mut called = HashSet::new();
+        for assignment in self.assignments.iter() {
+            called.extend(assignment.called());
+        }
+        called
     }
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
@@ -146,9 +191,18 @@ impl Assignment {
     fn truncated(&self) -> bool {
         match self {
             Assignment::Named(_, x) => x.truncated(),
-            Assignment::Lookahead(x) => x.truncated(),
+            Assignment::Lookahead(_) => true,
             Assignment::Anonymous(x) => x.truncated(),
             Assignment::Clean => false,
+        }
+    }
+
+    fn called(&self) -> HashSet<usize> {
+        match self {
+            Assignment::Named(_, x) => x.called(),
+            Assignment::Lookahead(x) => x.called(),
+            Assignment::Anonymous(x) => x.called(),
+            Assignment::Clean => HashSet::new(),
         }
     }
 
@@ -170,10 +224,10 @@ impl Lookahead {
         }
     }
 
-    fn truncated(&self) -> bool {
+    fn called(&self) -> HashSet<usize> {
         match self {
-            Lookahead::Positive(_) => true,
-            Lookahead::Negative(_) => true,
+            Lookahead::Positive(x) => x.called(),
+            Lookahead::Negative(x) => x.called(),
         }
     }
 
@@ -188,25 +242,37 @@ impl Lookahead {
 impl Item {
     fn left(&self) -> HashSet<usize> {
         match self {
-            Item::ZeroOrMore(x) => x.left(),
+            Item::Eager(x, _) => x.left(),
+            Item::Repetition(x) => x.left(),
             Item::Optional(x) => x.left(),
-            Item::Name(_, x) => x.left(),
+            Item::Name(x) => x.left(),
         }
     }
 
     fn truncated(&self) -> bool {
         match self {
-            Item::ZeroOrMore(_) => false,
+            Item::Eager(_, _) => true,
+            Item::Repetition(_) => false,
             Item::Optional(_) => false,
-            Item::Name(_, _) => true,
+            Item::Name(_) => true,
+        }
+    }
+
+    fn called(&self) -> HashSet<usize> {
+        match self {
+            Item::Eager(x, _) => x.called(),
+            Item::Repetition(x) => x.called(),
+            Item::Optional(x) => x.called(),
+            Item::Name(x) => x.called(),
         }
     }
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         match self {
-            Item::ZeroOrMore(x) => x.keywords(intern),
+            Item::Eager(x, _) => x.keywords(intern),
+            Item::Repetition(x) => x.keywords(intern),
             Item::Optional(x) => x.keywords(intern),
-            Item::Name(_, x) => x.keywords(intern),
+            Item::Name(x) => x.keywords(intern),
         }
     }
 }
@@ -215,14 +281,25 @@ impl Atom {
     fn left(&self) -> HashSet<usize> {
         match self {
             Atom::Name(name) => HashSet::from([*name]),
+            Atom::External(_) => HashSet::new(),
             Atom::Expect(_) => HashSet::new(),
             Atom::Nested(_) => HashSet::new(),
+        }
+    }
+
+    fn called(&self) -> HashSet<usize> {
+        match self {
+            Atom::Name(name) => HashSet::from([*name]),
+            Atom::External(_) => HashSet::new(),
+            Atom::Expect(_) => HashSet::new(),
+            Atom::Nested(x) => x.called(),
         }
     }
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         match self {
             Atom::Name(_) => Vec::new(),
+            Atom::External(_) => Vec::new(),
             Atom::Expect(expect) => expect.keywords(intern),
             Atom::Nested(rule) => rule.keywords(intern),
         }

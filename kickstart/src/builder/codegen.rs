@@ -1,4 +1,4 @@
-use crate::ast::{Alter, Assignment, Atom, Expect, Item, Lookahead, Prefix, Rule};
+use crate::ast::{Action, Alter, Assignment, Atom, Expect, Item, Lookahead, Message, Nested, Rule};
 use crate::builder::common::{Builder, Root};
 use crate::builder::dfa::common::{Automaton, Language};
 use crate::parser::Intern;
@@ -50,10 +50,11 @@ impl Builder {
             quote! {}
         };
 
-        let import = match &self.import {
-            Some(x) => parse_str(self.intern.get(x).unwrap()).unwrap(),
-            None => quote! {},
-        };
+        let import = self
+            .import
+            .as_ref()
+            .map(|x| x.parse(&self.intern))
+            .unwrap_or_default();
         let core = quote! {
             #import
 
@@ -75,109 +76,147 @@ impl Builder {
     }
 
     fn method(&self, id: &usize) -> (TokenStream, TokenStream, TokenStream) {
-        let name = format_ident!("{}", self.intern.get(id).unwrap());
-        let (ty, constant, body) = if let Some((prefix, ty, rule)) = self.rules.get(id) {
-            let ty = parse_str::<TokenStream>(self.intern.get(ty).unwrap()).unwrap();
-            let body = match prefix {
-                Prefix::Peg => quote! { self.__peg(RULES) },
-                Prefix::Lex => quote! { self.__lex(RULES) },
-            };
-
-            let body = if self.tags.left.contains(id) {
-                quote! {
-                    let start = self.stream.cursor;
-                    let strict = self.stream.strict;
-                    if let Some((end, cache)) = self.memo.#name.get(&(start, strict)) {
-                        self.stream.cursor = end.to_owned();
-                        return cache.clone();
-                    }
-
-                    let mut result = None;
-                    let mut end = start;
-                    loop {
-                        let cache = result.clone();
-                        self.memo.#name.insert((start, strict), (end, cache));
-                        let temp = #body;
-                        if end < self.stream.cursor {
-                            result = temp;
-                            end = self.stream.cursor;
-                            self.stream.cursor = start;
-                        } else {
-                            self.stream.cursor = end;
-                            break;
-                        }
-                    }
-
-                    let cache = result.clone();
-                    self.memo.#name.insert((start, strict), (end, cache));
-                    result
-                }
-            } else if self.tags.memo.contains(id) {
-                quote! {
-                    let start = self.stream.cursor;
-                    let strict = self.stream.strict;
-                    if let Some((end, cache)) = self.memo.#name.get(&(start, strict)) {
-                        self.stream.cursor = end.to_owned();
-                        return cache.clone();
-                    }
-
-                    let result = #body;
-
-                    let end = self.stream.cursor;
-                    let cache = result.clone();
-                    self.memo.#name.insert((start, strict), (end, cache));
-                    result
-                }
-            } else {
-                body
-            };
-
-            let rules = rule.codegen(&self.intern);
-            let size = 1 + rule.more.len();
-            let constant = quote! {
-                const RULES: super::Rules<#ty, #size> = #rules;
-            };
-            (ty, constant, body)
-        } else if let Some(language) = self.languages.get(id) {
-            let ty = quote! { usize };
-            let body = quote! {
-                self.stream.dfa(transition, ACCEPTANCE).map(|s| self.intern.id(s))
-            };
-            let body = if self.tags.memo.contains(id) {
-                quote! {
-                    let start = self.stream.cursor;
-                    let strict = self.stream.strict;
-                    if let Some(&(end, cache)) = self.memo.#name.get(&(start, strict)) {
-                        self.stream.cursor = end;
-                        return cache;
-                    }
-
-                    self.stream.trim();
-                    let result = #body;
-
-                    let end = self.stream.cursor;
-                    self.memo.#name.insert((start, strict), (end, result));
-                    result
-                }
-            } else {
-                quote! {
-                    self.stream.trim();
-                    #body
-                }
-            };
-            let constant = language.clone().pounded().build().codegen();
-            (ty, constant, body)
-        } else {
-            panic!()
+        let segments = (self.rule(id), self.regex(id));
+        let (ty, constant, body) = match segments {
+            (Some(inner), None) => inner,
+            (None, Some(inner)) => inner,
+            _ => panic!(),
         };
+
+        let name = format_ident!("{}", self.intern.get(id).unwrap());
         let body = quote! {
-            if self.snapshot.is_some() {
+            if self.__snapshot.is_some() {
                 return None;
             }
             #constant
             #body
         };
         (name.to_token_stream(), ty, body)
+    }
+
+    fn rule(&self, id: &usize) -> Option<(TokenStream, TokenStream, TokenStream)> {
+        let (std, ty, rule) = self.rules.get(id)?;
+        let name = format_ident!("{}", self.intern.get(id).unwrap());
+        let ty = ty
+            .as_ref()
+            .map(|x| x.parse(&self.intern))
+            .unwrap_or_else(|| quote! { () });
+        let body = if *std {
+            quote! { self.__peg(RULES) }
+        } else {
+            quote! { self.__lex(RULES) }
+        };
+
+        let body = if self.tags.left.contains(id) {
+            quote! {
+                let start = self.__stream.cursor;
+                let strict = self.__stream.strict;
+                if let Some((end, cache)) = self.__memo.#name.get(&(start, strict)) {
+                    self.__stream.cursor = end.to_owned();
+                    return cache.clone();
+                }
+
+                let mut result = None;
+                let mut end = start;
+                loop {
+                    let cache = result.clone();
+                    self.__memo.#name.insert((start, strict), (end, cache));
+                    let temp = #body;
+                    if end < self.__stream.cursor {
+                        result = temp;
+                        end = self.__stream.cursor;
+                        self.__stream.cursor = start;
+                    } else {
+                        self.__stream.cursor = end;
+                        break;
+                    }
+                }
+
+                let cache = result.clone();
+                self.__memo.#name.insert((start, strict), (end, cache));
+                result
+            }
+        } else if self.tags.memo.contains(id) {
+            quote! {
+                let start = self.__stream.cursor;
+                let strict = self.__stream.strict;
+                if let Some((end, cache)) = self.__memo.#name.get(&(start, strict)) {
+                    self.__stream.cursor = end.to_owned();
+                    return cache.clone();
+                }
+
+                let result = #body;
+
+                let end = self.__stream.cursor;
+                let cache = result.clone();
+                self.__memo.#name.insert((start, strict), (end, cache));
+                result
+            }
+        } else {
+            body
+        };
+
+        let rules = rule.codegen(&self.intern);
+        let size = 1 + rule.more.len();
+        let constant = quote! {
+            const RULES: super::Rules<#ty, #size> = #rules;
+        };
+        Some((ty, constant, body))
+    }
+
+    fn regex(&self, id: &usize) -> Option<(TokenStream, TokenStream, TokenStream)> {
+        let language = self.languages.get(id)?;
+        let name = format_ident!("{}", self.intern.get(id).unwrap());
+        let body = quote! {
+            self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
+        };
+        let body = if self.tags.memo.contains(id) {
+            quote! {
+                let start = self.__stream.cursor;
+                let strict = self.__stream.strict;
+                if let Some(&(end, cache)) = self.__memo.#name.get(&(start, strict)) {
+                    self.__stream.cursor = end;
+                    return cache;
+                }
+
+                self.__stream.trim();
+                let result = #body;
+
+                let end = self.__stream.cursor;
+                self.__memo.#name.insert((start, strict), (end, result));
+                result
+            }
+        } else {
+            quote! {
+                self.__stream.trim();
+                #body
+            }
+        };
+        let constant = language.clone().pounded().build().codegen();
+        Some((quote! { usize }, constant, body))
+    }
+}
+
+impl Action {
+    pub fn parse(&self, intern: &Intern) -> TokenStream {
+        let action = self
+            .0
+            .iter()
+            .map(|x| x.restore(intern, ('{', '}')))
+            .collect::<String>();
+        parse_str::<TokenStream>(action.as_str()).unwrap()
+    }
+}
+
+impl Nested {
+    fn restore(&self, intern: &Intern, wrapper: (char, char)) -> String {
+        match self {
+            Nested::Inner(x) => x
+                .iter()
+                .map(|v| format!("{}{}{}", wrapper.0, v.restore(intern, wrapper), wrapper.1))
+                .collect(),
+            Nested::Segment(x) => intern.get(x).unwrap().to_string(),
+        }
     }
 }
 
@@ -194,8 +233,7 @@ impl Alter {
     fn codegen(&self, intern: &Intern) -> TokenStream {
         let items = self.assignments.iter().map(|x| x.codegen(intern));
         let product = if let Some(action) = &self.action {
-            let result = intern.get(action).unwrap();
-            parse_str::<TokenStream>(result).unwrap()
+            action.parse(intern)
         } else {
             let names = self.assignments.iter().filter_map(|x| {
                 if let Assignment::Named(name, _) = x {
@@ -233,7 +271,7 @@ impl Assignment {
                 quote! { let _ = #item; }
             }
             Assignment::Clean => {
-                quote! { x.memo.clean(); }
+                quote! { x.__memo.clean(); }
             }
         }
     }
@@ -257,7 +295,21 @@ impl Lookahead {
 impl Item {
     fn codegen(&self, intern: &Intern) -> TokenStream {
         match self {
-            Item::ZeroOrMore(x) => {
+            Item::Eager(x, m) => {
+                let atom = x.codegen(intern);
+                let msg = if let Some(m) = m {
+                    m.msg(intern)
+                } else {
+                    x.msg(intern)
+                };
+                quote! {
+                    match #atom {
+                        Some(value) => value,
+                        None => return x.__error(#msg),
+                    }
+                }
+            }
+            Item::Repetition(x) => {
                 let atom = x.codegen(intern);
                 quote! {
                     {
@@ -270,28 +322,27 @@ impl Item {
                 }
             }
             Item::Optional(x) => x.codegen(intern),
-            Item::Name(e, x) => {
+            Item::Name(x) => {
                 let atom = x.codegen(intern);
-                if e.to_owned() {
-                    let msg = x.msg(intern);
-                    quote! {
-                        match #atom {
-                            Some(value) => value,
-                            None => return x.__error(#msg),
-                        }
-                    }
-                } else {
-                    quote! { #atom? }
-                }
+                quote! { #atom? }
             }
         }
+    }
+}
+
+impl Message {
+    fn msg(&self, intern: &Intern) -> String {
+        self.0
+            .iter()
+            .map(|x| x.restore(intern, ('(', ')')))
+            .collect()
     }
 }
 
 impl Atom {
     fn codegen(&self, intern: &Intern) -> TokenStream {
         match self {
-            Atom::Name(x) => {
+            Atom::Name(x) | Atom::External(x) => {
                 let name = format_ident!("{}", intern.get(x).unwrap());
                 quote! { x.#name() }
             }
@@ -306,6 +357,7 @@ impl Atom {
     fn msg(&self, intern: &Intern) -> String {
         match self {
             Atom::Name(x) => format!("<{}>", intern.get(x).unwrap()),
+            Atom::External(x) => format!("#{}", intern.get(x).unwrap()),
             Atom::Expect(x) => x.msg(intern).to_string(),
             Atom::Nested(_) => "???".to_string(),
         }

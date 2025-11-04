@@ -22,11 +22,36 @@ fn main() {
     let code = fs::read_to_string(&args.grammar).expect("file not found");
     let mut packrat = Packrat::from(code);
     let grammar = packrat.grammar();
-    if let Some((cursor, msg)) = &packrat.snapshot {
-        println!("Error: {msg} @ {cursor}");
+
+    if let Some((cursor, msg)) = &packrat.__snapshot {
+        let data = &packrat.__stream.data;
+        let before = data[..*cursor]
+            .rfind('\n')
+            .map_or(&data[..*cursor], |n| &data[n + 1..*cursor]);
+        let after = data[*cursor..]
+            .find('\n')
+            .map_or(&data[*cursor..], |n| &data[*cursor..*cursor + n]);
+
+        let x = before.chars().count();
+        let y = data[..*cursor].chars().filter(|c| *c == '\n').count() + 1;
+        let padding = y.to_string().len();
+
+        println!("error: {}", msg);
+        println!(
+            "{}--> {}:{}:{}",
+            " ".repeat(padding),
+            args.grammar.to_str().unwrap(),
+            y,
+            x
+        );
+        println!("{} |", " ".repeat(padding));
+        println!("{} | {}{}", y, before, after);
+        println!("{} | {}^", " ".repeat(padding), " ".repeat(x - 1));
+
         return;
     }
-    Builder::new(grammar.unwrap(), packrat.intern)
+
+    Builder::new(grammar.unwrap(), packrat.__intern)
         .codegen()
         .write(&args.target, "parser");
 }
