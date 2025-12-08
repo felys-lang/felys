@@ -287,7 +287,7 @@ impl Message {
 impl Atom {
     fn codegen(&self, intern: &Intern) -> TokenStream {
         match self {
-            Atom::Name(x) | Atom::External(x) => {
+            Atom::Name(x) => {
                 let name = format_ident!("{}", intern.get(x).unwrap());
                 quote! { x.#name() }
             }
@@ -302,7 +302,6 @@ impl Atom {
     fn msg(&self, intern: &Intern) -> String {
         match self {
             Atom::Name(x) => format!("<{}>", intern.get(x).unwrap()),
-            Atom::External(x) => format!("#{}", intern.get(x).unwrap()),
             Atom::Expect(x) => x.msg(intern).to_string(),
             Atom::Nested(_) => "???".to_string(),
         }

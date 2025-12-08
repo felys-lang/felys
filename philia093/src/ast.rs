@@ -60,7 +60,6 @@ pub enum Nested {
 
 pub enum Atom {
     Name(usize),
-    External(usize),
     Expect(Expect),
     Nested(Rule),
 }

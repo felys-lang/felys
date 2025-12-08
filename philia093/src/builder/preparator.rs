@@ -208,7 +208,6 @@ impl Atom {
     fn left(&self) -> HashSet<usize> {
         match self {
             Atom::Name(name) => HashSet::from([*name]),
-            Atom::External(_) => HashSet::new(),
             Atom::Expect(_) => HashSet::new(),
             Atom::Nested(_) => HashSet::new(),
         }
@@ -217,7 +216,6 @@ impl Atom {
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         match self {
             Atom::Name(_) => Vec::new(),
-            Atom::External(_) => Vec::new(),
             Atom::Expect(expect) => expect.keywords(intern),
             Atom::Nested(rule) => rule.keywords(intern),
         }
