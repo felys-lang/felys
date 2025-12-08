@@ -74,8 +74,7 @@ impl Builder {
         let body = if self.tags.left.contains(id) {
             quote! {
                 let start = self.__stream.cursor;
-                let strict = self.__stream.strict;
-                if let Some((end, cache)) = self.__memo.#name.get(&(start, strict)) {
+                if let Some((end, cache)) = self.__memo.#name.get(&start) {
                     self.__stream.cursor = end.to_owned();
                     return cache.clone();
                 }
@@ -84,7 +83,7 @@ impl Builder {
                 let mut end = start;
                 loop {
                     let cache = result.clone();
-                    self.__memo.#name.insert((start, strict), (end, cache));
+                    self.__memo.#name.insert(start, (end, cache));
                     let temp = #body;
                     if end < self.__stream.cursor {
                         result = temp;
@@ -97,14 +96,13 @@ impl Builder {
                 }
 
                 let cache = result.clone();
-                self.__memo.#name.insert((start, strict), (end, cache));
+                self.__memo.#name.insert(start, (end, cache));
                 result
             }
         } else if self.tags.memo.contains(id) {
             quote! {
                 let start = self.__stream.cursor;
-                let strict = self.__stream.strict;
-                if let Some((end, cache)) = self.__memo.#name.get(&(start, strict)) {
+                if let Some((end, cache)) = self.__memo.#name.get(&start) {
                     self.__stream.cursor = end.to_owned();
                     return cache.clone();
                 }
@@ -113,7 +111,7 @@ impl Builder {
 
                 let end = self.__stream.cursor;
                 let cache = result.clone();
-                self.__memo.#name.insert((start, strict), (end, cache));
+                self.__memo.#name.insert(start, (end, cache));
                 result
             }
         } else {
@@ -137,8 +135,7 @@ impl Builder {
         let body = if self.tags.memo.contains(id) {
             quote! {
                 let start = self.__stream.cursor;
-                let strict = self.__stream.strict;
-                if let Some(&(end, cache)) = self.__memo.#name.get(&(start, strict)) {
+                if let Some(&(end, cache)) = self.__memo.#name.get(&start) {
                     self.__stream.cursor = end;
                     return cache;
                 }
@@ -146,7 +143,7 @@ impl Builder {
                 let result = #body;
 
                 let end = self.__stream.cursor;
-                self.__memo.#name.insert((start, strict), (end, result));
+                self.__memo.#name.insert(start, (end, result));
                 result
             }
         } else {

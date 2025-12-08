@@ -94,7 +94,7 @@ fn memoize(import: TokenStream, memo: Vec<(TokenStream, TokenStream)>) -> TokenS
     });
     let memo = memo.iter().map(|(name, ty)| {
         quote! {
-            pub #name: HashMap<(usize, bool), (usize, Option<#ty>)>,
+            pub #name: HashMap<usize, (usize, Option<#ty>)>,
         }
     });
     quote! {
@@ -204,7 +204,6 @@ fn stream() -> TokenStream {
         pub struct Stream {
             pub data: String,
             pub cursor: usize,
-            pub strict: bool,
         }
 
         impl From<String> for Stream {
@@ -212,7 +211,6 @@ fn stream() -> TokenStream {
                 Self {
                     data: value,
                     cursor: 0,
-                    strict: false,
                 }
             }
         }
