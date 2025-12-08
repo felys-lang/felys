@@ -1,4 +1,4 @@
-use crate::parser::Packrat;
+use crate::philia093::Packrat;
 use builder::common::Builder;
 use clap::Parser;
 use std::fs;
@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 mod ast;
 mod builder;
-mod parser;
+mod philia093;
 mod utils;
 
 #[derive(Parser)]
@@ -53,5 +53,5 @@ fn main() {
 
     Builder::new(grammar.unwrap(), packrat.__intern)
         .codegen()
-        .write(&args.target, "parser");
+        .write(&args.target, "philia093");
 }

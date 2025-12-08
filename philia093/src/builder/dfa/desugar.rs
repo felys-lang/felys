@@ -1,7 +1,7 @@
 use crate::ast::{Primary, Regex};
 use crate::builder::common::s2c;
 use crate::builder::dfa::common::{Language, Terminal};
-use crate::parser::Intern;
+use crate::philia093::Intern;
 use std::collections::HashMap;
 
 impl Regex {

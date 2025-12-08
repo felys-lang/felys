@@ -8,7 +8,7 @@ impl Packrat {
         if let Some((loc, msg)) = self.__snapshot {
             return Err(format!("expect {msg} @ {loc}"));
         }
-        let grammar = result.ok_or("unknown parser error".to_string())?;
+        let grammar = result.ok_or("unknown philia093 error".to_string())?;
         let program = Program::new(grammar, self.__intern);
         Ok(program)
     }

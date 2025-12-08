@@ -1,6 +1,6 @@
 use crate::ast::{Action, Rule};
 use crate::builder::dfa::common::Language;
-use crate::parser::Intern;
+use crate::philia093::Intern;
 use proc_macro2::TokenStream;
 use std::collections::{HashMap, HashSet};
 

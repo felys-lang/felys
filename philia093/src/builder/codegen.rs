@@ -1,7 +1,7 @@
 use crate::ast::{Action, Alter, Assignment, Atom, Expect, Item, Lookahead, Message, Nested, Rule};
 use crate::builder::common::{Builder, Root, Template};
 use crate::builder::dfa::common::Automaton;
-use crate::parser::Intern;
+use crate::philia093::Intern;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::parse_str;

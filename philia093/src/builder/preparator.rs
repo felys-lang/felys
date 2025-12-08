@@ -1,6 +1,6 @@
 use crate::ast::{Alter, Assignment, Atom, Expect, Grammar, Hierarchy, Item, Lookahead, Rule, Tag};
 use crate::builder::common::{Builder, Tags, Template};
-use crate::parser::Intern;
+use crate::philia093::Intern;
 use std::collections::{HashMap, HashSet};
 
 impl Tags {
