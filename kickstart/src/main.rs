@@ -46,7 +46,7 @@ fn main() {
         );
         println!("{} |", " ".repeat(padding));
         println!("{} | {}{}", y, before, after);
-        println!("{} | {}^", " ".repeat(padding), " ".repeat(x - 1));
+        println!("{} | {}^", " ".repeat(padding), " ".repeat(x));
 
         return;
     }

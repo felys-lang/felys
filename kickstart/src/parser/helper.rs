@@ -2,7 +2,11 @@ use crate::parser::Packrat;
 
 impl Packrat {
     pub fn eof(&mut self) -> Option<()> {
-        self.__stream.trim();
+        loop {
+            if self.TRIM().is_none() {
+                break;
+            }
+        }
         if self.__stream.next().is_none() {
             Some(())
         } else {
