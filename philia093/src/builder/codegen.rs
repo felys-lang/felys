@@ -40,7 +40,7 @@ impl Builder {
         let core = quote! {
             #import
 
-            #[allow(clippy::double_parens, clippy::let_unit_value)]
+            #[allow(clippy::double_parens, clippy::let_unit_value, clippy::clone_on_copy)]
             #[allow(non_snake_case, unused)]
             impl super::Packrat {
                 #(#methods)*
