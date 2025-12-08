@@ -1,5 +1,5 @@
 use crate::ast::{Action, Alter, Assignment, Atom, Expect, Item, Lookahead, Message, Nested, Rule};
-use crate::builder::common::{Builder, Root};
+use crate::builder::common::{Builder, Root, Template};
 use crate::builder::dfa::common::Automaton;
 use crate::parser::Intern;
 use proc_macro2::TokenStream;
@@ -12,16 +12,24 @@ impl Builder {
         let mut memo = Vec::new();
         let mut methods = Vec::new();
 
-        for id in &self.sequence {
-            let (name, ty, body) = self.method(id);
+        for (id, template) in &self.order {
+            let name = format_ident!("{}", self.intern.get(id).unwrap());
+            let (ty, constant, body) = match template {
+                Template::Rule => self.rule(id),
+                Template::Lang => self.lang(id),
+            };
             let method = quote! {
                 pub fn #name(&mut self) -> Option<#ty> {
+                    if self.__snapshot.is_some() {
+                        return None;
+                    }
+                    #constant
                     #body
                 }
             };
             methods.push(method);
             if self.tags.memo.contains(id) || self.tags.left.contains(id) {
-                memo.push((name, ty));
+                memo.push((name.to_token_stream(), ty));
             }
         }
 
@@ -43,27 +51,8 @@ impl Builder {
         self.template(core, memo)
     }
 
-    fn method(&self, id: &usize) -> (TokenStream, TokenStream, TokenStream) {
-        let segments = (self.rule(id), self.regex(id));
-        let (ty, constant, body) = match segments {
-            (Some(inner), None) => inner,
-            (None, Some(inner)) => inner,
-            _ => panic!(),
-        };
-
-        let name = format_ident!("{}", self.intern.get(id).unwrap());
-        let body = quote! {
-            if self.__snapshot.is_some() {
-                return None;
-            }
-            #constant
-            #body
-        };
-        (name.to_token_stream(), ty, body)
-    }
-
-    fn rule(&self, id: &usize) -> Option<(TokenStream, TokenStream, TokenStream)> {
-        let (ty, rule) = self.rules.get(id)?;
+    fn rule(&self, id: &usize) -> (TokenStream, TokenStream, TokenStream) {
+        let (ty, rule) = self.rules.get(id).unwrap();
         let name = format_ident!("{}", self.intern.get(id).unwrap());
         let ty = ty
             .as_ref()
@@ -123,11 +112,11 @@ impl Builder {
         let constant = quote! {
             const RULES: super::Rules<#ty, #size> = #rules;
         };
-        Some((ty, constant, body))
+        (ty, constant, body)
     }
 
-    fn regex(&self, id: &usize) -> Option<(TokenStream, TokenStream, TokenStream)> {
-        let language = self.languages.get(id)?;
+    fn lang(&self, id: &usize) -> (TokenStream, TokenStream, TokenStream) {
+        let language = self.langs.get(id).unwrap();
         let name = format_ident!("{}", self.intern.get(id).unwrap());
         let body = quote! {
             self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
@@ -139,7 +128,7 @@ impl Builder {
                     self.__stream.cursor = end;
                     return cache;
                 }
-                
+
                 let result = #body;
 
                 let end = self.__stream.cursor;
@@ -152,7 +141,7 @@ impl Builder {
             }
         };
         let constant = language.clone().pounded().build().codegen();
-        Some((quote! { usize }, constant, body))
+        (quote! { usize }, constant, body)
     }
 }
 

@@ -8,10 +8,15 @@ pub struct Builder {
     pub intern: Intern,
     pub tags: Tags,
     pub rules: HashMap<usize, (Option<Action>, Rule)>,
-    pub languages: HashMap<usize, Language>,
-    pub sequence: Vec<usize>,
+    pub langs: HashMap<usize, Language>,
+    pub order: Vec<(usize, Template)>,
     pub keywords: Vec<String>,
     pub import: Option<Action>,
+}
+
+pub enum Template {
+    Rule,
+    Lang,
 }
 
 pub struct Tags {

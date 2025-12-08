@@ -13,6 +13,7 @@ pub enum Callable {
     Rex(Option<BufVec<Tag, 1>>, usize, Regex),
 }
 
+
 pub struct Rule {
     pub first: Alter,
     pub more: Vec<Alter>,

@@ -1,5 +1,5 @@
 use crate::ast::{Alter, Assignment, Atom, Callable, Expect, Grammar, Item, Lookahead, Rule, Tag};
-use crate::builder::common::{Builder, Tags};
+use crate::builder::common::{Builder, Tags, Template};
 use crate::parser::Intern;
 use std::collections::{HashMap, HashSet};
 
@@ -16,8 +16,8 @@ impl Builder {
     pub fn new(grammar: Grammar, intern: Intern) -> Self {
         let mut peg = HashMap::new();
         let mut rex = HashMap::new();
+        let mut order = Vec::new();
         let mut keywords = Vec::new();
-        let mut sequence = Vec::new();
         let mut tags = Tags {
             memo: HashSet::new(),
             left: HashSet::new(),
@@ -28,14 +28,15 @@ impl Builder {
                 Callable::Peg(deco, name, ty, rule) => {
                     keywords.append(&mut rule.keywords(&intern));
                     peg.insert(name, (ty, rule));
+                    order.push((name, Template::Rule));
                     (name, deco)
                 }
                 Callable::Rex(deco, name, regex) => {
                     rex.insert(name, regex);
+                    order.push((name, Template::Lang));
                     (name, deco)
                 }
             };
-            sequence.push(name);
             if let Some(decorator) = deco {
                 for tag in decorator.iter() {
                     tags.add(tag, name);
@@ -84,8 +85,8 @@ impl Builder {
             intern,
             tags,
             rules: peg,
-            languages,
-            sequence,
+            langs: languages,
+            order,
             keywords,
             import: grammar.import,
         }
