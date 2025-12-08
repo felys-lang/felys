@@ -63,7 +63,7 @@ impl Builder {
     }
 
     fn rule(&self, id: &usize) -> Option<(TokenStream, TokenStream, TokenStream)> {
-        let (_, ty, rule) = self.rules.get(id)?;
+        let (ty, rule) = self.rules.get(id)?;
         let name = format_ident!("{}", self.intern.get(id).unwrap());
         let ty = ty
             .as_ref()

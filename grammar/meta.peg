@@ -87,68 +87,72 @@ peg primary -> { Primary }:
     / set=SET { set }
     ;
 
+
+
 peg SET -> { Primary }:
-    / TRIM* '[' '^' first=[RANGE] more=RANGE* [']'] { Primary::Exclude(BufVec::new([first], more)) }
-    / TRIM* '[' first=[RANGE] more=RANGE* [']'] { Primary::Include(BufVec::new([first], more)) }
+    / WS* '[' '^' first=[RANGE] more=RANGE* [']'] { Primary::Exclude(BufVec::new([first], more)) }
+    / WS* '[' first=[RANGE] more=RANGE* [']'] { Primary::Include(BufVec::new([first], more)) }
     ;
 
 peg EXPECT -> { Expect }:
-    / TRIM* '\'' first=[SQC] more=SQC* ['\''] { Expect::Once(BufVec::new([first], more)) }
-    / TRIM* '\"' first=[DQC] more=DQC* ['\"'] { Expect::Keyword(BufVec::new([first], more)) }
+    / WS* '\'' first=[SQC] more=SQC* ['\''] { Expect::Once(BufVec::new([first], more)) }
+    / WS* '\"' first=[DQC] more=DQC* ['\"'] { Expect::Keyword(BufVec::new([first], more)) }
     ;
 
 peg STRING -> { BufVec<usize, 1> }:
-    / TRIM* '\'' first=[SQC] more=SQC* ['\''] { BufVec::new([first], more) }
+    / WS* '\'' first=[SQC] more=SQC* ['\''] { BufVec::new([first], more) }
     ;
+
+peg MESSAGE -> { Message }: WS* '(' msg=MSG* [')'] { Message(msg) } ;
+
+peg ACTION -> { Action }: WS* '{' act=ACT* ['}'] { Action(act) } ;
+
+@(memo)
+peg NAME -> { usize }: WS* ident=IDENT { ident };
+
+peg PEG: WS* 'peg' !TAIL ;
+peg REX: WS* 'rex' !TAIL ;
+peg TAG -> { Tag }:
+    / WS* 'memo' !TAIL { Tag::Memo }
+    / WS* 'left' !TAIL { Tag::Left }
+    ;
+
+peg EXCLAMATION: WS* '!' ;
+peg AMPERSAND: WS* '&' ;
+peg QUESTION: WS* '?' ;
+peg ARROW: WS* '->' ;
+peg DOLLAR: WS* '$' ;
+peg LPAREN: WS* '(' ;
+peg RPAREN: WS* ')' ;
+peg LBRACK: WS* '[' ;
+peg RBRACK: WS* ']' ;
+peg SLASH: WS* '/' ;
+peg COLON: WS* ':' ;
+peg COMMA: WS* ',' ;
+peg PLUS: WS* '+' ;
+peg STAR: WS* '*' ;
+peg PIPE: WS* '|' ;
+peg SEMI: WS* ';' ;
+peg HASH: WS* '#' ;
+peg EQ: WS* '=' ;
+peg AT: WS* '@' ;
+
+
 
 peg RANGE -> { (usize, usize) }:
     / start=BC '-' end=[BC] { (start, end) }
     / ch=BC { (ch, ch) }
     ;
 
-peg MESSAGE -> { Message }: TRIM* '(' msg=MSG* [')'] { Message(msg) } ;
-
 peg MSG -> { Nested }:
     / '(' msg=MSG* [')'] { Nested::Inner(msg) }
     / msg=PS { Nested::Segment(msg) }
     ;
 
-peg ACTION -> { Action }: TRIM* '{' act=ACT* ['}'] { Action(act) } ;
-
 peg ACT -> { Nested }:
     / '{' act=ACT* ['}'] { Nested::Inner(act) }
     / act=BS { Nested::Segment(act) }
     ;
-
-@(memo)
-peg NAME -> { usize }: TRIM* ident=IDENT { ident };
-
-peg PEG: TRIM* 'peg' !TAIL ;
-peg REX: TRIM* 'rex' !TAIL ;
-peg TAG -> { Tag }:
-    / TRIM* 'memo' !TAIL { Tag::Memo }
-    / TRIM* 'left' !TAIL { Tag::Left }
-    ;
-
-peg EXCLAMATION: TRIM* '!' ;
-peg AMPERSAND: TRIM* '&' ;
-peg QUESTION: TRIM* '?' ;
-peg ARROW: TRIM* '->' ;
-peg DOLLAR: TRIM* '$' ;
-peg LPAREN: TRIM* '(' ;
-peg RPAREN: TRIM* ')' ;
-peg LBRACK: TRIM* '[' ;
-peg RBRACK: TRIM* ']' ;
-peg SLASH: TRIM* '/' ;
-peg COLON: TRIM* ':' ;
-peg COMMA: TRIM* ',' ;
-peg PLUS: TRIM* '+' ;
-peg STAR: TRIM* '*' ;
-peg PIPE: TRIM* '|' ;
-peg SEMI: TRIM* ';' ;
-peg HASH: TRIM* '#' ;
-peg EQ: TRIM* '=' ;
-peg AT: TRIM* '@' ;
 
 rex IDENT: [a-zA-Z_] TAIL* ;
 rex TAIL: [a-zA-Z0-9_] ;
@@ -162,6 +166,4 @@ rex ESCAPE: '\\' [\'\"\[\]ntr\\] ;
 rex PS: [^()]+ ;
 rex BS: [^{}]+ ;
 
-rex TRIM: WS | COMMENT ;
-rex WS: [\u{20}\n\t\r]+ ;
-rex COMMENT: '//' [^\n]* ;
+rex WS: [\u{20}\n\t\r]+ | '//' [^\n]* ;

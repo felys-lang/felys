@@ -27,7 +27,7 @@ impl Builder {
             let (name, deco) = match callable {
                 Callable::Peg(deco, name, ty, rule) => {
                     keywords.append(&mut rule.keywords(&intern));
-                    peg.insert(name, (true, ty, rule));
+                    peg.insert(name, (ty, rule));
                     (name, deco)
                 }
                 Callable::Rex(deco, name, regex) => {
@@ -44,7 +44,7 @@ impl Builder {
         }
 
         let mut graph = HashMap::new();
-        for (name, (_, _, rule)) in &peg {
+        for (name, (_, rule)) in &peg {
             graph.insert(*name, rule.left());
         }
 

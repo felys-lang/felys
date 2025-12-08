@@ -3,7 +3,7 @@ use crate::parser::Packrat;
 impl Packrat {
     pub fn eof(&mut self) -> Option<()> {
         loop {
-            if self.TRIM().is_none() {
+            if self.WS().is_none() {
                 break;
             }
         }
