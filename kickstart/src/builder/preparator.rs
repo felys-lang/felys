@@ -8,7 +8,6 @@ impl Tags {
         match tag {
             Tag::Memo => self.memo.insert(name),
             Tag::Left => self.left.insert(name),
-            Tag::Whitespace => self.ws.insert(name),
         };
     }
 }
@@ -16,14 +15,12 @@ impl Tags {
 impl Builder {
     pub fn new(grammar: Grammar, intern: Intern) -> Self {
         let mut peg = HashMap::new();
-        let mut lex = HashMap::new();
-        let mut regexes = HashMap::new();
+        let mut rex = HashMap::new();
         let mut keywords = Vec::new();
         let mut sequence = Vec::new();
         let mut tags = Tags {
             memo: HashSet::new(),
             left: HashSet::new(),
-            ws: HashSet::new(),
         };
 
         for callable in grammar.callables {
@@ -33,13 +30,8 @@ impl Builder {
                     peg.insert(name, (true, ty, rule));
                     (name, deco)
                 }
-                Callable::Lex(deco, name, ty, rule) => {
-                    keywords.append(&mut rule.keywords(&intern));
-                    lex.insert(name, (false, ty, rule));
-                    (name, deco)
-                }
                 Callable::Rex(deco, name, regex) => {
-                    regexes.insert(name, regex);
+                    rex.insert(name, regex);
                     (name, deco)
                 }
             };
@@ -51,31 +43,8 @@ impl Builder {
             }
         }
 
-        for (_, _, rule) in peg.values() {
-            for name in rule.called() {
-                if !peg.contains_key(&name)
-                    && !lex.contains_key(&name)
-                    && !regexes.contains_key(&name)
-                {
-                    panic!("rule <{}> is not defined", intern.get(&name).unwrap());
-                }
-            }
-        }
-
-        for (_, _, rule) in lex.values() {
-            for name in rule.called() {
-                if !lex.contains_key(&name) && !regexes.contains_key(&name) {
-                    panic!("rule <{}> is not defined", intern.get(&name).unwrap());
-                }
-            }
-        }
-
-        let mut rules = HashMap::new();
-        rules.extend(peg);
-        rules.extend(lex);
-
         let mut graph = HashMap::new();
-        for (name, (_, _, rule)) in &rules {
+        for (name, (_, _, rule)) in &peg {
             graph.insert(*name, rule.left());
         }
 
@@ -104,9 +73,9 @@ impl Builder {
         }
 
         let mut languages = HashMap::new();
-        for (name, regex) in &regexes {
+        for (name, regex) in &rex {
             if !languages.contains_key(name) {
-                let language = regex.desugar(&regexes, &mut languages, &intern);
+                let language = regex.desugar(&rex, &mut languages, &intern);
                 languages.insert(*name, language);
             }
         }
@@ -114,7 +83,7 @@ impl Builder {
         Self {
             intern,
             tags,
-            rules,
+            rules: peg,
             languages,
             sequence,
             keywords,
@@ -130,14 +99,6 @@ impl Rule {
             left.extend(alter.left());
         }
         left
-    }
-
-    fn called(&self) -> HashSet<usize> {
-        let mut called = self.first.called();
-        for alter in &self.more {
-            called.extend(alter.called());
-        }
-        called
     }
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
@@ -159,14 +120,6 @@ impl Alter {
             }
         }
         left
-    }
-
-    fn called(&self) -> HashSet<usize> {
-        let mut called = HashSet::new();
-        for assignment in self.assignments.iter() {
-            called.extend(assignment.called());
-        }
-        called
     }
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
@@ -197,15 +150,6 @@ impl Assignment {
         }
     }
 
-    fn called(&self) -> HashSet<usize> {
-        match self {
-            Assignment::Named(_, x) => x.called(),
-            Assignment::Lookahead(x) => x.called(),
-            Assignment::Anonymous(x) => x.called(),
-            Assignment::Clean => HashSet::new(),
-        }
-    }
-
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         match self {
             Assignment::Named(_, x) => x.keywords(intern),
@@ -221,13 +165,6 @@ impl Lookahead {
         match self {
             Lookahead::Positive(x) => x.left(),
             Lookahead::Negative(x) => x.left(),
-        }
-    }
-
-    fn called(&self) -> HashSet<usize> {
-        match self {
-            Lookahead::Positive(x) => x.called(),
-            Lookahead::Negative(x) => x.called(),
         }
     }
 
@@ -258,15 +195,6 @@ impl Item {
         }
     }
 
-    fn called(&self) -> HashSet<usize> {
-        match self {
-            Item::Eager(x, _) => x.called(),
-            Item::Repetition(x) => x.called(),
-            Item::Optional(x) => x.called(),
-            Item::Name(x) => x.called(),
-        }
-    }
-
     fn keywords(&self, intern: &Intern) -> Vec<String> {
         match self {
             Item::Eager(x, _) => x.keywords(intern),
@@ -284,15 +212,6 @@ impl Atom {
             Atom::External(_) => HashSet::new(),
             Atom::Expect(_) => HashSet::new(),
             Atom::Nested(_) => HashSet::new(),
-        }
-    }
-
-    fn called(&self) -> HashSet<usize> {
-        match self {
-            Atom::Name(name) => HashSet::from([*name]),
-            Atom::External(_) => HashSet::new(),
-            Atom::Expect(_) => HashSet::new(),
-            Atom::Nested(x) => x.called(),
         }
     }
 

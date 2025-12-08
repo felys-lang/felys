@@ -17,7 +17,6 @@ pub struct Builder {
 pub struct Tags {
     pub memo: HashSet<usize>,
     pub left: HashSet<usize>,
-    pub ws: HashSet<usize>,
 }
 
 pub struct Root {

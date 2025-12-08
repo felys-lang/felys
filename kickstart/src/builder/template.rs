@@ -150,7 +150,6 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
                     return None;
                 }
                 let start = self.__stream.cursor;
-                self.__stream.trim();
                 let result = s
                     .chars()
                     .all(|c| self.__stream.next() == Some(c))
@@ -172,15 +171,6 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
 
             pub fn __peg<T, const S: usize>(&mut self, rules: Rules<T, S>) -> Option<T> {
                 rules.iter().filter_map(|rule| self.__attempt(*rule)).next()
-            }
-
-            pub fn __lex<T, const S: usize>(&mut self, rules: Rules<T, S>) -> Option<T> {
-                self.__stream.trim();
-                let strict = self.__stream.strict;
-                self.__stream.strict = true;
-                let result = self.__peg(rules);
-                self.__stream.strict = strict;
-                result
             }
 
             pub fn __error<T>(&mut self, msg: &'static str) -> Option<T> {

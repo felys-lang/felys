@@ -10,7 +10,6 @@ pub struct Action(pub Vec<Nested>);
 
 pub enum Callable {
     Peg(Option<BufVec<Tag, 1>>, usize, Option<Action>, Rule),
-    Lex(Option<BufVec<Tag, 1>>, usize, Option<Action>, Rule),
     Rex(Option<BufVec<Tag, 1>>, usize, Regex),
 }
 
@@ -23,7 +22,6 @@ pub struct Rule {
 pub enum Tag {
     Memo,
     Left,
-    Whitespace,
 }
 
 pub struct Alter {

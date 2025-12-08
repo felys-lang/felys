@@ -1,9 +1,9 @@
 use crate::ast::{Action, Alter, Assignment, Atom, Expect, Item, Lookahead, Message, Nested, Rule};
 use crate::builder::common::{Builder, Root};
-use crate::builder::dfa::common::{Automaton, Language};
+use crate::builder::dfa::common::Automaton;
 use crate::parser::Intern;
 use proc_macro2::TokenStream;
-use quote::{ToTokens, format_ident, quote};
+use quote::{format_ident, quote, ToTokens};
 use std::iter::once;
 use syn::parse_str;
 
@@ -25,31 +25,6 @@ impl Builder {
             }
         }
 
-        let mut whitespace = self.tags.ws.iter();
-        let trim = if let Some(first) = whitespace.next() {
-            let mut node = self.languages.get(first).unwrap().clone();
-            for name in whitespace {
-                node = Language::Union(
-                    node.into(),
-                    self.languages.get(name).unwrap().clone().into(),
-                );
-            }
-            let constants = node.pounded().build().codegen();
-            quote! {
-                if self.strict {
-                    return;
-                }
-                #constants
-                loop {
-                    if self.dfa(transition, ACCEPTANCE).is_none() {
-                        break;
-                    }
-                }
-            }
-        } else {
-            quote! {}
-        };
-
         let import = self
             .import
             .as_ref()
@@ -62,13 +37,6 @@ impl Builder {
             #[allow(non_snake_case, unused)]
             impl super::Packrat {
                 #(#methods)*
-            }
-
-            #[allow(unused)]
-            impl super::Stream {
-                pub fn trim(&mut self) {
-                    #trim
-                }
             }
         };
 
@@ -95,17 +63,13 @@ impl Builder {
     }
 
     fn rule(&self, id: &usize) -> Option<(TokenStream, TokenStream, TokenStream)> {
-        let (std, ty, rule) = self.rules.get(id)?;
+        let (_, ty, rule) = self.rules.get(id)?;
         let name = format_ident!("{}", self.intern.get(id).unwrap());
         let ty = ty
             .as_ref()
             .map(|x| x.parse(&self.intern))
             .unwrap_or_else(|| quote! { () });
-        let body = if *std {
-            quote! { self.__peg(RULES) }
-        } else {
-            quote! { self.__lex(RULES) }
-        };
+        let body = quote! { self.__peg(RULES) };
 
         let body = if self.tags.left.contains(id) {
             quote! {
@@ -178,8 +142,7 @@ impl Builder {
                     self.__stream.cursor = end;
                     return cache;
                 }
-
-                self.__stream.trim();
+                
                 let result = #body;
 
                 let end = self.__stream.cursor;
@@ -188,7 +151,6 @@ impl Builder {
             }
         } else {
             quote! {
-                self.__stream.trim();
                 #body
             }
         };

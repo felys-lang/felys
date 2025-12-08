@@ -14,9 +14,6 @@ peg callable -> { Callable }:
     / deco=deco? PEG name=[NAME] ty=(ARROW ty=[ACTION])? [COLON] rule=[rule] [SEMI] {
         Callable::Peg(deco, name, ty, rule)
     }
-    / deco=deco? LEX name=[NAME] ty=(ARROW ty=[ACTION])? [COLON] rule=[rule] [SEMI] {
-        Callable::Lex(deco, name, ty, rule)
-    }
     / deco=deco? REX name=NAME [COLON] regex=[union] [SEMI] {
         Callable::Rex(deco, name, regex)
     }
@@ -127,12 +124,10 @@ peg ACT -> { Nested }:
 peg NAME -> { usize }: TRIM* ident=IDENT { ident };
 
 peg PEG: TRIM* 'peg' !TAIL ;
-peg LEX: TRIM* 'lex' !TAIL ;
 peg REX: TRIM* 'rex' !TAIL ;
 peg TAG -> { Tag }:
     / TRIM* 'memo' !TAIL { Tag::Memo }
     / TRIM* 'left' !TAIL { Tag::Left }
-    / TRIM* 'ws' !TAIL { Tag::Whitespace }
     ;
 
 peg EXCLAMATION: TRIM* '!' ;
