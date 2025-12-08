@@ -12,10 +12,14 @@ peg grammar -> { Grammar }:
 
 peg callable -> { Callable }:
     / deco=deco? PEG name=[NAME] ty=(ARROW ty=[ACTION])? [COLON] rule=[rule] [SEMI] {
-        Callable::Peg(deco, name, ty, rule)
+        Callable {
+            deco, name, hierarchy: Hierarchy::Peg(ty, rule)
+        }
     }
     / deco=deco? REX name=NAME [COLON] regex=[union] [SEMI] {
-        Callable::Rex(deco, name, regex)
+        Callable {
+            deco, name, hierarchy: Hierarchy::Rex(regex)
+        }
     }
     ;
 

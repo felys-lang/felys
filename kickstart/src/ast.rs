@@ -8,11 +8,16 @@ pub struct Grammar {
 
 pub struct Action(pub Vec<Nested>);
 
-pub enum Callable {
-    Peg(Option<BufVec<Tag, 1>>, usize, Option<Action>, Rule),
-    Rex(Option<BufVec<Tag, 1>>, usize, Regex),
+pub struct Callable {
+    pub deco: Option<BufVec<Tag, 1>>,
+    pub name: usize,
+    pub hierarchy: Hierarchy,
 }
 
+pub enum Hierarchy {
+    Peg(Option<Action>, Rule),
+    Rex(Regex),
+}
 
 pub struct Rule {
     pub first: Alter,

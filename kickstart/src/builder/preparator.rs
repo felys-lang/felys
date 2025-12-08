@@ -1,4 +1,6 @@
-use crate::ast::{Alter, Assignment, Atom, Callable, Expect, Grammar, Item, Lookahead, Rule, Tag};
+use crate::ast::{
+    Alter, Assignment, Atom, Expect, Grammar, Hierarchy, Item, Lookahead, Rule, Tag,
+};
 use crate::builder::common::{Builder, Tags, Template};
 use crate::parser::Intern;
 use std::collections::{HashMap, HashSet};
@@ -24,22 +26,20 @@ impl Builder {
         };
 
         for callable in grammar.callables {
-            let (name, deco) = match callable {
-                Callable::Peg(deco, name, ty, rule) => {
+            match callable.hierarchy {
+                Hierarchy::Peg(ty, rule) => {
                     keywords.append(&mut rule.keywords(&intern));
-                    peg.insert(name, (ty, rule));
-                    order.push((name, Template::Rule));
-                    (name, deco)
+                    peg.insert(callable.name, (ty, rule));
+                    order.push((callable.name, Template::Rule));
                 }
-                Callable::Rex(deco, name, regex) => {
-                    rex.insert(name, regex);
-                    order.push((name, Template::Lang));
-                    (name, deco)
+                Hierarchy::Rex(regex) => {
+                    rex.insert(callable.name, regex);
+                    order.push((callable.name, Template::Lang));
                 }
             };
-            if let Some(decorator) = deco {
+            if let Some(decorator) = callable.deco {
                 for tag in decorator.iter() {
-                    tags.add(tag, name);
+                    tags.add(tag, callable.name);
                 }
             }
         }
