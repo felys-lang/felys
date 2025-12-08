@@ -24,12 +24,14 @@ peg callable -> { Callable }:
     ;
 
 peg deco -> { BufVec<Tag, 1> }:
-    / AT [LPAREN] first=[TAG] more=(COMMA tag=[TAG])* [RPAREN] { BufVec::new([first], more) }
+    / AT [LPAREN] first=[TAG] more=(COMMA tag=[TAG])* [RPAREN] {
+        BufVec::new([first], more)
+    }
     ;
 
 peg rule -> { Rule }:
     / SLASH? first=[alter] more=(SLASH alter=[alter])* {
-        Rule { first, more }
+        Rule(BufVec::new([first], more))
     }
     ;
 
@@ -94,17 +96,27 @@ peg primary -> { Primary }:
 
 
 peg SET -> { Primary }:
-    / WS* '[' '^' first=[RANGE] more=RANGE* [']'] { Primary::Exclude(BufVec::new([first], more)) }
-    / WS* '[' first=[RANGE] more=RANGE* [']'] { Primary::Include(BufVec::new([first], more)) }
+    / WS* '[' '^' first=[RANGE] more=RANGE* [']'] {
+        Primary::Exclude(BufVec::new([first], more))
+    }
+    / WS* '[' first=[RANGE] more=RANGE* [']'] {
+        Primary::Include(BufVec::new([first], more))
+    }
     ;
 
 peg EXPECT -> { Expect }:
-    / WS* '\'' first=[SQC] more=SQC* ['\''] { Expect::Once(BufVec::new([first], more)) }
-    / WS* '\"' first=[DQC] more=DQC* ['\"'] { Expect::Keyword(BufVec::new([first], more)) }
+    / WS* '\'' first=[SQC] more=SQC* ['\''] {
+        Expect::Once(BufVec::new([first], more))
+    }
+    / WS* '\"' first=[DQC] more=DQC* ['\"'] {
+        Expect::Keyword(BufVec::new([first], more))
+    }
     ;
 
 peg STRING -> { BufVec<usize, 1> }:
-    / WS* '\'' first=[SQC] more=SQC* ['\''] { BufVec::new([first], more) }
+    / WS* '\'' first=[SQC] more=SQC* ['\''] {
+        BufVec::new([first], more)
+    }
     ;
 
 peg MESSAGE -> { Message }: WS* '(' msg=MSG* [')'] { Message(msg) } ;

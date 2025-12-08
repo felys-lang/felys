@@ -1,6 +1,4 @@
-use crate::ast::{
-    Alter, Assignment, Atom, Expect, Grammar, Hierarchy, Item, Lookahead, Rule, Tag,
-};
+use crate::ast::{Alter, Assignment, Atom, Expect, Grammar, Hierarchy, Item, Lookahead, Rule, Tag};
 use crate::builder::common::{Builder, Tags, Template};
 use crate::parser::Intern;
 use std::collections::{HashMap, HashSet};
@@ -95,16 +93,16 @@ impl Builder {
 
 impl Rule {
     fn left(&self) -> HashSet<usize> {
-        let mut left = self.first.left();
-        for alter in &self.more {
+        let mut left = HashSet::new();
+        for alter in self.0.iter() {
             left.extend(alter.left());
         }
         left
     }
 
     fn keywords(&self, intern: &Intern) -> Vec<String> {
-        let mut keywords = self.first.keywords(intern);
-        for alter in &self.more {
+        let mut keywords = Vec::new();
+        for alter in self.0.iter() {
             keywords.extend(alter.keywords(intern));
         }
         keywords

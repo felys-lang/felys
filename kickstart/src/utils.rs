@@ -19,6 +19,10 @@ impl<T, const N: usize> BufVec<T, N> {
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.buf.iter().chain(self.vec.iter())
     }
+
+    pub fn len(&self) -> usize {
+        self.vec.len() + 1
+    }
 }
 
 impl<const N: usize> BufVec<usize, N> {

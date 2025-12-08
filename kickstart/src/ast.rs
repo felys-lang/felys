@@ -19,10 +19,7 @@ pub enum Hierarchy {
     Rex(Regex),
 }
 
-pub struct Rule {
-    pub first: Alter,
-    pub more: Vec<Alter>,
-}
+pub struct Rule(pub BufVec<Alter, 1>);
 
 #[derive(Debug)]
 pub enum Tag {

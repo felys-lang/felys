@@ -4,7 +4,6 @@ use crate::builder::dfa::common::Automaton;
 use crate::parser::Intern;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use std::iter::once;
 use syn::parse_str;
 
 impl Builder {
@@ -108,7 +107,7 @@ impl Builder {
         };
 
         let rules = rule.codegen(&self.intern);
-        let size = 1 + rule.more.len();
+        let size = rule.0.len();
         let constant = quote! {
             const RULES: super::Rules<#ty, #size> = #rules;
         };
@@ -170,9 +169,7 @@ impl Nested {
 
 impl Rule {
     fn codegen(&self, intern: &Intern) -> TokenStream {
-        let first = once(self.first.codegen(intern));
-        let more = self.more.iter().map(|x| x.codegen(intern));
-        let alters = first.chain(more);
+        let alters = self.0.iter().map(|x| x.codegen(intern));
         quote! { [#(#alters),*] }
     }
 }
