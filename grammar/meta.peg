@@ -123,7 +123,7 @@ peg MESSAGE -> { Message }: WS* '(' msg=MSG* [')'] { Message(msg) } ;
 peg ACTION -> { Action }: WS* '{' act=ACT* ['}'] { Action(act) } ;
 
 @(memo)
-peg NAME -> { usize }: WS* ident=IDENT { ident };
+peg NAME -> { usize }: WS* ident=IDENT;
 
 peg PEG: WS* 'peg' !TAIL ;
 peg REX: WS* 'rex' !TAIL ;
