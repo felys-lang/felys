@@ -1,4 +1,4 @@
-use crate::philia093::Packrat;
+use crate::philia093::PhiLia093;
 use builder::common::Builder;
 use clap::Parser;
 use std::fs;
@@ -20,7 +20,7 @@ struct Args {
 fn main() {
     let args = Args::parse();
     let code = fs::read_to_string(&args.grammar).expect("file not found");
-    let mut packrat = Packrat::from(code);
+    let mut packrat = PhiLia093::from(code);
     let grammar = packrat.grammar();
 
     if let Some((cursor, msg)) = &packrat.__snapshot {

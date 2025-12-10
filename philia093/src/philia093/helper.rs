@@ -1,6 +1,6 @@
-use crate::philia093::Packrat;
+use crate::philia093::PhiLia093;
 
-impl Packrat {
+impl PhiLia093 {
     pub fn eof(&mut self) -> Option<()> {
         loop {
             if self.WS().is_none() {

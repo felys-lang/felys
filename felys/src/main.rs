@@ -1,4 +1,4 @@
-use crate::philia093::Packrat;
+use crate::philia093::PhiLia093;
 
 mod ast;
 mod philia093;
@@ -18,8 +18,8 @@ fn main(args) {
 "#;
 
 fn main() {
-    let mut packrat = Packrat::from(CODE.to_string());
-    let root = packrat.root();
-    println!("{:?}", packrat.__snapshot);
+    let mut philia093 = PhiLia093::from(CODE.to_string());
+    let root = philia093.root();
+    println!("{:?}", philia093.__snapshot);
     println!("{:?}", root);
 }

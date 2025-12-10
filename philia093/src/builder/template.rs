@@ -1,6 +1,6 @@
 use crate::builder::common::{Builder, Common, Root};
 use proc_macro2::TokenStream;
-use quote::{ToTokens, quote};
+use quote::{quote, ToTokens};
 
 impl Builder {
     pub fn template(&self, core: TokenStream, memo: Vec<(TokenStream, TokenStream)>) -> Root {
@@ -121,7 +121,7 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
         use std::collections::HashSet;
 
         #[allow(unused)]
-        pub struct Packrat {
+        pub struct PhiLia093 {
             pub __intern: super::Intern,
             pub __memo: super::Memo,
             pub __stream: super::Stream,
@@ -129,7 +129,7 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
             pub __snapshot: Option<(usize, &'static str)>,
         }
 
-        impl From<String> for Packrat {
+        impl From<String> for PhiLia093 {
             fn from(value: String) -> Self {
                 Self {
                     __intern: super::Intern::default(),
@@ -141,10 +141,10 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
             }
         }
 
-        pub type Rules<T, const S: usize> = [fn(&mut Packrat) -> Option<T>; S];
+        pub type R<T, const S: usize> = [fn(&mut PhiLia093) -> Option<T>; S];
 
         #[allow(unused)]
-        impl Packrat {
+        impl PhiLia093 {
             pub fn __expect(&mut self, s: &'static str) -> Option<&'static str> {
                 if self.__snapshot.is_some() {
                     return None;
@@ -160,7 +160,7 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
                 result
             }
 
-            pub fn __attempt<T>(&mut self, f: fn(&mut Packrat) -> Option<T>) -> Option<T> {
+            pub fn __attempt<T>(&mut self, f: fn(&mut PhiLia093) -> Option<T>) -> Option<T> {
                 let start = self.__stream.cursor;
                 let result = f(self);
                 if result.is_none() {
@@ -169,7 +169,7 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
                 result
             }
 
-            pub fn __peg<T, const S: usize>(&mut self, rules: Rules<T, S>) -> Option<T> {
+            pub fn __peg<T, const S: usize>(&mut self, rules: R<T, S>) -> Option<T> {
                 rules.iter().filter_map(|rule| self.__attempt(*rule)).next()
             }
 
@@ -182,7 +182,7 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
                 None
             }
 
-            pub fn __lookahead<T>(&mut self, f: fn(&mut Packrat) -> Option<T>, behavior: bool) -> Option<()> {
+            pub fn __lookahead<T>(&mut self, f: fn(&mut PhiLia093) -> Option<T>, behavior: bool) -> Option<()> {
                 let start = self.__stream.cursor;
                 let snapshot = self.__snapshot;
                 let result = f(self);

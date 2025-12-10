@@ -42,7 +42,7 @@ impl Builder {
 
             #[allow(clippy::double_parens, clippy::let_unit_value, clippy::clone_on_copy)]
             #[allow(non_snake_case, unused)]
-            impl super::Packrat {
+            impl super::PhiLia093 {
                 #(#methods)*
             }
         };
@@ -109,7 +109,7 @@ impl Builder {
         let rules = rule.codegen(&self.intern);
         let size = rule.0.len();
         let constant = quote! {
-            const RULES: super::Rules<#ty, #size> = #rules;
+            const RULES: super::R<#ty, #size> = #rules;
         };
         (ty, constant, body)
     }

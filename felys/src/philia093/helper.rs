@@ -1,7 +1,7 @@
 use crate::ast::Ident;
-use crate::philia093::Packrat;
+use crate::philia093::PhiLia093;
 
-impl Packrat {
+impl PhiLia093 {
     pub fn ident(&mut self) -> Option<Ident> {
         loop {
             if self.T().is_none() {
