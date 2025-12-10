@@ -219,7 +219,7 @@ impl Assignment {
                 quote! { x.__memo.clean(); }
             }
             Assignment::Eof => {
-                quote! { x.__eof(); }
+                quote! { x.__eof()?; }
             }
         }
     }

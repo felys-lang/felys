@@ -264,4 +264,4 @@ rex ESCAPE: ['"ntr\\] ;
 
 rex T: WS | COMMENT ;
 rex WS: [\u{20}\n\t\r]+ ;
-rex COMMENT: '//' [^\n]*;
+rex COMMENT: '//' [^\n]* ;

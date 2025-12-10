@@ -16,7 +16,7 @@ peg callable -> { Callable }:
             deco, name, hierarchy: Hierarchy::Peg(ty, rule)
         }
     }
-    / deco=deco? REX name=NAME [COLON] regex=[union] [SEMI] {
+    / deco=deco? REX name=[NAME] [COLON] regex=[union] [SEMI] {
         Callable {
             deco, name, hierarchy: Hierarchy::Rex(regex)
         }
@@ -24,7 +24,7 @@ peg callable -> { Callable }:
     ;
 
 peg deco -> { BufVec<Tag, 1> }:
-    / AT [LPAREN] first=[TAG] more=(COMMA tag=[TAG])* [RPAREN] {
+    / AT [LPAR] first=[TAG] more=(COMMA tag=[TAG])* [RPAR] {
         BufVec::new([first], more)
     }
     ;
@@ -58,14 +58,14 @@ peg lookahead -> { Lookahead }:
     ;
 
 peg item -> { Item }:
-    / LBRACK atom=[atom] [RBRACK] msg=MESSAGE? { Item::Eager(atom, msg) }
+    / LBRA atom=[atom] [RBRA] msg=MESSAGE? { Item::Eager(atom, msg) }
     / atom=atom QUESTION { Item::Optional(atom) }
     / atom=atom STAR { Item::Repetition(atom) }
     / atom=atom { Item::Name(atom) }
     ;
 
 peg atom -> { Atom }:
-    / LPAREN rule=[rule] [RPAREN] { Atom::Nested(rule) }
+    / LPAR rule=[rule] [RPAR] { Atom::Nested(rule) }
     / name=NAME { Atom::Name(name) }
     / expect=EXPECT { Atom::Expect(expect) }
     ;
@@ -87,7 +87,7 @@ peg repeat -> { Regex }:
     ;
 
 peg primary -> { Primary }:
-    / LPAREN regex=[union] [RPAREN] { Primary::Parentheses(regex.into()) }
+    / LPAR regex=[union] [RPAR] { Primary::Parentheses(regex.into()) }
     / string=STRING { Primary::Literal(string) }
     / name=NAME { Primary::Name(name) }
     / set=SET { set }
@@ -136,10 +136,10 @@ peg AMPERSAND: T* '&' ;
 peg QUESTION: T* '?' ;
 peg ARROW: T* '->' ;
 peg DOLLAR: T* '$' ;
-peg LPAREN: T* '(' ;
-peg RPAREN: T* ')' ;
-peg LBRACK: T* '[' ;
-peg RBRACK: T* ']' ;
+peg LPAR: T* '(' ;
+peg RPAR: T* ')' ;
+peg LBRA: T* '[' ;
+peg RBRA: T* ']' ;
 peg SLASH: T* '/' ;
 peg COLON: T* ':' ;
 peg COMMA: T* ',' ;
