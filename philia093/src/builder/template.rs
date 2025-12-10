@@ -194,6 +194,14 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
                     None
                 }
             }
+
+            pub fn __eof(&mut self) -> Option<()> {
+                if self.__stream.peek().is_none() {
+                    Some(())
+                } else {
+                    None
+                }
+            }
         }
     }
 }

@@ -3,7 +3,7 @@ use crate::philia093::PhiLia093;
 mod ast;
 mod philia093;
 
-const CODE: &'static str = r#"
+const CODE: &str = r#"
 group Human(age, gender);
 
 impl Human {

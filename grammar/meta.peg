@@ -5,7 +5,7 @@
 }
 
 peg grammar -> { Grammar }:
-    / import=ACTION? $ callables=(callable=callable $)* [eof] {
+    / import=ACTION? $ callables=(callable=callable $)* [EOF] {
         Grammar { import, callables }
     }
     ;
@@ -49,6 +49,7 @@ peg assignment -> { Assignment }:
     / lookahead=lookahead { Assignment::Lookahead(lookahead) }
     / item=item { Assignment::Anonymous(item) }
     / DOLLAR { Assignment::Clean }
+    / HASH { Assignment::Eof }
     ;
 
 peg lookahead -> { Lookahead }:
@@ -92,67 +93,64 @@ peg primary -> { Primary }:
     / set=SET { set }
     ;
 
-
-
 peg SET -> { Primary }:
-    / WS* '[' '^' first=[RANGE] more=RANGE* [']'] {
+    / T* '[' '^' first=[RANGE] more=RANGE* [']'] {
         Primary::Exclude(BufVec::new([first], more))
     }
-    / WS* '[' first=[RANGE] more=RANGE* [']'] {
+    / T* '[' first=[RANGE] more=RANGE* [']'] {
         Primary::Include(BufVec::new([first], more))
     }
     ;
 
 peg EXPECT -> { Expect }:
-    / WS* '\'' first=[SQC] more=SQC* ['\''] {
+    / T* '\'' first=[SQC] more=SQC* ['\''] {
         Expect::Once(BufVec::new([first], more))
     }
-    / WS* '\"' first=[DQC] more=DQC* ['\"'] {
+    / T* '\"' first=[DQC] more=DQC* ['\"'] {
         Expect::Keyword(BufVec::new([first], more))
     }
     ;
 
 peg STRING -> { BufVec<usize, 1> }:
-    / WS* '\'' first=[SQC] more=SQC* ['\''] {
+    / T* '\'' first=[SQC] more=SQC* ['\''] {
         BufVec::new([first], more)
     }
     ;
 
-peg MESSAGE -> { Message }: WS* '(' msg=MSG* [')'] { Message(msg) } ;
+peg MESSAGE -> { Message }: T* '(' msg=MSG* [')'] { Message(msg) } ;
 
-peg ACTION -> { Action }: WS* '{' act=ACT* ['}'] { Action(act) } ;
+peg ACTION -> { Action }: T* '{' act=ACT* ['}'] { Action(act) } ;
 
 @(memo)
-peg NAME -> { usize }: WS* ident=IDENT;
+peg NAME -> { usize }: T* ident=IDENT;
 
-peg PEG: WS* 'peg' !TAIL ;
-peg REX: WS* 'rex' !TAIL ;
+peg PEG: T* 'peg' !TAIL ;
+peg REX: T* 'rex' !TAIL ;
 peg TAG -> { Tag }:
-    / WS* 'memo' !TAIL { Tag::Memo }
-    / WS* 'left' !TAIL { Tag::Left }
+    / T* 'memo' !TAIL { Tag::Memo }
+    / T* 'left' !TAIL { Tag::Left }
     ;
 
-peg EXCLAMATION: WS* '!' ;
-peg AMPERSAND: WS* '&' ;
-peg QUESTION: WS* '?' ;
-peg ARROW: WS* '->' ;
-peg DOLLAR: WS* '$' ;
-peg LPAREN: WS* '(' ;
-peg RPAREN: WS* ')' ;
-peg LBRACK: WS* '[' ;
-peg RBRACK: WS* ']' ;
-peg SLASH: WS* '/' ;
-peg COLON: WS* ':' ;
-peg COMMA: WS* ',' ;
-peg PLUS: WS* '+' ;
-peg STAR: WS* '*' ;
-peg PIPE: WS* '|' ;
-peg SEMI: WS* ';' ;
-peg HASH: WS* '#' ;
-peg EQ: WS* '=' ;
-peg AT: WS* '@' ;
-
-
+peg EXCLAMATION: T* '!' ;
+peg AMPERSAND: T* '&' ;
+peg QUESTION: T* '?' ;
+peg ARROW: T* '->' ;
+peg DOLLAR: T* '$' ;
+peg LPAREN: T* '(' ;
+peg RPAREN: T* ')' ;
+peg LBRACK: T* '[' ;
+peg RBRACK: T* ']' ;
+peg SLASH: T* '/' ;
+peg COLON: T* ':' ;
+peg COMMA: T* ',' ;
+peg PLUS: T* '+' ;
+peg STAR: T* '*' ;
+peg PIPE: T* '|' ;
+peg SEMI: T* ';' ;
+peg HASH: T* '#' ;
+peg EQ: T* '=' ;
+peg AT: T* '@' ;
+peg EOF: T* # ;
 
 peg RANGE -> { (usize, usize) }:
     / start=BC '-' end=[BC] { (start, end) }
@@ -181,4 +179,7 @@ rex ESCAPE: '\\' [\'\"\[\]ntr\\] ;
 rex PS: [^()]+ ;
 rex BS: [^{}]+ ;
 
-rex WS: [\u{20}\n\t\r]+ | '//' [^\n]* ;
+rex T: WS | COMMENT ;
+rex WS: [\u{20}\n\t\r]+ ;
+rex COMMENT: '//' [^\n]*;
+

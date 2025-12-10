@@ -37,6 +37,7 @@ pub enum Assignment {
     Lookahead(Lookahead),
     Anonymous(Item),
     Clean,
+    Eof,
 }
 
 pub enum Lookahead {

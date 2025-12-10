@@ -5,38 +5,38 @@
 }
 
 peg root -> { Root }:
-    / first=[item] $ more=(item=item $)* [eof] {
+    / first=[item] $ more=(item=item $)* [EOF] {
         Root(BufVec::new([first], more))
     }
     ;
 
 peg item -> { Item }:
-    / GROUP ident=[ident] [LPAR] params=[params] [RPAR] [SEMI] {
+    / GROUP ident=[IDENT] [LPAR] params=[params] [RPAR] [SEMI] {
         Item::Group(ident, params)
     }
-    / IMPL ident=[ident] [LBRA] first=[implementation] more=implementation* [RBRA] {
+    / IMPL ident=[IDENT] [LBRA] first=[implementation] more=implementation* [RBRA] {
         Item::Impl(ident, BufVec::new([first], more))
     }
-    / FN MAIN [LPAR] ident=[ident] [RPAR] block=[block] {
+    / FN MAIN [LPAR] ident=[IDENT] [RPAR] block=[block] {
         Item::Main(ident, block)
     }
-    / FN ident=[ident] [LPAR] params=params? [RPAR] block=[block] {
+    / FN ident=[IDENT] [LPAR] params=params? [RPAR] block=[block] {
         Item::Fn(ident, params, block)
     }
     ;
 
 peg implementation -> { Impl }:
-    / FN ident=[ident] [LPAR] params=params? [RPAR] block=[block] {
+    / FN ident=[IDENT] [LPAR] params=params? [RPAR] block=[block] {
         Impl::Associated(ident, params, block)
     }
-    / FN ident=[ident] [LPAR] SELF more=(',' ident=ident)* ','? [RPAR] block=[block] {
+    / FN ident=[IDENT] [LPAR] SELF more=(',' ident=IDENT)* ','? [RPAR] block=[block] {
         Impl::Method(ident, more, block)
     }
     ;
 
 @(memo)
 peg pat -> { Pat }:
-    / ident=ident { Pat::Ident(ident) }
+    / ident=IDENT { Pat::Ident(ident) }
     / UNDERSCORE { Pat::Any }
     / LPAR first=pat COMMA second=pat more=(COMMA pat=pat)* COMMA? RPAR {
         Pat::Tuple(BufVec::new([first, second], more))
@@ -142,7 +142,7 @@ peg call -> { Expr }:
     / call=call LPAR args=args? [RPAR] {
         Expr::Call(call.into(), args)
     }
-    / call=call DOT ident=[ident] {
+    / call=call DOT ident=[IDENT] {
         Expr::Field(call.into(), ident)
     }
     / primary=primary
@@ -164,14 +164,14 @@ peg primary -> { Expr }:
     ;
 
 peg params -> { BufVec<Ident, 1> }:
-    / first=ident more=(COMMA ident=ident)* COMMA? { BufVec::new([first], more) }
+    / first=IDENT more=(COMMA ident=IDENT)* COMMA? { BufVec::new([first], more) }
     ;
 
 peg path -> { Path }:
-    / STD [COLON2] more=(COLON2 ident=[ident])* {
+    / STD [COLON2] more=(COLON2 ident=[IDENT])* {
         Path::Std(more)
     }
-    / first=ident more=(COLON2 ident=[ident])* {
+    / first=IDENT more=(COLON2 ident=[IDENT])* {
         Path::Default(BufVec::new([first], more))
     }
     ;
@@ -183,8 +183,10 @@ peg lit -> { Lit }:
     / bool=BOOL { Lit::Bool(bool) }
     ;
 
-peg FLOAT -> { usize } : T* float=FXX ;
-peg INT -> { usize } : T* int=USIZE ;
+peg IDENT -> { Ident }: T* ident=n2i ;
+
+peg FLOAT -> { usize }: T* float=FXX ;
+peg INT -> { usize }: T* int=USIZE ;
 peg STR -> { Vec<Chunk> }: T* '"' chunks=CHUNK* ['"'] ;
 peg BOOL -> { Bool }:
     / T* "true" !TAIL { Bool::True }
@@ -243,13 +245,15 @@ peg PIPE: T* '|' ;
 peg COLON2: T* '::' ;
 peg UNDERSCORE: T* '_' ;
 
+peg EOF: T* # ;
+
 peg CHUNK -> { Chunk }:
     / slice=SLICE { Chunk::Slice(slice) }
     / '\\u{' hex=[HEX] ['}'] { Chunk::Unicode(hex) }
     / '\\' escape=[ESCAPE] { Chunk::Escape(escape) }
     ;
 
-rex IDENT: [a-zA-Z_] TAIL* ;
+rex NAME: [a-zA-Z_] TAIL* ;
 rex TAIL: [a-zA-Z0-9_] ;
 
 rex USIZE: '0' | [1-9][0-9]* ;

@@ -137,6 +137,7 @@ impl Assignment {
             Assignment::Lookahead(x) => x.left(),
             Assignment::Anonymous(x) => x.left(),
             Assignment::Clean => HashSet::new(),
+            Assignment::Eof => HashSet::new(),
         }
     }
 
@@ -146,6 +147,7 @@ impl Assignment {
             Assignment::Lookahead(_) => true,
             Assignment::Anonymous(x) => x.truncated(),
             Assignment::Clean => false,
+            Assignment::Eof => false,
         }
     }
 
@@ -155,6 +157,7 @@ impl Assignment {
             Assignment::Lookahead(x) => x.keywords(intern),
             Assignment::Anonymous(x) => x.keywords(intern),
             Assignment::Clean => Vec::new(),
+            Assignment::Eof => Vec::new(),
         }
     }
 }
