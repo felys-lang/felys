@@ -57,10 +57,10 @@ impl Builder {
             .as_ref()
             .map(|x| x.parse(&self.intern))
             .unwrap_or_else(|| quote! { () });
-        let body = quote! { self.__peg(RULES) };
+        let mut body = quote! { self.__peg(RULES) };
 
-        let body = if self.tags.left.contains(id) {
-            quote! {
+        if self.tags.left.contains(id) {
+            body = quote! {
                 let start = self.__stream.cursor;
                 if let Some((end, cache)) = self.__memo.#name.get(&start) {
                     self.__stream.cursor = end.to_owned();
@@ -88,7 +88,7 @@ impl Builder {
                 result
             }
         } else if self.tags.memo.contains(id) {
-            quote! {
+            body = quote! {
                 let start = self.__stream.cursor;
                 if let Some((end, cache)) = self.__memo.#name.get(&start) {
                     self.__stream.cursor = end.to_owned();
@@ -102,9 +102,7 @@ impl Builder {
                 self.__memo.#name.insert(start, (end, cache));
                 result
             }
-        } else {
-            body
-        };
+        }
 
         let rules = rule.codegen(&self.intern);
         let size = rule.0.len();
@@ -117,30 +115,34 @@ impl Builder {
     fn lang(&self, id: &usize) -> (TokenStream, TokenStream, TokenStream) {
         let language = self.langs.get(id).unwrap();
         let name = format_ident!("{}", self.intern.get(id).unwrap());
-        let body = quote! {
-            self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
+        let mut ty = quote! { usize };
+        let mut body = quote! {
+            self.__stream.dfa(transition, ACCEPTANCE)
         };
-        let body = if self.tags.memo.contains(id) {
-            quote! {
+
+        if self.tags.memo.contains(id) {
+            body = quote! {
                 let start = self.__stream.cursor;
                 if let Some(&(end, cache)) = self.__memo.#name.get(&start) {
                     self.__stream.cursor = end;
                     return cache;
                 }
 
-                let result = #body;
+                let result = #body.map(|s| self.__intern.id(s));
 
                 let end = self.__stream.cursor;
                 self.__memo.#name.insert(start, (end, result));
                 result
-            }
+            };
+        } else if self.tags.fast.contains(id) {
+            body = quote! { #body.map(|_| ()) };
+            ty = quote! { () };
         } else {
-            quote! {
-                #body
-            }
-        };
+            body = quote! { #body.map(|s| self.__intern.id(s)) };
+        }
+
         let constant = language.clone().pounded().build().codegen();
-        (quote! { usize }, constant, body)
+        (ty, constant, body)
     }
 }
 

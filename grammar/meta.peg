@@ -128,6 +128,7 @@ peg REX: T* 'rex' !TAIL ;
 peg TAG -> { Tag }:
     / T* 'memo' !TAIL { Tag::Memo }
     / T* 'left' !TAIL { Tag::Left }
+    / T* 'fast' !TAIL { Tag::Fast }
     ;
 
 peg EXCLAMATION: T* '!' ;
@@ -167,6 +168,7 @@ peg ACT -> { Nested }:
     ;
 
 rex IDENT: [a-zA-Z_] TAIL* ;
+@(fast)
 rex TAIL: [a-zA-Z0-9_] ;
 
 rex DQC: UNICODE | ESCAPE | [^\"\\] ;
@@ -178,6 +180,7 @@ rex ESCAPE: '\\' [\'\"\[\]ntr\\] ;
 rex PS: [^()]+ ;
 rex BS: [^{}]+ ;
 
+@(fast)
 rex T: WS | COMMENT ;
 rex WS: [\u{20}\n\t\r]+ ;
 rex COMMENT: '//' [^\n]*;

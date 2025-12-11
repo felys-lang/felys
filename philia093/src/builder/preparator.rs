@@ -8,6 +8,7 @@ impl Tags {
         match tag {
             Tag::Memo => self.memo.insert(name),
             Tag::Left => self.left.insert(name),
+            Tag::Fast => self.fast.insert(name),
         };
     }
 }
@@ -21,6 +22,7 @@ impl Builder {
         let mut tags = Tags {
             memo: HashSet::new(),
             left: HashSet::new(),
+            fast: HashSet::new(),
         };
 
         for callable in grammar.callables {

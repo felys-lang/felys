@@ -3,6 +3,7 @@ use builder::common::Builder;
 use clap::Parser;
 use std::fs;
 use std::path::PathBuf;
+use std::time::Instant;
 
 mod ast;
 mod builder;
@@ -20,8 +21,10 @@ struct Args {
 fn main() {
     let args = Args::parse();
     let code = fs::read_to_string(&args.grammar).expect("file not found");
+    let now = Instant::now();
     let mut packrat = PhiLia093::from(code);
     let grammar = packrat.grammar();
+    println!("{}ns", now.elapsed().as_nanos());
 
     if let Some((cursor, msg)) = &packrat.__snapshot {
         let data = &packrat.__stream.data;

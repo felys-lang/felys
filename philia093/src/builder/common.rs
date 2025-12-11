@@ -22,6 +22,7 @@ pub enum Template {
 pub struct Tags {
     pub memo: HashSet<usize>,
     pub left: HashSet<usize>,
+    pub fast: HashSet<usize>,
 }
 
 pub struct Root {

@@ -254,6 +254,7 @@ peg CHUNK -> { Chunk }:
     ;
 
 rex NAME: [a-zA-Z_] TAIL* ;
+@(fast)
 rex TAIL: [a-zA-Z0-9_] ;
 
 rex USIZE: '0' | [1-9][0-9]* ;
@@ -262,6 +263,7 @@ rex SLICE: [^"\\]+ ;
 rex HEX: [0-9a-f]+ ;
 rex ESCAPE: ['"ntr\\] ;
 
+@(fast)
 rex T: WS | COMMENT ;
 rex WS: [\u{20}\n\t\r]+ ;
 rex COMMENT: '//' [^\n]* ;

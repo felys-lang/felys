@@ -25,6 +25,7 @@ pub struct Rule(pub BufVec<Alter, 1>);
 pub enum Tag {
     Memo,
     Left,
+    Fast,
 }
 
 pub struct Alter {
