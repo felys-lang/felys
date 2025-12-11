@@ -117,25 +117,37 @@ fn memoize(import: TokenStream, memo: Vec<(TokenStream, TokenStream)>) -> TokenS
 }
 
 fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
+    let __keywords = if keywords.is_empty() {
+        quote! {
+            fn __keywords(_: &str) -> bool {
+                false
+            }
+        }
+    } else {
+        quote! {
+            fn __keywords(string: &str) -> bool {
+                matches!(string, #(#keywords)|*)
+            }
+        }
+    };
     quote! {
-        use std::collections::HashSet;
-
         #[allow(unused)]
         pub struct PhiLia093 {
             pub __intern: super::Intern,
             pub __memo: super::Memo,
             pub __stream: super::Stream,
-            pub __keywords: HashSet<&'static str>,
+            pub __keywords: fn(&str) -> bool,
             pub __snapshot: Option<(usize, &'static str)>,
         }
 
         impl From<String> for PhiLia093 {
             fn from(value: String) -> Self {
+                #__keywords
                 Self {
                     __intern: super::Intern::default(),
                     __memo: super::Memo::default(),
                     __stream: super::Stream::from(value),
-                    __keywords: HashSet::from([#(#keywords),*]),
+                    __keywords,
                     __snapshot: None,
                 }
             }
