@@ -58,7 +58,6 @@ fn intern() -> TokenStream {
         use std::rc::Rc;
 
         #[allow(unused)]
-        #[derive(Default)]
         pub struct Intern {
             data: HashMap<Rc<str>, usize>,
             fast: Vec<Rc<str>>,
@@ -66,6 +65,13 @@ fn intern() -> TokenStream {
 
         #[allow(unused)]
         impl Intern {
+            pub fn new(capacity: usize) -> Self {
+                Self {
+                    data: HashMap::with_capacity(capacity),
+                    fast: Vec::with_capacity(capacity),
+                }
+            }
+
             pub fn id(&mut self, s: &str) -> usize {
                 if let Some(&id) = self.data.get(s) {
                     id
@@ -87,16 +93,17 @@ fn intern() -> TokenStream {
 }
 
 fn memoize(import: TokenStream, memo: Vec<(TokenStream, TokenStream)>) -> TokenStream {
-    let names = memo.iter().map(|(name, _)| {
-        quote! {
-            self.#name.clear();
-        }
-    });
-    let memo = memo.iter().map(|(name, ty)| {
+    let fields = memo.iter().map(|(name, ty)| {
         quote! {
             pub #name: HashMap<usize, (usize, Option<#ty>)>,
         }
     });
+    let clean = memo.iter().map(|(name, _)| {
+        quote! {
+            self.#name.clear();
+        }
+    });
+
     quote! {
         use std::collections::HashMap;
         #import
@@ -104,13 +111,13 @@ fn memoize(import: TokenStream, memo: Vec<(TokenStream, TokenStream)>) -> TokenS
         #[allow(non_snake_case, unused)]
         #[derive(Default)]
         pub struct Memo {
-            #(#memo)*
+            #(#fields)*
         }
 
         #[allow(unused)]
         impl Memo {
             pub fn clean(&mut self) {
-                #(#names)*
+                #(#clean)*
             }
         }
     }
@@ -131,6 +138,8 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
         }
     };
     quote! {
+        use std::cmp::min;
+        
         #[allow(unused)]
         pub struct PhiLia093 {
             pub __intern: super::Intern,
@@ -143,8 +152,9 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
         impl From<String> for PhiLia093 {
             fn from(value: String) -> Self {
                 #__keywords
+                let capacity = min(value.len() / 20, 512);
                 Self {
-                    __intern: super::Intern::default(),
+                    __intern: super::Intern::new(capacity),
                     __memo: super::Memo::default(),
                     __stream: super::Stream::from(value),
                     __keywords,

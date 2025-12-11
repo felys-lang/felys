@@ -121,7 +121,6 @@ peg MESSAGE -> { Message }: T* '(' msg=MSG* [')'] { Message(msg) } ;
 
 peg ACTION -> { Action }: T* '{' act=ACT* ['}'] { Action(act) } ;
 
-@(memo)
 peg NAME -> { usize }: T* ident=IDENT;
 
 peg PEG: T* 'peg' !TAIL ;
