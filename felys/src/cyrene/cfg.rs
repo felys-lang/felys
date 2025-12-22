@@ -6,17 +6,21 @@ use crate::error::Fault;
 impl Block {
     pub fn ir(&self, f: &mut Function, ctx: &mut Context, ns: &Namespace) -> Result<Dst, Fault> {
         let mut iter = self.0.iter().peekable();
+        let mut result = Ok(Dst::none());
+        ctx.stack();
         while let Some(stmt) = iter.next() {
             let ret = stmt.ir(f, ctx, ns)?;
             if ret.var().is_ok() {
-                return if iter.peek().is_none() {
-                    Ok(ret)
+                if iter.peek().is_none() {
+                    result = Ok(ret);
                 } else {
-                    Err(Fault::BlockEarlyEnd)
+                    result = Err(Fault::BlockEarlyEnd);
                 };
+                break;
             }
         }
-        Ok(Dst::none())
+        ctx.unstack();
+        result
     }
 }
 
@@ -138,12 +142,20 @@ impl Expr {
             }
             Expr::Field(_, _) => todo!(),
             Expr::Path(path) => {
+                if let Path::Default(x) = path
+                    && x.len() == 1
+                    && let Some(var) = ctx.get(x.buffer()[0])
+                {
+                    return Ok(var.into());
+                }
+
                 let id = match path {
                     Path::Std(x) => ns.std.get(x)?,
                     Path::Default(x) => ns.default.get(x)?,
                 };
+
                 let var = ctx.var();
-                f.load(var, id);
+                f.func(var, id);
                 Ok(var.into())
             }
         }

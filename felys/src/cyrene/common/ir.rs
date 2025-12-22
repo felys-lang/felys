@@ -5,6 +5,7 @@ use std::collections::HashMap;
 pub struct Context {
     vars: usize,
     labels: usize,
+    scopes: Vec<HashMap<usize, usize>>,
     pub loops: Vec<(Label, Label)>,
     pub writebacks: Vec<(Var, bool)>,
 }
@@ -14,6 +15,7 @@ impl Context {
         Self {
             vars: args.len(),
             labels: 1,
+            scopes: vec![HashMap::new()],
             loops: Vec::new(),
             writebacks: Vec::new(),
         }
@@ -30,13 +32,24 @@ impl Context {
         self.labels += 1;
         label
     }
-}
 
-pub struct Scope {
-    data: Vec<HashMap<usize, usize>>,
-}
+    pub fn stack(&mut self) {
+        self.scopes.push(HashMap::new());
+    }
 
-impl Scope {}
+    pub fn unstack(&mut self) {
+        self.scopes.pop();
+    }
+
+    pub fn get(&self, id: usize) -> Option<Var> {
+        for scope in self.scopes.iter().rev() {
+            if let Some(var) = scope.get(&id) {
+                return Some(*var);
+            }
+        }
+        None
+    }
+}
 
 #[derive(Debug)]
 pub struct Function {
@@ -54,8 +67,13 @@ impl Function {
         self.segments.push(Segment::new(label));
     }
 
-    pub fn load(&mut self, dst: Var, label: usize) {
-        let ir = Instruction::Load(dst, label);
+    pub fn func(&mut self, dst: Var, id: usize) {
+        let ir = Instruction::Func(dst, id);
+        self.segments.last_mut().unwrap().instructions.push(ir);
+    }
+
+    pub fn load(&mut self, dst: Var, id: usize) {
+        let ir = Instruction::Load(dst, id);
         self.segments.last_mut().unwrap().instructions.push(ir);
     }
 
@@ -108,6 +126,7 @@ impl Segment {
 #[derive(Debug)]
 pub enum Instruction {
     Field(Var, Var, usize),
+    Func(Var, usize),
     Load(Var, usize),
     Binary(Var, Var, BinOp, Var),
     Unary(Var, UnaOp, Var),

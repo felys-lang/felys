@@ -1,17 +1,17 @@
-use crate::ast::{Block, BufVec, Ident};
+use crate::ast::{Block, BufVec};
 
 #[derive(Clone, Debug)]
 pub enum Item {
-    Group(Ident, BufVec<Ident, 1>),
-    Impl(Ident, BufVec<Impl, 1>),
-    Fn(Ident, Option<BufVec<Ident, 1>>, Block),
-    Main(Ident, Block),
+    Group(usize, BufVec<usize, 1>),
+    Impl(usize, BufVec<Impl, 1>),
+    Fn(usize, Option<BufVec<usize, 1>>, Block),
+    Main(usize, Block),
 }
 
 #[derive(Clone, Debug)]
 pub enum Impl {
-    Associated(Ident, Option<BufVec<Ident, 1>>, Block),
-    Method(Ident, Vec<Ident>, Block),
+    Associated(usize, Option<BufVec<usize, 1>>, Block),
+    Method(usize, Vec<usize>, Block),
 }
 
 #[derive(Clone, Debug)]

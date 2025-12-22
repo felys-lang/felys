@@ -6,8 +6,5 @@ pub enum Pat {
     Lit(Lit),
     Tuple(BufVec<Pat, 2>),
     Group(BufVec<Pat, 1>),
-    Ident(Ident),
+    Ident(usize),
 }
-
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub struct Ident(pub usize);

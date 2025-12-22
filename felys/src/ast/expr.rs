@@ -13,21 +13,21 @@ pub enum Expr {
     Return(Option<Rc<Expr>>),
     While(Rc<Expr>, Block),
     Binary(Rc<Expr>, BinOp, Rc<Expr>),
-    Lambda(Option<BufVec<Ident, 1>>, Rc<Expr>),
+    Lambda(Option<BufVec<usize, 1>>, Rc<Expr>),
     Call(Rc<Expr>, Option<BufVec<Expr, 1>>),
     Tuple(BufVec<Expr, 2>),
     List(Option<BufVec<Expr, 1>>),
     Lit(Lit),
     Paren(Rc<Expr>),
     Unary(UnaOp, Rc<Expr>),
-    Field(Rc<Expr>, Ident),
+    Field(Rc<Expr>, usize),
     Path(Path),
 }
 
 #[derive(Clone, Debug)]
 pub enum Path {
-    Std(BufVec<Ident, 1>),
-    Default(BufVec<Ident, 1>),
+    Std(BufVec<usize, 1>),
+    Default(BufVec<usize, 1>),
 }
 
 #[derive(Clone, Debug)]

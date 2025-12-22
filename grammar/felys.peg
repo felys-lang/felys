@@ -163,7 +163,7 @@ peg primary -> { Expr }:
     / PIPE params=params? [PIPE] expr=[expr] { Expr::Lambda(params, expr.into()) }
     ;
 
-peg params -> { BufVec<Ident, 1> }:
+peg params -> { BufVec<usize, 1> }:
     / first=IDENT more=(COMMA ident=IDENT)* COMMA? { BufVec::new([first], more) }
     ;
 
@@ -183,7 +183,7 @@ peg lit -> { Lit }:
     / bool=BOOL { Lit::Bool(bool) }
     ;
 
-peg IDENT -> { Ident }: T* ident=n2i ;
+peg IDENT -> { usize }: T* ident=n2i ;
 
 peg FLOAT -> { usize }: T* float=FXX ;
 peg INT -> { usize }: T* int=USIZE ;
