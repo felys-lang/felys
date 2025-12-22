@@ -9,5 +9,5 @@ pub enum Pat {
     Ident(Ident),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Ident(pub usize);

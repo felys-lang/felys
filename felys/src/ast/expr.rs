@@ -26,7 +26,7 @@ pub enum Expr {
 
 #[derive(Clone, Debug)]
 pub enum Path {
-    Std(Vec<Ident>),
+    Std(BufVec<Ident, 1>),
     Default(BufVec<Ident, 1>),
 }
 

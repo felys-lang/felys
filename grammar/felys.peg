@@ -168,8 +168,8 @@ peg params -> { BufVec<Ident, 1> }:
     ;
 
 peg path -> { Path }:
-    / STD [COLON2] more=(COLON2 ident=[IDENT])* {
-        Path::Std(more)
+    / STD [COLON2] first=[IDENT] [COLON2] more=(COLON2 ident=[IDENT])* {
+        Path::Std(BufVec::new([first], more))
     }
     / first=IDENT more=(COLON2 ident=[IDENT])* {
         Path::Default(BufVec::new([first], more))
@@ -207,7 +207,7 @@ peg RETURN: T* "return" !TAIL ;
 peg BREAK: T* "break" !TAIL ;
 peg CONTINUE: T* "continue" !TAIL ;
 peg SELF: T* "self" !TAIL ;
-peg STD: T* "std" !TAIL ;
+peg STD: T* 'std' !TAIL ;
 
 peg OR: T* "or" !TAIL ;
 peg AND: T* "and" !TAIL ;
