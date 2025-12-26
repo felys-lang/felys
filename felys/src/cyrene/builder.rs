@@ -1,5 +1,5 @@
 use crate::ast::{BufVec, Item, Root};
-use crate::cyrene::{Context, Function, Meta};
+use crate::cyrene::{Context, Function, Namespace};
 use crate::demiurge::Demiurge;
 use crate::error::Fault;
 use crate::philia093::Intern;
@@ -12,11 +12,11 @@ pub struct Cyrene {
 
 impl Cyrene {
     pub fn cfg(self) -> Result<Demiurge, Fault> {
-        let mut meta = Meta::new();
+        let mut ns = Namespace::new();
         for item in self.root.0.iter() {
             if let Item::Fn(id, _, _) = item {
                 let path = BufVec::new([*id], Vec::new());
-                meta.namespace.add(&path)
+                ns.add(&path)?
             }
         }
 
@@ -30,14 +30,14 @@ impl Cyrene {
                         Some(vec) => Context::new(vec.iter()),
                         None => Context::new([].iter()),
                     };
-                    block.ir(&mut f, &mut ctx, &meta)?;
+                    block.ir(&mut f, &mut ctx, &ns)?;
                     functions.insert(*id, f);
                 }
                 Item::Main(args, block) => {
                     let mut f = Function::new();
                     let args = [*args];
                     let mut ctx = Context::new(args.iter());
-                    block.ir(&mut f, &mut ctx, &meta)?;
+                    block.ir(&mut f, &mut ctx, &ns)?;
                     entry = Some(f);
                 }
             }

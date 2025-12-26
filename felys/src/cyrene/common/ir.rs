@@ -61,7 +61,7 @@ impl Context {
 
 #[derive(Debug)]
 pub struct Function {
-    pub segments: Vec<Segment>,
+    segments: Vec<Segment>,
 }
 
 impl Function {
@@ -75,49 +75,12 @@ impl Function {
         self.segments.push(Segment::new(label));
     }
 
-    pub fn field(&mut self, dst: Var, src: Var, offset: usize) {
-        let ir = Instruction::Field(dst, src, offset);
-        self.segments.last_mut().unwrap().instructions.push(ir);
-    }
-
-    pub fn func(&mut self, dst: Var, id: usize) {
-        let ir = Instruction::Func(dst, id);
-        self.segments.last_mut().unwrap().instructions.push(ir);
-    }
-
-    pub fn load(&mut self, dst: Var, id: usize) {
-        let ir = Instruction::Load(dst, id);
-        self.segments.last_mut().unwrap().instructions.push(ir);
-    }
-
-    pub fn binary(&mut self, dst: Var, lhs: Var, op: BinOp, rhs: Var) {
-        let ir = Instruction::Binary(dst, lhs, op, rhs);
-        self.segments.last_mut().unwrap().instructions.push(ir);
-    }
-
-    pub fn unary(&mut self, dst: Var, op: UnaOp, inner: Var) {
-        let ir = Instruction::Unary(dst, op, inner);
-        self.segments.last_mut().unwrap().instructions.push(ir);
-    }
-
-    pub fn branch(&mut self, cond: Var, on: bool, label: Label) {
-        let ir = Instruction::Branch(cond, on, label);
-        self.segments.last_mut().unwrap().instructions.push(ir);
-    }
-
-    pub fn jump(&mut self, label: Label) {
-        let ir = Instruction::Jump(label);
-        self.segments.last_mut().unwrap().instructions.push(ir);
-    }
-
-    pub fn copy(&mut self, dst: Var, src: Var) {
-        let ir = Instruction::Copy(dst, src);
-        self.segments.last_mut().unwrap().instructions.push(ir);
-    }
-
-    pub fn ret(&mut self, var: Option<Var>) {
-        let ir = Instruction::Return(var);
-        self.segments.last_mut().unwrap().instructions.push(ir);
+    pub fn add(&mut self, instruction: Instruction) {
+        self.segments
+            .last_mut()
+            .unwrap()
+            .instructions
+            .push(instruction);
     }
 }
 
@@ -147,6 +110,11 @@ pub enum Instruction {
     Branch(Var, bool, Label),
     Jump(Label),
     Return(Option<Var>),
+    Buffer,
+    Push(Var),
+    Call(Var, Var),
+    List(Var),
+    Tuple(Var),
 }
 
 pub struct Dst(Option<Var>);

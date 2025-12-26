@@ -139,7 +139,6 @@ peg primary -> { Expr }:
         Expr::Tuple(BufVec::new([first, second], more))
     }
     / LSQB args=args? [RSQB] { Expr::List(args) }
-    / PIPE params=params? [PIPE] expr=[expr] { Expr::Lambda(params, expr.into()) }
     ;
 
 peg params -> { BufVec<usize, 1> }:
@@ -213,9 +212,7 @@ peg RBRA: T* '}' ;
 peg LSQB: T* '[' ;
 peg RSQB: T* ']' ;
 peg COMMA: T* ',' ;
-peg DOT: T* '.' ;
 peg SEMI: T* ';' ;
-peg PIPE: T* '|' ;
 peg COLON2: T* '::' ;
 peg UNDERSCORE: T* '_' ;
 

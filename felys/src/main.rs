@@ -1,5 +1,7 @@
+use crate::ast::BufVec;
+use crate::cyrene::Namespace;
 use crate::error::Fault;
-use crate::philia093::PhiLia093;
+use crate::philia093::{Intern, PhiLia093};
 
 mod ast;
 mod cyrene;
@@ -8,8 +10,23 @@ mod error;
 mod philia093;
 
 const CODE: &str = r#"
+fn x() {
+    a = 1;
+    b = 1;
+    c = 1;
+    return 1;
+}
+
+fn y() {
+    return 1;
+}
+
+fn z() {
+    return 1;
+}
+
 fn main(args) {
-    loop { break args; }
+    z(1, 2, 3)
 }
 "#;
 

@@ -13,7 +13,6 @@ pub enum Expr {
     Return(Option<Rc<Expr>>),
     While(Rc<Expr>, Block),
     Binary(Rc<Expr>, BinOp, Rc<Expr>),
-    Lambda(Option<BufVec<usize, 1>>, Rc<Expr>),
     Call(Rc<Expr>, Option<BufVec<Expr, 1>>),
     Tuple(BufVec<Expr, 2>),
     List(Option<BufVec<Expr, 1>>),
