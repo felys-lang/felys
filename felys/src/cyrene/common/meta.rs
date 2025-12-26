@@ -2,12 +2,19 @@ use crate::ast::BufVec;
 use crate::error::Fault;
 use std::collections::HashMap;
 
-pub struct Namespace {
-    pub std: Router,
-    pub default: Router,
+pub struct Meta {
+    pub namespace: Namespace,
 }
 
-pub struct Router {
+impl Meta {
+    pub fn new() -> Self {
+        Self {
+            namespace: Namespace::new(),
+        }
+    }
+}
+
+pub struct Namespace {
     ids: usize,
     tree: HashMap<usize, Node>,
 }
@@ -17,7 +24,7 @@ enum Node {
     Node(HashMap<usize, Node>),
 }
 
-impl Router {
+impl Namespace {
     pub fn new() -> Self {
         Self {
             ids: 0,

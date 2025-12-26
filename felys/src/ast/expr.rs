@@ -20,14 +20,7 @@ pub enum Expr {
     Lit(Lit),
     Paren(Rc<Expr>),
     Unary(UnaOp, Rc<Expr>),
-    Field(Rc<Expr>, usize),
-    Path(Path),
-}
-
-#[derive(Clone, Debug)]
-pub enum Path {
-    Std(BufVec<usize, 1>),
-    Default(BufVec<usize, 1>),
+    Path(BufVec<usize, 1>),
 }
 
 #[derive(Clone, Debug)]

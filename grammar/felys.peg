@@ -11,12 +11,6 @@ peg root -> { Root }:
     ;
 
 peg item -> { Item }:
-    / GROUP ident=[IDENT] [LPAR] params=[params] [RPAR] [SEMI] {
-        Item::Group(ident, params)
-    }
-    / IMPL ident=[IDENT] [LBRA] first=[implementation] more=implementation* [RBRA] {
-        Item::Impl(ident, BufVec::new([first], more))
-    }
     / FN MAIN [LPAR] ident=[IDENT] [RPAR] block=[block] {
         Item::Main(ident, block)
     }
@@ -25,24 +19,12 @@ peg item -> { Item }:
     }
     ;
 
-peg implementation -> { Impl }:
-    / FN ident=[IDENT] [LPAR] params=params? [RPAR] block=[block] {
-        Impl::Associated(ident, params, block)
-    }
-    / FN ident=[IDENT] [LPAR] SELF more=(',' ident=IDENT)* ','? [RPAR] block=[block] {
-        Impl::Method(ident, more, block)
-    }
-    ;
-
 @(memo)
 peg pat -> { Pat }:
-    / ident=IDENT { Pat::Ident(ident) }
     / UNDERSCORE { Pat::Any }
+    / ident=IDENT { Pat::Ident(ident) }
     / LPAR first=pat COMMA second=pat more=(COMMA pat=pat)* COMMA? RPAR {
         Pat::Tuple(BufVec::new([first, second], more))
-    }
-    / path=path LPAR first=pat more=(COMMA pat=pat)* COMMA? RPAR {
-        Pat::Group(BufVec::new([first], more))
     }
     ;
 
@@ -142,9 +124,6 @@ peg call -> { Expr }:
     / call=call LPAR args=args? [RPAR] {
         Expr::Call(call.into(), args)
     }
-    / call=call DOT ident=[IDENT] {
-        Expr::Field(call.into(), ident)
-    }
     / primary=primary
     ;
 
@@ -167,13 +146,8 @@ peg params -> { BufVec<usize, 1> }:
     / first=IDENT more=(COMMA ident=IDENT)* COMMA? { BufVec::new([first], more) }
     ;
 
-peg path -> { Path }:
-    / STD [COLON2] first=[IDENT] [COLON2] more=(COLON2 ident=[IDENT])* {
-        Path::Std(BufVec::new([first], more))
-    }
-    / first=IDENT more=(COLON2 ident=[IDENT])* {
-        Path::Default(BufVec::new([first], more))
-    }
+peg path -> { BufVec<usize, 1> }:
+    / first=IDENT more=(COLON2 ident=[IDENT])* { BufVec::new([first], more) }
     ;
 
 peg lit -> { Lit }:

@@ -1,5 +1,5 @@
 mod ir;
-mod namespace;
+mod meta;
 
 pub use ir::*;
-pub use namespace::*;
+pub use meta::*;

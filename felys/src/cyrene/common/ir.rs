@@ -11,11 +11,15 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(args: HashMap<usize, usize>) -> Self {
+    pub fn new<'a>(args: impl Iterator<Item = &'a usize>) -> Self {
+        let mut floor = HashMap::new();
+        for (var, arg) in args.enumerate() {
+            floor.insert(*arg, var);
+        }
         Self {
-            vars: args.len(),
+            vars: floor.len(),
             labels: 1,
-            scopes: vec![HashMap::new()],
+            scopes: vec![floor],
             loops: Vec::new(),
             writebacks: Vec::new(),
         }
@@ -41,6 +45,10 @@ impl Context {
         self.scopes.pop();
     }
 
+    pub fn add(&mut self, id: usize, var: Var) {
+        self.scopes.last_mut().unwrap().insert(id, var);
+    }
+
     pub fn get(&self, id: usize) -> Option<Var> {
         for scope in self.scopes.iter().rev() {
             if let Some(var) = scope.get(&id) {
@@ -53,7 +61,7 @@ impl Context {
 
 #[derive(Debug)]
 pub struct Function {
-    segments: Vec<Segment>,
+    pub segments: Vec<Segment>,
 }
 
 impl Function {
@@ -65,6 +73,11 @@ impl Function {
 
     pub fn append(&mut self, label: usize) {
         self.segments.push(Segment::new(label));
+    }
+
+    pub fn field(&mut self, dst: Var, src: Var, offset: usize) {
+        let ir = Instruction::Field(dst, src, offset);
+        self.segments.last_mut().unwrap().instructions.push(ir);
     }
 
     pub fn func(&mut self, dst: Var, id: usize) {

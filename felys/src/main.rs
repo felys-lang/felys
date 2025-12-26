@@ -1,32 +1,23 @@
-use crate::ast::Item;
-use crate::cyrene::{Context, Function};
+use crate::error::Fault;
 use crate::philia093::PhiLia093;
 
 mod ast;
 mod cyrene;
-mod philia093;
+mod demiurge;
 mod error;
+mod philia093;
 
 const CODE: &str = r#"
 fn main(args) {
-     std::b;
+    loop { break args; }
 }
 "#;
 
-fn main() {
-    let mut philia093 = PhiLia093::from(CODE.to_string());
-    let root = philia093.root();
-    println!("{:?}", philia093.__snapshot);
-    println!("{:?}", root);
-    // for item in root.unwrap().0.iter() {
-    //     let block = match item {
-    //         Item::Fn(_, _, x) => x,
-    //         Item::Main(_, x) => x,
-    //         _ => continue,
-    //     };
-    //     let mut f = Function::new();
-    //     let mut ctx = Context::new();
-    //     block.ir(&mut f, &mut ctx);
-    //     println!("{:?}", f.segments);
-    // }
+fn main() -> Result<(), Fault> {
+    let philia093 = PhiLia093::from(CODE.to_string());
+    let cyrene = philia093.parse()?;
+    let demiurge = cyrene.cfg()?;
+    println!("{:?}", demiurge.functions);
+    println!("{:?}", demiurge.main);
+    Ok(())
 }
