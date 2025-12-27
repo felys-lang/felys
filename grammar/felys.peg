@@ -26,11 +26,11 @@ peg item -> { Item }:
     ;
 
 peg implementation -> { Impl }:
-    / FN ident=[IDENT] [LPAR] params=params? [RPAR] block=[block] {
-        Impl::Associated(ident, params, block)
-    }
     / FN ident=[IDENT] [LPAR] SELF more=(',' ident=IDENT)* ','? [RPAR] block=[block] {
         Impl::Method(ident, more, block)
+    }
+    / FN ident=[IDENT] [LPAR] params=params? [RPAR] block=[block] {
+        Impl::Associated(ident, params, block)
     }
     ;
 

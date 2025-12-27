@@ -4,16 +4,24 @@ use crate::philia093::PhiLia093;
 mod ast;
 mod cyrene;
 mod demiurge;
+mod elysia;
 mod error;
 mod philia093;
-mod elysia;
 
 const CODE: &str = r#"
-fn x() {
-    a = 1;
-    b = 1;
-    c = 1;
-    return 1;
+group Test(a);
+
+impl Test {
+    fn x() {
+        a = 1;
+        b = 1;
+        c = 1;
+        return 1;
+    }
+
+    fn y(self) {
+        return self;
+    }
 }
 
 fn y() {
@@ -25,7 +33,7 @@ fn z() {
 }
 
 fn main(args) {
-    z(1, 2, x(3, 4, 5))
+    Test::x(1, 2, z(3, 4, 5)).y()
 }
 "#;
 
@@ -33,7 +41,8 @@ fn main() -> Result<(), Fault> {
     let philia093 = PhiLia093::from(CODE.to_string());
     let cyrene = philia093.parse()?;
     let demiurge = cyrene.cfg()?;
-    println!("{:?}", demiurge.functions);
+    println!("{:?}", demiurge.groups);
+    println!("{:?}", demiurge.fns);
     println!("{:?}", demiurge.main);
     Ok(())
 }

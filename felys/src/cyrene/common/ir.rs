@@ -22,7 +22,7 @@ pub enum Const {
 }
 
 impl Context {
-    pub fn new<'a>(args: impl Iterator<Item = &'a usize>) -> Self {
+    pub fn new<'a>(args: impl Iterator<Item=&'a usize>) -> Self {
         let mut floor = HashMap::new();
         for (var, arg) in args.enumerate() {
             floor.insert(*arg, var);

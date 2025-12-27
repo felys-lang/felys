@@ -49,7 +49,7 @@ impl Cyrene {
             }
         }
 
-        let mut functions = BTreeMap::new();
+        let mut fns = BTreeMap::new();
         let mut entry = None;
         for item in self.root.0.iter() {
             match item {
@@ -61,7 +61,7 @@ impl Cyrene {
                     };
                     block.ir(&mut f, &mut ctx, &meta, None)?;
                     let src = meta.ns.get([*id].iter())?;
-                    functions.insert(src, f);
+                    fns.insert(src, f);
                 }
                 Item::Main(args, block) => {
                     let mut f = Function::new();
@@ -81,14 +81,14 @@ impl Cyrene {
                                 };
                                 block.ir(&mut f, &mut ctx, &meta, None)?;
                                 let src = meta.ns.get([*id, *sid].iter())?;
-                                functions.insert(src, f);
+                                fns.insert(src, f);
                             }
                             Impl::Method(sid, args, block) => {
                                 let s = meta.intern.id("self");
                                 let mut ctx = Context::new([s].iter().chain(args));
                                 block.ir(&mut f, &mut ctx, &meta, None)?;
                                 let src = meta.ns.get([*id, *sid].iter())?;
-                                functions.insert(src, f);
+                                fns.insert(src, f);
                             }
                         }
                     }
@@ -97,7 +97,8 @@ impl Cyrene {
         }
 
         Ok(Demiurge {
-            functions,
+            groups: meta.groups,
+            fns,
             main: entry.ok_or(Fault::EntryNotFound)?,
             intern: meta.intern,
         })
