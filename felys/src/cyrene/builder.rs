@@ -1,5 +1,5 @@
 use crate::ast::{BufVec, Item, Root};
-use crate::cyrene::{Context, Function, Namespace};
+use crate::cyrene::{Context, Function, Meta};
 use crate::demiurge::Demiurge;
 use crate::error::Fault;
 use crate::philia093::Intern;
@@ -12,11 +12,11 @@ pub struct Cyrene {
 
 impl Cyrene {
     pub fn cfg(self) -> Result<Demiurge, Fault> {
-        let mut ns = Namespace::new();
+        let mut meta = Meta::new(self.intern);
         for item in self.root.0.iter() {
             if let Item::Fn(id, _, _) = item {
                 let path = BufVec::new([*id], Vec::new());
-                ns.add(&path)?
+                meta.ns.add(&path)?
             }
         }
 
@@ -30,14 +30,13 @@ impl Cyrene {
                         Some(vec) => Context::new(vec.iter()),
                         None => Context::new([].iter()),
                     };
-                    block.ir(&mut f, &mut ctx, &ns)?;
+                    block.ir(&mut f, &mut ctx, &meta, None)?;
                     functions.insert(*id, f);
                 }
                 Item::Main(args, block) => {
                     let mut f = Function::new();
-                    let args = [*args];
-                    let mut ctx = Context::new(args.iter());
-                    block.ir(&mut f, &mut ctx, &ns)?;
+                    let mut ctx = Context::new([*args].iter());
+                    block.ir(&mut f, &mut ctx, &meta, None)?;
                     entry = Some(f);
                 }
             }
@@ -46,7 +45,7 @@ impl Cyrene {
         Ok(Demiurge {
             functions,
             main: entry.ok_or(Fault::EntryNotFound)?,
-            intern: self.intern,
+            intern: meta.intern,
         })
     }
 }

@@ -1,13 +1,23 @@
-use crate::ast::{BinOp, UnaOp};
+use crate::ast::{BinOp, Lit, UnaOp};
 use crate::error::Fault;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 pub struct Context {
     vars: usize,
     labels: usize,
     scopes: Vec<HashMap<usize, usize>>,
+    pub cache: HashMap<Lit, Const>,
     pub loops: Vec<(Label, Label)>,
     pub writebacks: Vec<(Var, bool)>,
+}
+
+#[derive(Debug, Clone)]
+pub enum Const {
+    Int(isize),
+    Float(f64),
+    Bool(bool),
+    Str(Rc<str>),
 }
 
 impl Context {
@@ -20,6 +30,7 @@ impl Context {
             vars: floor.len(),
             labels: 1,
             scopes: vec![floor],
+            cache: HashMap::new(),
             loops: Vec::new(),
             writebacks: Vec::new(),
         }
@@ -103,7 +114,7 @@ impl Segment {
 pub enum Instruction {
     Field(Var, Var, usize),
     Func(Var, usize),
-    Load(Var, usize),
+    Load(Var, Const),
     Binary(Var, Var, BinOp, Var),
     Unary(Var, UnaOp, Var),
     Copy(Var, Var),
@@ -115,6 +126,7 @@ pub enum Instruction {
     Call(Var, Var),
     List(Var),
     Tuple(Var),
+    Index(Var, Var, Var),
 }
 
 pub struct Dst(Option<Var>);

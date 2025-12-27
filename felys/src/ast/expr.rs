@@ -14,6 +14,7 @@ pub enum Expr {
     While(Rc<Expr>, Block),
     Binary(Rc<Expr>, BinOp, Rc<Expr>),
     Call(Rc<Expr>, Option<BufVec<Expr, 1>>),
+    Index(Rc<Expr>, Rc<Expr>),
     Tuple(BufVec<Expr, 2>),
     List(Option<BufVec<Expr, 1>>),
     Lit(Lit),

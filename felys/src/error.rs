@@ -5,4 +5,6 @@ pub enum Fault {
     InvalidPath,
     BlockEarlyEnd,
     EntryNotFound,
+    StrNotInterned,
+    InvalidConst
 }

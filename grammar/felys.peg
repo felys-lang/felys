@@ -124,6 +124,9 @@ peg call -> { Expr }:
     / call=call LPAR args=args? [RPAR] {
         Expr::Call(call.into(), args)
     }
+    / call=call LSQB index=expr [RSQB] {
+        Expr::Index(call.into(), index.into())
+    }
     / primary=primary
     ;
 

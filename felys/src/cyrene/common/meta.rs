@@ -1,6 +1,21 @@
 use crate::ast::BufVec;
 use crate::error::Fault;
+use crate::philia093::Intern;
 use std::collections::HashMap;
+
+pub struct Meta {
+    pub ns: Namespace,
+    pub intern: Intern,
+}
+
+impl Meta {
+    pub fn new(intern: Intern) -> Self {
+        Self {
+            ns: Namespace::new(),
+            intern,
+        }
+    }
+}
 
 pub struct Namespace {
     ids: usize,
