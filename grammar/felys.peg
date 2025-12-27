@@ -11,11 +11,26 @@ peg root -> { Root }:
     ;
 
 peg item -> { Item }:
+    / GROUP ident=[IDENT] [LPAR] params=[params] [RPAR] [SEMI] {
+        Item::Group(ident, params)
+    }
+    / IMPL ident=[IDENT] [LBRA] first=[implementation] more=implementation* [RBRA] {
+        Item::Impl(ident, BufVec::new([first], more))
+    }
     / FN MAIN [LPAR] ident=[IDENT] [RPAR] block=[block] {
         Item::Main(ident, block)
     }
     / FN ident=[IDENT] [LPAR] params=params? [RPAR] block=[block] {
         Item::Fn(ident, params, block)
+    }
+    ;
+
+peg implementation -> { Impl }:
+    / FN ident=[IDENT] [LPAR] params=params? [RPAR] block=[block] {
+        Impl::Associated(ident, params, block)
+    }
+    / FN ident=[IDENT] [LPAR] SELF more=(',' ident=IDENT)* ','? [RPAR] block=[block] {
+        Impl::Method(ident, more, block)
     }
     ;
 
@@ -121,6 +136,12 @@ peg unary -> { Expr }:
     ;
 
 peg call -> { Expr }:
+    / call=call DOT ident=[IDENT] LPAR args=args? [RPAR] {
+        Expr::Method(call.into(), ident, args)
+    }
+    / call=call DOT ident=[IDENT] {
+        Expr::Field(call.into(), ident)
+    }
     / call=call LPAR args=args? [RPAR] {
         Expr::Call(call.into(), args)
     }
@@ -182,8 +203,7 @@ peg LOOP: T* "loop" !TAIL ;
 peg RETURN: T* "return" !TAIL ;
 peg BREAK: T* "break" !TAIL ;
 peg CONTINUE: T* "continue" !TAIL ;
-peg SELF: T* "self" !TAIL ;
-peg STD: T* 'std' !TAIL ;
+peg SELF: T* 'self' !TAIL ;
 
 peg OR: T* "or" !TAIL ;
 peg AND: T* "and" !TAIL ;
@@ -199,6 +219,7 @@ peg DASH: T* '-' ;
 peg ASTERISK: T* '*' ;
 peg SLASH: T* '/' ;
 peg PERCENT: T* '%' ;
+peg DOT: T* '.' ;
 peg AT: T* '@' ;
 
 peg EQ: T* '=' !'=' ;
@@ -232,7 +253,7 @@ rex NAME: [a-zA-Z_] TAIL* ;
 rex TAIL: [a-zA-Z0-9_] ;
 
 rex USIZE: '0' | [1-9][0-9]* ;
-rex FXX: [1-9][0-9]* '.' [0-9]+ | '0.' [0-9]+;
+rex FXX: [1-9][0-9]* '.' [0-9]+ | '0.' [0-9]+ ;
 rex SLICE: [^"\\]+ ;
 rex HEX: [0-9a-f]+ ;
 rex ESCAPE: ['"ntr\\] ;

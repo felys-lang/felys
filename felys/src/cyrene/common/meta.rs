@@ -1,4 +1,3 @@
-use crate::ast::BufVec;
 use crate::error::Fault;
 use crate::philia093::Intern;
 use std::collections::HashMap;
@@ -6,6 +5,25 @@ use std::collections::HashMap;
 pub struct Meta {
     pub ns: Namespace,
     pub intern: Intern,
+    pub groups: HashMap<usize, Group>,
+}
+
+pub struct Group {
+    pub indices: HashMap<usize, usize>,
+    pub methods: HashMap<usize, usize>,
+}
+
+impl Group {
+    pub fn new<'a>(fields: impl Iterator<Item = &'a usize>) -> Self {
+        let mut indices = HashMap::new();
+        for (i, field) in fields.enumerate() {
+            indices.insert(i, *field);
+        }
+        Self {
+            indices,
+            methods: HashMap::new(),
+        }
+    }
 }
 
 pub struct Namespace {
@@ -26,9 +44,9 @@ impl Namespace {
         }
     }
 
-    pub fn add(&mut self, path: &BufVec<usize, 1>) -> Result<usize, Fault> {
+    pub fn add<'a>(&mut self, path: impl Iterator<Item = &'a usize>) -> Result<usize, Fault> {
         let mut map = &mut self.tree;
-        let mut iter = path.iter().peekable();
+        let mut iter = path.peekable();
 
         while let Some(ident) = iter.next() {
             if iter.peek().is_none() {
@@ -49,9 +67,9 @@ impl Namespace {
         Err(Fault::InvalidPath)
     }
 
-    pub fn get(&self, path: &BufVec<usize, 1>) -> Result<usize, Fault> {
+    pub fn get<'a>(&self, path: impl Iterator<Item = &'a usize>) -> Result<usize, Fault> {
         let mut map = &self.tree;
-        let mut iter = path.iter().peekable();
+        let mut iter = path.peekable();
 
         while let Some(ident) = iter.next() {
             let node = map.get(ident).ok_or(Fault::InvalidPath)?;

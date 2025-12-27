@@ -7,7 +7,7 @@ use std::rc::Rc;
 pub struct Context {
     vars: usize,
     labels: usize,
-    scopes: Vec<HashMap<usize, usize>>,
+    scopes: Vec<HashMap<usize, Var>>,
     pub cache: HashMap<Lit, Const>,
     pub loops: Vec<(Label, Label)>,
     pub writebacks: Vec<(Var, bool)>,
@@ -22,7 +22,7 @@ pub enum Const {
 }
 
 impl Context {
-    pub fn new<'a>(args: impl Iterator<Item=&'a usize>) -> Self {
+    pub fn new<'a>(args: impl Iterator<Item = &'a usize>) -> Self {
         let mut floor = HashMap::new();
         for (var, arg) in args.enumerate() {
             floor.insert(*arg, var);
@@ -128,6 +128,7 @@ pub enum Instruction {
     List(Var),
     Tuple(Var),
     Index(Var, Var, Var),
+    Method(Var, Var, usize),
 }
 
 pub struct Dst(Option<Var>);

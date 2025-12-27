@@ -264,9 +264,29 @@ impl Expr {
                     return Ok(var.into());
                 }
 
-                let id = meta.ns.get(path)?;
+                let id = meta.ns.get(path.iter())?;
                 let var = ctx.var();
                 f.add(Instruction::Func(var, id));
+                Ok(var.into())
+            }
+            Expr::Field(expr, id) => {
+                let var = expr.ir(f, ctx, meta)?.var()?;
+                let dst = ctx.var();
+                f.add(Instruction::Field(dst, var, *id));
+                Ok(dst.into())
+            }
+            Expr::Method(expr, id, args) => {
+                let s = expr.ir(f, ctx, meta)?.var()?;
+                f.add(Instruction::Buffer);
+                f.add(Instruction::Push(s));
+                if let Some(args) = args {
+                    for arg in args.iter() {
+                        let element = arg.ir(f, ctx, meta)?.var()?;
+                        f.add(Instruction::Push(element));
+                    }
+                }
+                let var = ctx.var();
+                f.add(Instruction::Method(var, s, *id));
                 Ok(var.into())
             }
         }

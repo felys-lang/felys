@@ -6,6 +6,7 @@ mod cyrene;
 mod demiurge;
 mod error;
 mod philia093;
+mod elysia;
 
 const CODE: &str = r#"
 fn x() {
