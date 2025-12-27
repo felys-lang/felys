@@ -8,15 +8,6 @@ pub struct Meta {
     pub intern: Intern,
 }
 
-impl Meta {
-    pub fn new(intern: Intern) -> Self {
-        Self {
-            ns: Namespace::new(),
-            intern,
-        }
-    }
-}
-
 pub struct Namespace {
     ids: usize,
     tree: HashMap<usize, Node>,
@@ -35,16 +26,18 @@ impl Namespace {
         }
     }
 
-    pub fn add(&mut self, path: &BufVec<usize, 1>) -> Result<(), Fault> {
+    pub fn add(&mut self, path: &BufVec<usize, 1>) -> Result<usize, Fault> {
         let mut map = &mut self.tree;
         let mut iter = path.iter().peekable();
 
         while let Some(ident) = iter.next() {
             if iter.peek().is_none() {
-                if map.insert(*ident, Node::Id(self.ids)).is_some() {
+                let id = self.ids;
+                if map.insert(*ident, Node::Id(id)).is_some() {
                     return Err(Fault::InvalidPath);
                 }
                 self.ids += 1;
+                return Ok(id);
             } else {
                 let node = Node::Node(HashMap::new());
                 map = match map.entry(*ident).or_insert(node) {
@@ -53,7 +46,7 @@ impl Namespace {
                 };
             }
         }
-        Ok(())
+        Err(Fault::InvalidPath)
     }
 
     pub fn get(&self, path: &BufVec<usize, 1>) -> Result<usize, Fault> {

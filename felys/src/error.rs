@@ -6,5 +6,5 @@ pub enum Fault {
     BlockEarlyEnd,
     EntryNotFound,
     StrNotInterned,
-    InvalidConst
+    InvalidConst,
 }

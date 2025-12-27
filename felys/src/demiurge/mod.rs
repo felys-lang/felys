@@ -1,9 +1,9 @@
 use crate::cyrene::Function;
 use crate::philia093::Intern;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 pub struct Demiurge {
-    pub functions: HashMap<usize, Function>,
+    pub functions: BTreeMap<usize, Function>,
     pub main: Function,
     pub intern: Intern,
 }

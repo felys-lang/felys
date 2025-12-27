@@ -1,7 +1,5 @@
-use crate::ast::BufVec;
-use crate::cyrene::Namespace;
 use crate::error::Fault;
-use crate::philia093::{Intern, PhiLia093};
+use crate::philia093::PhiLia093;
 
 mod ast;
 mod cyrene;
@@ -26,7 +24,7 @@ fn z() {
 }
 
 fn main(args) {
-    z(1, 2, 3)
+    z(1, 2, x(3, 4, 5))
 }
 "#;
 

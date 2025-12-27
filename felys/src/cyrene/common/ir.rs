@@ -1,6 +1,7 @@
 use crate::ast::{BinOp, Lit, UnaOp};
 use crate::error::Fault;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::rc::Rc;
 
 pub struct Context {
@@ -21,7 +22,7 @@ pub enum Const {
 }
 
 impl Context {
-    pub fn new<'a>(args: impl Iterator<Item = &'a usize>) -> Self {
+    pub fn new<'a>(args: impl Iterator<Item=&'a usize>) -> Self {
         let mut floor = HashMap::new();
         for (var, arg) in args.enumerate() {
             floor.insert(*arg, var);

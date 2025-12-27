@@ -1,9 +1,9 @@
 use crate::ast::{BufVec, Item, Root};
-use crate::cyrene::{Context, Function, Meta};
+use crate::cyrene::{Context, Function, Meta, Namespace};
 use crate::demiurge::Demiurge;
 use crate::error::Fault;
 use crate::philia093::Intern;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 pub struct Cyrene {
     pub root: Root,
@@ -12,15 +12,20 @@ pub struct Cyrene {
 
 impl Cyrene {
     pub fn cfg(self) -> Result<Demiurge, Fault> {
-        let mut meta = Meta::new(self.intern);
+        let mut meta = Meta {
+            ns: Namespace::new(),
+            intern: self.intern,
+        };
+        let mut ids = HashMap::new();
         for item in self.root.0.iter() {
             if let Item::Fn(id, _, _) = item {
                 let path = BufVec::new([*id], Vec::new());
-                meta.ns.add(&path)?
+                let src = meta.ns.add(&path)?;
+                ids.insert(id, src);
             }
         }
 
-        let mut functions = HashMap::new();
+        let mut functions = BTreeMap::new();
         let mut entry = None;
         for item in self.root.0.iter() {
             match item {
@@ -31,7 +36,8 @@ impl Cyrene {
                         None => Context::new([].iter()),
                     };
                     block.ir(&mut f, &mut ctx, &meta, None)?;
-                    functions.insert(*id, f);
+                    let src = ids.get(&id).unwrap();
+                    functions.insert(*src, f);
                 }
                 Item::Main(args, block) => {
                     let mut f = Function::new();
