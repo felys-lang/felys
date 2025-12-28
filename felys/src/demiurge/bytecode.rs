@@ -2,21 +2,25 @@ use crate::ast::{BinOp, UnaOp};
 
 #[derive(Debug)]
 pub enum Bytecode {
-    Field(usize, usize, usize),
-    Func(usize, usize),
-    Load(usize, usize),
-    Binary(usize, usize, BinOp, usize),
-    Unary(usize, UnaOp, usize),
-    Copy(usize, usize),
-    Branch(usize, bool, usize),
-    Jump(usize),
-    Return(Option<usize>),
+    Field(Reg, Reg, usize),
+    Func(Reg, Idx),
+    Load(Reg, Idx),
+    Binary(Reg, Reg, BinOp, Reg),
+    Unary(Reg, UnaOp, Reg),
+    Copy(Reg, Reg),
+    Branch(Reg, bool, Idx),
+    Jump(Idx),
+    Return(Option<Reg>),
     Buffer,
-    Push(usize),
-    Call(usize, usize),
-    List(usize),
-    Tuple(usize),
-    Index(usize, usize, usize),
-    Method(usize, usize, usize),
-    Group(usize, usize),
+    Push(Reg),
+    Call(Reg, Reg),
+    List(Reg),
+    Tuple(Reg),
+    Index(Reg, Reg, Reg),
+    Method(Reg, Reg, usize),
+    Group(Reg, Idx),
 }
+
+pub type Reg = usize;
+
+pub type Idx = usize;

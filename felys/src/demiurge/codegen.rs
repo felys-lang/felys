@@ -18,14 +18,14 @@ struct Data {
 }
 
 impl Data {
-    fn offset(&mut self, c: Const) -> usize {
-        if let Some(offset) = self.fast.get(&c) {
-            *offset
+    fn idx(&mut self, c: Const) -> usize {
+        if let Some(idx) = self.fast.get(&c) {
+            *idx
         } else {
-            let offset = self.data.len();
-            self.fast.insert(c.clone(), offset);
+            let idx = self.data.len();
+            self.fast.insert(c.clone(), idx);
             self.data.push(c);
-            offset
+            idx
         }
     }
 }
@@ -80,11 +80,11 @@ impl Demiurge {
 
 impl Function {
     fn codegen(self, data: &mut Data, todo: &mut Vec<usize>) -> Result<Vec<Bytecode>, Fault> {
-        let mut offset = 0;
+        let mut idx = 0;
         let mut labels = HashMap::new();
         for segment in self.segments.iter() {
-            labels.insert(segment.label, offset);
-            offset += segment.instructions.len();
+            labels.insert(segment.label, idx);
+            idx += segment.instructions.len();
         }
 
         let mut bytecodes = Vec::new();
@@ -97,19 +97,19 @@ impl Function {
                         Bytecode::Func(dst, id)
                     }
                     Instruction::Load(dst, c) => {
-                        let offset = data.offset(c);
-                        Bytecode::Load(dst, offset)
+                        let idx = data.idx(c);
+                        Bytecode::Load(dst, idx)
                     }
                     Instruction::Binary(dst, l, op, r) => Bytecode::Binary(dst, l, op, r),
                     Instruction::Unary(dst, op, inner) => Bytecode::Unary(dst, op, inner),
                     Instruction::Copy(dst, src) => Bytecode::Copy(dst, src),
                     Instruction::Branch(cond, on, label) => {
-                        let offset = labels.get(&label).cloned().unwrap();
-                        Bytecode::Branch(cond, on, offset)
+                        let idx = labels.get(&label).cloned().unwrap();
+                        Bytecode::Branch(cond, on, idx)
                     }
                     Instruction::Jump(label) => {
-                        let offset = labels.get(&label).cloned().unwrap();
-                        Bytecode::Jump(offset)
+                        let idx = labels.get(&label).cloned().unwrap();
+                        Bytecode::Jump(idx)
                     }
                     Instruction::Return(value) => Bytecode::Return(value),
                     Instruction::Buffer => Bytecode::Buffer,
@@ -137,18 +137,18 @@ impl Bytecode {
         lookup: &mut Vec<Group>,
     ) {
         match self {
-            Bytecode::Func(_, fid) => {
-                *fid = fid2idx.get(fid).cloned().unwrap();
+            Bytecode::Func(_, id) => {
+                *id = fid2idx.get(id).cloned().unwrap();
             }
-            Bytecode::Group(_, gid) => {
-                if let Some(idx) = gid2idx.get(gid) {
-                    *gid = *idx;
+            Bytecode::Group(_, id) => {
+                if let Some(idx) = gid2idx.get(id) {
+                    *id = *idx;
                 } else {
                     let idx = lookup.len();
-                    gid2idx.insert(*gid, idx);
-                    let group = groups.remove(gid).unwrap();
+                    gid2idx.insert(*id, idx);
+                    let group = groups.remove(id).unwrap();
                     lookup.push(group);
-                    *gid = idx;
+                    *id = idx;
                 }
             }
             _ => {}

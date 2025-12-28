@@ -14,7 +14,7 @@ impl Cyrene {
     pub fn cfg(self) -> Result<Demiurge, Fault> {
         let mut meta = Meta {
             ns: Namespace::new(),
-            constructor: Namespace::new(),
+            constructors: Namespace::new(),
             intern: self.intern,
             groups: HashMap::new(),
         };
@@ -46,7 +46,7 @@ impl Item {
     fn allocate(&self, meta: &mut Meta) -> Result<(), Fault> {
         if let Item::Group(id, fields) = self {
             let group = Group::new(fields.iter());
-            let gid = meta.constructor.add([*id].iter())?;
+            let gid = meta.constructors.add([*id].iter())?;
             meta.groups.insert(gid, group);
         }
         Ok(())
@@ -108,7 +108,7 @@ impl Impl {
                 meta.ns.add([id, *sid].iter())?;
             }
             Impl::Method(sid, _, _) => {
-                let gid = meta.constructor.get([id].iter())?;
+                let gid = meta.constructors.get([id].iter())?;
                 let src = meta.ns.add([id, *sid].iter())?;
                 let group = meta.groups.get_mut(&gid).unwrap();
                 group.methods.insert(*sid, src);

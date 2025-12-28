@@ -265,7 +265,7 @@ impl Expr {
                 }
 
                 let var = ctx.var();
-                if let Ok(id) = meta.constructor.get(path.iter()) {
+                if let Ok(id) = meta.constructors.get(path.iter()) {
                     f.add(Instruction::Group(var, id));
                 } else {
                     let id = meta.ns.get(path.iter())?;

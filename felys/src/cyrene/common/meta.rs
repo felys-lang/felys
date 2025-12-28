@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 pub struct Meta {
     pub ns: Namespace,
-    pub constructor: Namespace,
+    pub constructors: Namespace,
     pub intern: Intern,
     pub groups: HashMap<usize, Group>,
 }
