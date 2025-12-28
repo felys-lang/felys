@@ -129,8 +129,12 @@ pub enum Instruction {
     Tuple(Var),
     Index(Var, Var, Var),
     Method(Var, Var, usize),
-    Construct(Var, usize),
+    Group(Var, usize),
 }
+
+pub type Var = usize;
+
+pub type Label = usize;
 
 pub struct Dst(Option<Var>);
 
@@ -139,7 +143,7 @@ impl Dst {
         self.0.ok_or(Fault::NoReturnValue)
     }
 
-    pub fn none() -> Self {
+    pub fn void() -> Self {
         Self(None)
     }
 }
@@ -149,7 +153,3 @@ impl From<Var> for Dst {
         Self(Some(value))
     }
 }
-
-pub type Var = usize;
-
-pub type Label = usize;

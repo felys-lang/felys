@@ -18,5 +18,5 @@ pub enum Bytecode {
     Tuple(usize),
     Index(usize, usize, usize),
     Method(usize, usize, usize),
-    Construct(usize, usize),
+    Group(usize, usize),
 }

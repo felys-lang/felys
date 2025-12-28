@@ -174,7 +174,7 @@ peg path -> { BufVec<usize, 1> }:
     ;
 
 peg lit -> { Lit }:
-    / float=FLOAT { Lit::Float(float) }
+    / float=FLOAT { Lit::Float(float.0, float.1) }
     / int=INT { Lit::Int(int) }
     / str=STR { Lit::Str(str) }
     / bool=BOOL { Lit::Bool(bool) }
@@ -182,7 +182,7 @@ peg lit -> { Lit }:
 
 peg IDENT -> { usize }: T* ident=n2i ;
 
-peg FLOAT -> { usize }: T* float=FXX ;
+peg FLOAT -> { (usize, usize) }: T* int=USIZE '.' deci=USIZE ;
 peg INT -> { usize }: T* int=USIZE ;
 peg STR -> { Vec<Chunk> }: T* '"' chunks=CHUNK* ['"'] ;
 peg BOOL -> { Bool }:
@@ -253,7 +253,6 @@ rex NAME: [a-zA-Z_] TAIL* ;
 rex TAIL: [a-zA-Z0-9_] ;
 
 rex USIZE: '0' | [1-9][0-9]* ;
-rex FXX: [1-9][0-9]* '.' [0-9]+ | '0.' [0-9]+ ;
 rex SLICE: [^"\\]+ ;
 rex HEX: [0-9a-f]+ ;
 rex ESCAPE: ['"ntr\\] ;

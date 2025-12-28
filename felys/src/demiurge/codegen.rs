@@ -119,7 +119,7 @@ impl Function {
                     Instruction::Tuple(dst) => Bytecode::Tuple(dst),
                     Instruction::Index(dst, src, index) => Bytecode::Index(dst, src, index),
                     Instruction::Method(dst, src, id) => Bytecode::Method(dst, src, id),
-                    Instruction::Construct(dst, id) => Bytecode::Construct(dst, id),
+                    Instruction::Group(dst, id) => Bytecode::Group(dst, id),
                 };
                 bytecodes.push(bytecode);
             }
@@ -140,7 +140,7 @@ impl Bytecode {
             Bytecode::Func(_, fid) => {
                 *fid = fid2idx.get(fid).cloned().unwrap();
             }
-            Bytecode::Construct(_, gid) => {
+            Bytecode::Group(_, gid) => {
                 if let Some(idx) = gid2idx.get(gid) {
                     *gid = *idx;
                 } else {

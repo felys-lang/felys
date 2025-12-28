@@ -12,7 +12,7 @@ impl Block {
         init: Option<(&Pat, Var)>,
     ) -> Result<Dst, Fault> {
         let mut iter = self.0.iter().peekable();
-        let mut result = Ok(Dst::none());
+        let mut result = Ok(Dst::void());
         ctx.stack();
         if let Some((pat, var)) = init {
             pat.ir(f, ctx, &None, var)?;
@@ -36,9 +36,9 @@ impl Block {
 impl Stmt {
     pub fn ir(&self, f: &mut Function, ctx: &mut Context, meta: &Meta) -> Result<Dst, Fault> {
         match self {
-            Stmt::Empty => Ok(Dst::none()),
+            Stmt::Empty => Ok(Dst::void()),
             Stmt::Expr(expr) => expr.ir(f, ctx, meta),
-            Stmt::Semi(expr) => expr.ir(f, ctx, meta).and(Ok(Dst::none())),
+            Stmt::Semi(expr) => expr.ir(f, ctx, meta).and(Ok(Dst::void())),
             Stmt::Assign(pat, op, expr) => {
                 let op = match op {
                     AssOp::AddEq => Some(BinOp::Add),
@@ -50,7 +50,7 @@ impl Stmt {
                 };
                 let var = expr.ir(f, ctx, meta)?.var()?;
                 pat.ir(f, ctx, &op, var)?;
-                Ok(Dst::none())
+                Ok(Dst::void())
             }
         }
     }
@@ -83,7 +83,7 @@ impl Pat {
                 ctx.add(*id, var);
             }
         }
-        Ok(Dst::none())
+        Ok(Dst::void())
     }
 }
 
@@ -94,7 +94,7 @@ impl Expr {
             Expr::Break(expr) => {
                 let ret = match expr {
                     Some(x) => x.ir(f, ctx, meta)?,
-                    None => Dst::none(),
+                    None => Dst::void(),
                 };
                 let (dst, alive) = ctx.writebacks.last_mut().unwrap();
                 if *alive {
@@ -106,12 +106,12 @@ impl Expr {
                 }
                 let (_, end) = ctx.loops.last().unwrap();
                 f.add(Instruction::Jump(*end));
-                Ok(Dst::none())
+                Ok(Dst::void())
             }
             Expr::Continue => {
                 let (start, _) = ctx.loops.last().unwrap();
                 f.add(Instruction::Jump(*start));
-                Ok(Dst::none())
+                Ok(Dst::void())
             }
             Expr::For(pat, expr, block) => {
                 let iterator = expr.ir(f, ctx, meta)?.var()?;
@@ -139,7 +139,7 @@ impl Expr {
 
                 f.add(Instruction::Jump(start));
                 f.append(end);
-                Ok(Dst::none())
+                Ok(Dst::void())
             }
             Expr::Index(expr, index) => {
                 let val = expr.ir(f, ctx, meta)?.var()?;
@@ -167,7 +167,7 @@ impl Expr {
                 }
                 f.append(end);
                 if void {
-                    then = Dst::none();
+                    then = Dst::void();
                 }
                 Ok(then)
             }
@@ -183,16 +183,16 @@ impl Expr {
                 ctx.loops.pop();
                 f.add(Instruction::Jump(start));
                 f.append(end);
-                let dst = if alive { var.into() } else { Dst::none() };
+                let dst = if alive { var.into() } else { Dst::void() };
                 Ok(dst)
             }
             Expr::Return(expr) => {
                 let ret = match expr {
                     Some(x) => x.ir(f, ctx, meta)?,
-                    None => Dst::none(),
+                    None => Dst::void(),
                 };
                 f.add(Instruction::Return(ret.var().ok()));
-                Ok(Dst::none())
+                Ok(Dst::void())
             }
             Expr::While(expr, block) => {
                 let start = ctx.label();
@@ -205,7 +205,7 @@ impl Expr {
                 ctx.loops.pop();
                 f.add(Instruction::Jump(start));
                 f.append(end);
-                Ok(Dst::none())
+                Ok(Dst::void())
             }
             Expr::Binary(lhs, op, rhs) => {
                 let l = lhs.ir(f, ctx, meta)?.var()?;
@@ -266,7 +266,7 @@ impl Expr {
 
                 let var = ctx.var();
                 if let Ok(id) = meta.constructor.get(path.iter()) {
-                    f.add(Instruction::Construct(var, id));
+                    f.add(Instruction::Group(var, id));
                 } else {
                     let id = meta.ns.get(path.iter())?;
                     f.add(Instruction::Func(var, id));
@@ -314,7 +314,21 @@ impl Lit {
                     .map_err(|_| Fault::InvalidConst)?;
                 Const::Int(value)
             }
-            Lit::Float(x) => todo!(),
+            Lit::Float(int, deci) => {
+                let i = meta
+                    .intern
+                    .get(int)
+                    .ok_or(Fault::StrNotInterned)?
+                    .parse()
+                    .map_err(|_| Fault::InvalidConst)?;
+                let d = meta
+                    .intern
+                    .get(deci)
+                    .ok_or(Fault::StrNotInterned)?
+                    .parse()
+                    .map_err(|_| Fault::InvalidConst)?;
+                Const::Float(i, d)
+            }
             Lit::Bool(x) => match x {
                 Bool::True => Const::Bool(true),
                 Bool::False => Const::Bool(false),

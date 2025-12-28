@@ -1,9 +1,9 @@
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum Lit {
     Int(usize),
-    Float(usize),
+    Float(usize, usize),
     Bool(Bool),
-    Str(Str),
+    Str(Vec<Chunk>),
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
@@ -11,8 +11,6 @@ pub enum Bool {
     True,
     False,
 }
-
-pub type Str = Vec<Chunk>;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum Chunk {
