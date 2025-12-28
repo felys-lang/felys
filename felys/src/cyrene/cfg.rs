@@ -264,9 +264,13 @@ impl Expr {
                     return Ok(var.into());
                 }
 
-                let id = meta.ns.get(path.iter())?;
                 let var = ctx.var();
-                f.add(Instruction::Func(var, id));
+                if let Ok(id) = meta.constructor.get(path.iter()) {
+                    f.add(Instruction::Construct(var, id));
+                } else {
+                    let id = meta.ns.get(path.iter())?;
+                    f.add(Instruction::Func(var, id));
+                }
                 Ok(var.into())
             }
             Expr::Field(expr, id) => {
@@ -310,15 +314,7 @@ impl Lit {
                     .map_err(|_| Fault::InvalidConst)?;
                 Const::Int(value)
             }
-            Lit::Float(x) => {
-                let value = meta
-                    .intern
-                    .get(x)
-                    .ok_or(Fault::StrNotInterned)?
-                    .parse()
-                    .map_err(|_| Fault::InvalidConst)?;
-                Const::Float(value)
-            }
+            Lit::Float(x) => todo!(),
             Lit::Bool(x) => match x {
                 Bool::True => Const::Bool(true),
                 Bool::False => Const::Bool(false),

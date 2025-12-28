@@ -16,11 +16,12 @@ impl Test {
         a = 1;
         b = 1;
         c = 1;
+        a += c;
         return 1;
     }
 
     fn y(self) {
-        return self;
+        return self + 1;
     }
 }
 
@@ -33,7 +34,7 @@ fn z() {
 }
 
 fn main(args) {
-    Test::x(1, 2, z(3, 4, 5)).y()
+    Test(1, 2, z(3, 4, 5)).y().a
 }
 "#;
 
@@ -41,8 +42,10 @@ fn main() -> Result<(), Fault> {
     let philia093 = PhiLia093::from(CODE.to_string());
     let cyrene = philia093.parse()?;
     let demiurge = cyrene.cfg()?;
-    println!("{:?}", demiurge.groups);
-    println!("{:?}", demiurge.fns);
-    println!("{:?}", demiurge.main);
+    let elysia = demiurge.codegen()?;
+    println!("{:?}", elysia.main);
+    println!("{:?}", elysia.text);
+    println!("{:?}", elysia.data);
+    println!("{:?}", elysia.lookup);
     Ok(())
 }

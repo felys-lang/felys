@@ -13,10 +13,10 @@ pub struct Context {
     pub writebacks: Vec<(Var, bool)>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Const {
-    Int(isize),
-    Float(f64),
+    Int(usize),
+    Float(usize, usize),
     Bool(bool),
     Str(Rc<str>),
 }
@@ -73,7 +73,7 @@ impl Context {
 
 #[derive(Debug)]
 pub struct Function {
-    segments: Vec<Segment>,
+    pub segments: Vec<Segment>,
 }
 
 impl Function {
@@ -98,8 +98,8 @@ impl Function {
 
 #[derive(Debug)]
 pub struct Segment {
-    label: Label,
-    instructions: Vec<Instruction>,
+    pub label: Label,
+    pub instructions: Vec<Instruction>,
 }
 
 impl Segment {
@@ -129,6 +129,7 @@ pub enum Instruction {
     Tuple(Var),
     Index(Var, Var, Var),
     Method(Var, Var, usize),
+    Construct(Var, usize),
 }
 
 pub struct Dst(Option<Var>);

@@ -3,7 +3,7 @@ use crate::cyrene::{Context, Function, Group, Meta, Namespace};
 use crate::demiurge::Demiurge;
 use crate::error::Fault;
 use crate::philia093::Intern;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
 pub struct Cyrene {
     pub root: Root,
@@ -14,14 +14,16 @@ impl Cyrene {
     pub fn cfg(self) -> Result<Demiurge, Fault> {
         let mut meta = Meta {
             ns: Namespace::new(),
+            constructor: Namespace::new(),
             intern: self.intern,
             groups: HashMap::new(),
         };
 
         for item in self.root.0.iter() {
             if let Item::Group(id, fields) = item {
-                let structure = Group::new(fields.iter());
-                meta.groups.insert(*id, structure);
+                let group = Group::new(fields.iter());
+                let gid = meta.constructor.add([*id].iter())?;
+                meta.groups.insert(gid, group);
             }
         }
 
@@ -35,9 +37,10 @@ impl Cyrene {
                                 meta.ns.add([*id, *sid].iter())?;
                             }
                             Impl::Method(sid, _, _) => {
+                                let gid = meta.constructor.get([*id].iter())?;
                                 let src = meta.ns.add([*id, *sid].iter())?;
-                                let group = meta.groups.get_mut(id).unwrap();
-                                group.methods.insert(*id, src);
+                                let group = meta.groups.get_mut(&gid).unwrap();
+                                group.methods.insert(*sid, src);
                             }
                         };
                     }
@@ -49,7 +52,7 @@ impl Cyrene {
             }
         }
 
-        let mut fns = BTreeMap::new();
+        let mut fns = HashMap::new();
         let mut entry = None;
         for item in self.root.0.iter() {
             match item {

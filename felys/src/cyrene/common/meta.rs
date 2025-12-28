@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 pub struct Meta {
     pub ns: Namespace,
+    pub constructor: Namespace,
     pub intern: Intern,
     pub groups: HashMap<usize, Group>,
 }
@@ -18,7 +19,7 @@ impl Group {
     pub fn new<'a>(fields: impl Iterator<Item=&'a usize>) -> Self {
         let mut indices = HashMap::new();
         for (i, field) in fields.enumerate() {
-            indices.insert(i, *field);
+            indices.insert(*field, i);
         }
         Self {
             indices,
