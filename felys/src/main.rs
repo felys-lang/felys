@@ -9,32 +9,14 @@ mod error;
 mod philia093;
 
 const CODE: &str = r#"
-group Test(a);
-
-impl Test {
-    fn x() {
-        a = 1;
-        b = 1;
-        c = 1;
-        a += c;
-        return 1;
-    }
-
-    fn y(self) {
-        return self + 1;
-    }
-}
-
-fn y() {
-    return 1;
-}
-
-fn z() {
-    return 1;
-}
-
 fn main(args) {
-    Test(1, 2, z(3, 4, 5)).y().a
+    i = 0;
+    if true {
+        i = 1;
+    } else {
+        i = 2;
+    }
+    return i;
 }
 "#;
 
@@ -42,10 +24,11 @@ fn main() -> Result<(), Fault> {
     let philia093 = PhiLia093::from(CODE.to_string());
     let cyrene = philia093.parse()?;
     let demiurge = cyrene.cfg()?;
-    let elysia = demiurge.codegen()?;
-    println!("{:?}", elysia.main);
-    println!("{:?}", elysia.text);
-    println!("{:?}", elysia.data);
-    println!("{:?}", elysia.lookup);
+    println!("{:?}", demiurge.main);
+    // let elysia = demiurge.codegen()?;
+    // println!("{:?}", elysia.main);
+    // println!("{:?}", elysia.text);
+    // println!("{:?}", elysia.data);
+    // println!("{:?}", elysia.lookup);
     Ok(())
 }

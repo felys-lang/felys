@@ -10,7 +10,7 @@ pub enum Expr {
     For(Pat, Rc<Expr>, Block),
     If(Rc<Expr>, Block, Option<Rc<Expr>>),
     Loop(Block),
-    Return(Option<Rc<Expr>>),
+    Return(Rc<Expr>),
     While(Rc<Expr>, Block),
     Binary(Rc<Expr>, BinOp, Rc<Expr>),
     Call(Rc<Expr>, Option<BufVec<Expr, 1>>),

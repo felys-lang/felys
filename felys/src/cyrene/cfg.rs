@@ -1,24 +1,16 @@
 use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Stmt};
-use crate::cyrene::common::{Context, Function};
-use crate::cyrene::{Const, Dst, Instruction, Meta, Var};
+use crate::cyrene::common::Context;
+use crate::cyrene::{Const, Dst, Id, Instruction, Label, Meta, Var};
 use crate::error::Fault;
 
+type Stack = Vec<(Label, Label, Option<Option<Id>>)>;
+
 impl Block {
-    pub fn ir(
-        &self,
-        f: &mut Function,
-        ctx: &mut Context,
-        meta: &Meta,
-        init: Option<(&Pat, Var)>,
-    ) -> Result<Dst, Fault> {
+    pub fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
         let mut iter = self.0.iter().peekable();
         let mut result = Ok(Dst::void());
-        ctx.stack();
-        if let Some((pat, var)) = init {
-            pat.ir(f, ctx, &None, var)?;
-        }
         while let Some(stmt) = iter.next() {
-            let ret = stmt.ir(f, ctx, meta)?;
+            let ret = stmt.ir(ctx, stk, meta)?;
             if ret.var().is_ok() {
                 if iter.peek().is_none() {
                     result = Ok(ret);
@@ -28,17 +20,16 @@ impl Block {
                 break;
             }
         }
-        ctx.unstack();
         result
     }
 }
 
 impl Stmt {
-    pub fn ir(&self, f: &mut Function, ctx: &mut Context, meta: &Meta) -> Result<Dst, Fault> {
+    pub fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
         match self {
             Stmt::Empty => Ok(Dst::void()),
-            Stmt::Expr(expr) => expr.ir(f, ctx, meta),
-            Stmt::Semi(expr) => expr.ir(f, ctx, meta).and(Ok(Dst::void())),
+            Stmt::Expr(expr) => expr.ir(ctx, stk, meta),
+            Stmt::Semi(expr) => expr.ir(ctx, stk, meta).and(Ok(Dst::void())),
             Stmt::Assign(pat, op, expr) => {
                 let op = match op {
                     AssOp::AddEq => Some(BinOp::Add),
@@ -48,8 +39,8 @@ impl Stmt {
                     AssOp::ModEq => Some(BinOp::Mod),
                     AssOp::Eq => None,
                 };
-                let var = expr.ir(f, ctx, meta)?.var()?;
-                pat.ir(f, ctx, &op, var)?;
+                let var = expr.ir(ctx, stk, meta)?.var()?;
+                pat.ir(ctx, &op, var)?;
                 Ok(Dst::void())
             }
         }
@@ -57,240 +48,247 @@ impl Stmt {
 }
 
 impl Pat {
-    pub fn ir(
-        &self,
-        f: &mut Function,
-        ctx: &mut Context,
-        op: &Option<BinOp>,
-        mut var: Var,
-    ) -> Result<Dst, Fault> {
+    pub fn ir(&self, ctx: &mut Context, op: &Option<BinOp>, mut rhs: Var) -> Result<(), Fault> {
         match self {
             Pat::Any => {}
-            Pat::Tuple(tup) => {
-                for (i, pat) in tup.iter().enumerate() {
-                    let dst = ctx.var();
-                    f.add(Instruction::Field(dst, var, i));
-                    pat.ir(f, ctx, op, dst)?;
+            Pat::Tuple(pats) => {
+                for (i, pat) in pats.iter().enumerate() {
+                    let field = ctx.var();
+                    ctx.push(Instruction::Field(field, rhs, i));
+                    pat.ir(ctx, op, field)?
                 }
             }
             Pat::Ident(id) => {
-                if let Some(op) = op {
-                    let lhs = ctx.get(*id).ok_or(Fault::InvalidPath)?;
-                    let dst = ctx.var();
-                    f.add(Instruction::Binary(dst, lhs, op.clone(), var));
-                    var = dst;
+                let id = Id::Interned(*id);
+                if let Some(bop) = op {
+                    let lhs = ctx.lookup(ctx.cursor, id)?;
+                    let var = ctx.var();
+                    ctx.push(Instruction::Binary(var, lhs, bop.clone(), rhs));
+                    rhs = var;
                 }
-                ctx.add(*id, var);
+                ctx.define(ctx.cursor, id, rhs)
             }
         }
-        Ok(Dst::void())
+        Ok(())
     }
 }
 
 impl Expr {
-    pub fn ir(&self, f: &mut Function, ctx: &mut Context, meta: &Meta) -> Result<Dst, Fault> {
+    pub fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
         match self {
-            Expr::Block(block) => block.ir(f, ctx, meta, None),
+            Expr::Block(block) => block.ir(ctx, stk, meta),
             Expr::Break(expr) => {
-                let ret = match expr {
-                    Some(x) => x.ir(f, ctx, meta)?,
-                    None => Dst::void(),
-                };
-                let (dst, alive) = ctx.writebacks.last_mut().unwrap();
-                if *alive {
-                    if let Ok(wb) = ret.var() {
-                        f.add(Instruction::Copy(*dst, wb))
-                    } else {
-                        *alive = false;
+                let expr = expr.as_ref().map(|x| x.ir(ctx, stk, meta));
+                let (_, end, wb) = stk.last_mut().unwrap();
+                match (expr, wb) {
+                    (None, None) | (None, Some(None)) => {}
+                    (Some(x), Some(wb)) if wb.is_none() => {
+                        let id = ctx.id();
+                        *wb = Some(id);
+                        ctx.define(ctx.cursor, id, x?.var()?);
                     }
+                    (Some(x), Some(Some(id))) => {
+                        ctx.define(ctx.cursor, *id, x?.var()?);
+                    }
+                    _ => return Err(Fault::Todo),
                 }
-                let (_, end) = ctx.loops.last().unwrap();
-                f.add(Instruction::Jump(*end));
-                Ok(Dst::void())
+                ctx.jump(*end);
+                ctx.unreachable()
             }
             Expr::Continue => {
-                let (start, _) = ctx.loops.last().unwrap();
-                f.add(Instruction::Jump(*start));
-                Ok(Dst::void())
+                let (start, _, _) = stk.last().unwrap();
+                ctx.jump(*start);
+                ctx.unreachable()
             }
-            Expr::For(pat, expr, block) => {
-                let iterator = expr.ir(f, ctx, meta)?.var()?;
-                let len = ctx.var();
-                f.add(Instruction::Field(len, iterator, 1));
-
-                let i = ctx.var();
-                f.add(Instruction::Load(i, Const::Int(0)));
-                let one = ctx.var();
-                f.add(Instruction::Load(one, Const::Int(1)));
-
-                let start = ctx.label();
-                f.append(start);
-                let end = ctx.label();
-                let cond = ctx.var();
-                f.add(Instruction::Binary(cond, i, BinOp::Le, len));
-                f.add(Instruction::Branch(cond, false, end));
-
-                ctx.loops.push((start, end));
-                let element = ctx.var();
-                f.add(Instruction::Index(element, iterator, i));
-                block.ir(f, ctx, meta, Some((pat, element)))?;
-                f.add(Instruction::Binary(i, i, BinOp::Add, one));
-                ctx.loops.pop();
-
-                f.add(Instruction::Jump(start));
-                f.append(end);
-                Ok(Dst::void())
-            }
-            Expr::Index(expr, index) => {
-                let val = expr.ir(f, ctx, meta)?.var()?;
-                let idx = index.ir(f, ctx, meta)?.var()?;
-                let var = ctx.var();
-                f.add(Instruction::Index(var, val, idx));
-                Ok(var.into())
-            }
+            Expr::For(_, _, _) => todo!(),
             Expr::If(expr, block, alter) => {
-                let cond = expr.ir(f, ctx, meta)?.var()?;
-                let mut end = ctx.label();
-                f.add(Instruction::Branch(cond, false, end));
-                let mut then = block.ir(f, ctx, meta, None)?;
-                let mut void = true;
+                let then = ctx.label();
+                let otherwise = ctx.label();
+                let join = ctx.label();
+                let mut ret = Err(Fault::Todo);
+
+                ctx.add(then);
+                ctx.add(otherwise);
+                ctx.add(join);
+
+                let cond = expr.ir(ctx, stk, meta)?.var()?;
+                ctx.branch(cond, then, otherwise);
+                ctx.seal(then)?;
+                ctx.seal(otherwise)?;
+
+                ctx.cursor = then;
+                if let Ok(var) = block.ir(ctx, stk, meta)?.var() {
+                    let id = ctx.id();
+                    ret = Ok(id);
+                    ctx.define(ctx.cursor, id, var);
+                }
+                ctx.jump(join);
+
+                ctx.cursor = otherwise;
+                let mut returned = false;
                 if let Some(alt) = alter {
-                    let tmp = end;
-                    end = ctx.label();
-                    f.add(Instruction::Jump(end));
-                    f.append(tmp);
-                    let var = alt.ir(f, ctx, meta)?;
-                    if let Ok(ret) = then.var() {
-                        f.add(Instruction::Copy(ret, var.var()?));
-                        void = false;
+                    if let Ok(var) = alt.ir(ctx, stk, meta)?.var() {
+                        ctx.define(ctx.cursor, ret.clone()?, var);
+                        returned = true;
                     }
                 }
-                f.append(end);
-                if void {
-                    then = Dst::void();
+                ctx.jump(join);
+                ctx.seal(join)?;
+
+                ctx.cursor = join;
+                if returned {
+                    Ok(ctx.lookup(ctx.cursor, ret.unwrap())?.into())
+                } else {
+                    Ok(Dst::void())
                 }
-                Ok(then)
             }
             Expr::Loop(block) => {
-                let start = ctx.label();
-                f.append(start);
+                let body = ctx.label();
                 let end = ctx.label();
-                ctx.loops.push((start, end));
-                let var = ctx.var();
-                ctx.writebacks.push((var, true));
-                block.ir(f, ctx, meta, None)?;
-                let (_, alive) = ctx.writebacks.pop().unwrap();
-                ctx.loops.pop();
-                f.add(Instruction::Jump(start));
-                f.append(end);
-                let dst = if alive { var.into() } else { Dst::void() };
-                Ok(dst)
+
+                ctx.add(body);
+                ctx.add(end);
+
+                ctx.jump(body);
+
+                ctx.cursor = body;
+                stk.push((body, end, Some(None)));
+                block.ir(ctx, stk, meta)?.var()?;
+                let wb = stk.pop().unwrap().2.unwrap();
+                ctx.jump(body);
+                ctx.seal(body)?;
+                ctx.seal(end)?;
+
+                ctx.cursor = end;
+                if let Some(id) = wb {
+                    let var = ctx.lookup(ctx.cursor, id)?;
+                    Ok(var.into())
+                } else {
+                    Ok(Dst::void())
+                }
             }
             Expr::Return(expr) => {
-                let ret = match expr {
-                    Some(x) => x.ir(f, ctx, meta)?,
-                    None => Dst::void(),
-                };
-                f.add(Instruction::Return(ret.var().ok()));
-                Ok(Dst::void())
+                let var = expr.ir(ctx, stk, meta)?.var()?;
+                ctx.push(Instruction::Return(var));
+                ctx.unreachable()
             }
             Expr::While(expr, block) => {
-                let start = ctx.label();
-                f.append(start);
+                let header = ctx.label();
+                let body = ctx.label();
                 let end = ctx.label();
-                let cond = expr.ir(f, ctx, meta)?.var()?;
-                f.add(Instruction::Branch(cond, false, end));
-                ctx.loops.push((start, end));
-                block.ir(f, ctx, meta, None)?;
-                ctx.loops.pop();
-                f.add(Instruction::Jump(start));
-                f.append(end);
+
+                ctx.add(header);
+                ctx.add(body);
+                ctx.add(end);
+
+                ctx.jump(header);
+
+                ctx.cursor = header;
+                let cond = expr.ir(ctx, stk, meta)?.var()?;
+                ctx.branch(cond, body, end);
+                ctx.seal(body)?;
+
+                ctx.cursor = body;
+                stk.push((header, end, None));
+                block.ir(ctx, stk, meta)?;
+                stk.pop();
+                ctx.jump(header);
+                ctx.seal(header)?;
+                ctx.seal(end)?;
+
+                ctx.cursor = end;
                 Ok(Dst::void())
             }
             Expr::Binary(lhs, op, rhs) => {
-                let l = lhs.ir(f, ctx, meta)?.var()?;
-                let r = rhs.ir(f, ctx, meta)?.var()?;
+                let l = lhs.ir(ctx, stk, meta)?.var()?;
+                let r = rhs.ir(ctx, stk, meta)?.var()?;
                 let var = ctx.var();
-                f.add(Instruction::Binary(var, l, op.clone(), r));
+                ctx.push(Instruction::Binary(var, l, op.clone(), r));
                 Ok(var.into())
             }
             Expr::Call(expr, args) => {
-                let func = expr.ir(f, ctx, meta)?.var()?;
-                f.add(Instruction::Buffer);
+                let callable = expr.ir(ctx, stk, meta)?.var()?;
+                ctx.push(Instruction::Buffer);
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let element = arg.ir(f, ctx, meta)?.var()?;
-                        f.add(Instruction::Push(element));
+                        let element = arg.ir(ctx, stk, meta)?.var()?;
+                        ctx.push(Instruction::Push(element));
                     }
                 }
                 let var = ctx.var();
-                f.add(Instruction::Call(var, func));
-                Ok(var.into())
-            }
-            Expr::Tuple(args) => {
-                f.add(Instruction::Buffer);
-                for arg in args.iter() {
-                    let element = arg.ir(f, ctx, meta)?.var()?;
-                    f.add(Instruction::Push(element));
-                }
-                let var = ctx.var();
-                f.add(Instruction::Tuple(var));
-                Ok(var.into())
-            }
-            Expr::List(args) => {
-                f.add(Instruction::Buffer);
-                if let Some(args) = args {
-                    for arg in args.iter() {
-                        let element = arg.ir(f, ctx, meta)?.var()?;
-                        f.add(Instruction::Push(element));
-                    }
-                }
-                let var = ctx.var();
-                f.add(Instruction::List(var));
-                Ok(var.into())
-            }
-            Expr::Lit(lit) => lit.ir(f, ctx, meta),
-            Expr::Paren(expr) => expr.ir(f, ctx, meta),
-            Expr::Unary(op, inner) => {
-                let i = inner.ir(f, ctx, meta)?.var()?;
-                let var = ctx.var();
-                f.add(Instruction::Unary(var, op.clone(), i));
-                Ok(var.into())
-            }
-            Expr::Path(path) => {
-                if path.len() == 1
-                    && let Some(var) = ctx.get(path.buffer()[0])
-                {
-                    return Ok(var.into());
-                }
-
-                let var = ctx.var();
-                if let Ok(id) = meta.constructors.get(path.iter()) {
-                    f.add(Instruction::Group(var, id));
-                } else {
-                    let id = meta.ns.get(path.iter())?;
-                    f.add(Instruction::Func(var, id));
-                }
+                ctx.push(Instruction::Call(var, callable));
                 Ok(var.into())
             }
             Expr::Field(expr, id) => {
-                let var = expr.ir(f, ctx, meta)?.var()?;
-                let dst = ctx.var();
-                f.add(Instruction::Field(dst, var, *id));
-                Ok(dst.into())
+                let src = expr.ir(ctx, stk, meta)?.var()?;
+                let var = ctx.var();
+                ctx.push(Instruction::Field(var, src, *id));
+                Ok(var.into())
             }
             Expr::Method(expr, id, args) => {
-                let s = expr.ir(f, ctx, meta)?.var()?;
-                f.add(Instruction::Buffer);
-                f.add(Instruction::Push(s));
+                let src = expr.ir(ctx, stk, meta)?.var()?;
+                ctx.push(Instruction::Buffer);
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let element = arg.ir(f, ctx, meta)?.var()?;
-                        f.add(Instruction::Push(element));
+                        let element = arg.ir(ctx, stk, meta)?.var()?;
+                        ctx.push(Instruction::Push(element));
                     }
                 }
                 let var = ctx.var();
-                f.add(Instruction::Method(var, s, *id));
+                ctx.push(Instruction::Method(var, src, *id));
+                Ok(var.into())
+            }
+            Expr::Index(expr, index) => {
+                let src = expr.ir(ctx, stk, meta)?.var()?;
+                let idx = index.ir(ctx, stk, meta)?.var()?;
+                let var = ctx.var();
+                ctx.push(Instruction::Index(var, src, idx));
+                Ok(var.into())
+            }
+            Expr::Tuple(args) => {
+                ctx.push(Instruction::Buffer);
+                for arg in args.iter() {
+                    let element = arg.ir(ctx, stk, meta)?.var()?;
+                    ctx.push(Instruction::Push(element));
+                }
+                let var = ctx.var();
+                ctx.push(Instruction::Tuple(var));
+                Ok(var.into())
+            }
+            Expr::List(args) => {
+                ctx.push(Instruction::Buffer);
+                if let Some(args) = args {
+                    for arg in args.iter() {
+                        let element = arg.ir(ctx, stk, meta)?.var()?;
+                        ctx.push(Instruction::Push(element));
+                    }
+                }
+                let var = ctx.var();
+                ctx.push(Instruction::List(var));
+                Ok(var.into())
+            }
+            Expr::Lit(lit) => lit.ir(ctx, meta),
+            Expr::Paren(expr) => expr.ir(ctx, stk, meta),
+            Expr::Unary(op, inner) => {
+                let i = inner.ir(ctx, stk, meta)?.var()?;
+                let var = ctx.var();
+                ctx.push(Instruction::Unary(var, op.clone(), i));
+                Ok(var.into())
+            }
+            Expr::Path(path) => {
+                if path.len() == 1 {
+                    let id = Id::Interned(path.buffer()[0]);
+                    if let Ok(var) = ctx.lookup(ctx.cursor, id) {
+                        return Ok(var.into());
+                    }
+                }
+                let var = ctx.var();
+                if let Ok(id) = meta.constructors.get(path.iter()) {
+                    ctx.push(Instruction::Group(var, id));
+                } else {
+                    let id = meta.ns.get(path.iter())?;
+                    ctx.push(Instruction::Func(var, id));
+                }
                 Ok(var.into())
             }
         }
@@ -298,10 +296,10 @@ impl Expr {
 }
 
 impl Lit {
-    pub fn ir(&self, f: &mut Function, ctx: &mut Context, meta: &Meta) -> Result<Dst, Fault> {
+    pub fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Dst, Fault> {
         let var = ctx.var();
         if let Some(c) = ctx.cache.get(self) {
-            f.add(Instruction::Load(var, c.clone()));
+            ctx.push(Instruction::Load(var, c.clone()));
             return Ok(var.into());
         }
         let c = match self {
@@ -367,7 +365,7 @@ impl Lit {
                 Const::Str(value.into())
             }
         };
-        f.add(Instruction::Load(var, c));
+        ctx.push(Instruction::Load(var, c));
         Ok(var.into())
     }
 }

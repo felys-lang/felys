@@ -74,7 +74,7 @@ peg expr -> { Expr }:
         Expr::If(expr.into(), block, otherwise.map(Rc::new))
     }
     / LOOP block=[block] { Expr::Loop(block) }
-    / RETURN expr=expr? { Expr::Return(expr.map(Rc::new)) }
+    / RETURN expr=[expr] { Expr::Return(expr.into()) }
     / WHILE expr=[expr] block=[block] { Expr::While(expr.into(), block) }
     ;
 

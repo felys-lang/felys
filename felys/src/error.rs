@@ -1,4 +1,5 @@
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum Fault {
     FailedToParse,
     NoReturnValue,
@@ -7,4 +8,5 @@ pub enum Fault {
     EntryNotFound,
     StrNotInterned,
     InvalidConst,
+    Todo
 }

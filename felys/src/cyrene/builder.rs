@@ -75,20 +75,22 @@ impl Item {
     ) -> Result<(), Fault> {
         match self {
             Item::Fn(id, args, block) => {
-                let mut f = Function::new();
+                let mut stk = Vec::new();
                 let mut ctx = match args {
                     Some(vec) => Context::new(vec.iter()),
                     None => Context::new([].iter()),
                 };
-                block.ir(&mut f, &mut ctx, meta, None)?;
+                block.ir(&mut ctx, &mut stk, meta)?;
                 let src = meta.ns.get([*id].iter())?;
-                fns.insert(src, f);
+                ctx.seal(ctx.cursor)?;
+                fns.insert(src, ctx.export());
             }
             Item::Main(args, block) => {
-                let mut f = Function::new();
+                let mut stk = Vec::new();
                 let mut ctx = Context::new([*args].iter());
-                block.ir(&mut f, &mut ctx, meta, None)?;
-                *main = Some(f);
+                block.ir(&mut ctx, &mut stk, meta)?;
+                ctx.seal(ctx.cursor)?;
+                *main = Some(ctx.export());
             }
             Item::Impl(id, impls) => {
                 for implementation in impls.iter() {
@@ -123,23 +125,25 @@ impl Impl {
         meta: &mut Meta,
         fns: &mut HashMap<usize, Function>,
     ) -> Result<(), Fault> {
-        let mut f = Function::new();
+        let mut stk = Vec::new();
         match self {
             Impl::Associated(sid, args, block) => {
                 let mut ctx = match args {
                     Some(vec) => Context::new(vec.iter()),
                     None => Context::new([].iter()),
                 };
-                block.ir(&mut f, &mut ctx, meta, None)?;
+                block.ir(&mut ctx, &mut stk, meta)?;
+                ctx.seal(ctx.cursor)?;
                 let src = meta.ns.get([id, *sid].iter())?;
-                fns.insert(src, f);
+                fns.insert(src, ctx.export());
             }
             Impl::Method(sid, args, block) => {
                 let s = meta.intern.id("self");
                 let mut ctx = Context::new([s].iter().chain(args));
-                block.ir(&mut f, &mut ctx, meta, None)?;
+                block.ir(&mut ctx, &mut stk, meta)?;
+                ctx.seal(ctx.cursor)?;
                 let src = meta.ns.get([id, *sid].iter())?;
-                fns.insert(src, f);
+                fns.insert(src, ctx.export());
             }
         }
         Ok(())
