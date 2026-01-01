@@ -1,12 +1,35 @@
 use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Stmt};
 use crate::cyrene::common::Context;
-use crate::cyrene::{Const, Dst, Id, Instruction, Label, Meta, Var};
+use crate::cyrene::{Const, Dst, Function, Id, Instruction, Label, Meta, Var};
 use crate::error::Fault;
 
 type Stack = Vec<(Label, Label, Option<Option<Id>>)>;
 
 impl Block {
-    pub fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
+    pub fn build<'a>(
+        &self,
+        args: impl Iterator<Item = &'a usize>,
+        meta: &Meta,
+    ) -> Result<Function, Fault> {
+        let mut stk = Vec::new();
+        let mut ctx = Context::default();
+        ctx.seal(Label::Entry)?;
+        for (var, id) in args.enumerate() {
+            ctx.define(ctx.cursor, Id::Interned(*id), var);
+        }
+
+        if let Ok(var) = self.ir(&mut ctx, &mut stk, meta)?.var() {
+            ctx.define(ctx.cursor, Id::Ret, var);
+        }
+        ctx.seal(Label::Exit)?;
+
+        ctx.cursor = Label::Exit;
+        let ret = ctx.lookup(ctx.cursor, Id::Ret)?;
+        ctx.push(Instruction::Return(ret));
+        Ok(ctx.export())
+    }
+
+    fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
         let mut iter = self.0.iter().peekable();
         let mut result = Ok(Dst::void());
         while let Some(stmt) = iter.next() {
@@ -25,7 +48,7 @@ impl Block {
 }
 
 impl Stmt {
-    pub fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
+    fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
         match self {
             Stmt::Empty => Ok(Dst::void()),
             Stmt::Expr(expr) => expr.ir(ctx, stk, meta),
@@ -48,7 +71,7 @@ impl Stmt {
 }
 
 impl Pat {
-    pub fn ir(&self, ctx: &mut Context, op: &Option<BinOp>, mut rhs: Var) -> Result<(), Fault> {
+    fn ir(&self, ctx: &mut Context, op: &Option<BinOp>, mut rhs: Var) -> Result<(), Fault> {
         match self {
             Pat::Any => {}
             Pat::Tuple(pats) => {
@@ -74,7 +97,7 @@ impl Pat {
 }
 
 impl Expr {
-    pub fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
+    fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
         match self {
             Expr::Block(block) => block.ir(ctx, stk, meta),
             Expr::Break(expr) => {
@@ -126,11 +149,11 @@ impl Expr {
 
                 ctx.cursor = otherwise;
                 let mut returned = false;
-                if let Some(alt) = alter {
-                    if let Ok(var) = alt.ir(ctx, stk, meta)?.var() {
-                        ctx.define(ctx.cursor, ret.clone()?, var);
-                        returned = true;
-                    }
+                if let Some(alt) = alter
+                    && let Ok(var) = alt.ir(ctx, stk, meta)?.var()
+                {
+                    ctx.define(ctx.cursor, ret.clone()?, var);
+                    returned = true;
                 }
                 ctx.jump(join);
                 ctx.seal(join)?;
@@ -169,7 +192,8 @@ impl Expr {
             }
             Expr::Return(expr) => {
                 let var = expr.ir(ctx, stk, meta)?.var()?;
-                ctx.push(Instruction::Return(var));
+                ctx.define(ctx.cursor, Id::Ret, var);
+                ctx.jump(Label::Exit);
                 ctx.unreachable()
             }
             Expr::While(expr, block) => {
@@ -296,7 +320,7 @@ impl Expr {
 }
 
 impl Lit {
-    pub fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Dst, Fault> {
+    fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Dst, Fault> {
         let var = ctx.var();
         if let Some(c) = ctx.cache.get(self) {
             ctx.push(Instruction::Load(var, c.clone()));
@@ -312,20 +336,15 @@ impl Lit {
                     .map_err(|_| Fault::InvalidConst)?;
                 Const::Int(value)
             }
-            Lit::Float(int, deci) => {
-                let i = meta
+            Lit::Float(x) => {
+                let value = meta
                     .intern
-                    .get(int)
+                    .get(x)
                     .ok_or(Fault::StrNotInterned)?
-                    .parse()
-                    .map_err(|_| Fault::InvalidConst)?;
-                let d = meta
-                    .intern
-                    .get(deci)
-                    .ok_or(Fault::StrNotInterned)?
-                    .parse()
-                    .map_err(|_| Fault::InvalidConst)?;
-                Const::Float(i, d)
+                    .parse::<f64>()
+                    .map_err(|_| Fault::InvalidConst)?
+                    .to_bits();
+                Const::Float(value)
             }
             Lit::Bool(x) => match x {
                 Bool::True => Const::Bool(true),

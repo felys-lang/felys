@@ -1,7 +1,7 @@
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum Lit {
     Int(usize),
-    Float(usize, usize),
+    Float(usize),
     Bool(Bool),
     Str(Vec<Chunk>),
 }

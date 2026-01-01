@@ -12,6 +12,9 @@ const CODE: &str = r#"
 fn main(args) {
     i = 0;
     if true {
+        if false {
+            return 3;
+        }
         i = 1;
     } else {
         i = 2;

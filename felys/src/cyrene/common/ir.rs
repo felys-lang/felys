@@ -6,67 +6,56 @@ use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Function {
-    pub fragments: HashMap<Label, Fragment>,
+    pub entry: Fragment,
+    pub fragments: HashMap<usize, Fragment>,
+    pub exit: Fragment,
 }
 
+#[derive(Default)]
 pub struct Context {
     ids: usize,
     vars: usize,
     labels: usize,
     pub cursor: Label,
     pub cache: HashMap<Lit, Const>,
-    pub fragments: HashMap<Label, Fragment>,
-    pub defs: HashMap<Label, HashMap<Id, Var>>,
-    pub incompleted: HashMap<Label, HashMap<Id, Var>>,
-    pub sealed: HashSet<Label>,
+
+    defs: HashMap<Label, HashMap<Id, Var>>,
+    incompleted: HashMap<Label, HashMap<Id, Var>>,
+    sealed: HashSet<Label>,
+
+    entry: Fragment,
+    fragments: HashMap<usize, Fragment>,
+    exit: Fragment,
 }
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub enum Id {
     Interned(usize),
     Tmp(usize),
+    Ret,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Const {
     Int(usize),
-    Float(usize, usize),
+    Float(u64),
     Bool(bool),
     Str(Rc<str>),
 }
 
 impl Context {
-    pub fn new<'a>(args: impl Iterator<Item = &'a usize>) -> Self {
-        let mut ctx = Self {
-            ids: 0,
-            cursor: 0,
-            vars: 0,
-            labels: 0,
-            cache: HashMap::new(),
-            fragments: HashMap::new(),
-            defs: HashMap::new(),
-            incompleted: HashMap::new(),
-            sealed: HashSet::new(),
-        };
-        let entry = ctx.label();
-        ctx.add(entry);
-        ctx.seal(entry).unwrap();
-        for (var, id) in args.enumerate() {
-            ctx.define(ctx.cursor, Id::Interned(*id), var);
-        }
-        ctx
-    }
-
     pub fn export(self) -> Function {
         Function {
+            entry: self.entry,
             fragments: self.fragments,
+            exit: self.exit,
         }
     }
 
     pub fn id(&mut self) -> Id {
-        let id = Id::Interned(self.ids);
+        let id = self.ids;
         self.ids += 1;
-        id
+        Id::Tmp(id)
     }
 
     pub fn var(&mut self) -> Var {
@@ -75,10 +64,10 @@ impl Context {
         var
     }
 
-    pub fn label(&mut self) -> Var {
+    pub fn label(&mut self) -> Label {
         let label = self.labels;
         self.labels += 1;
-        label
+        Label::Id(label)
     }
 
     pub fn unreachable(&mut self) -> Result<Dst, Fault> {
@@ -89,46 +78,37 @@ impl Context {
     }
 
     pub fn add(&mut self, label: Label) {
-        self.fragments.insert(label, Fragment::default());
+        let Label::Id(id) = label else { return };
+        self.fragments.insert(id, Fragment::default());
+    }
+
+    pub fn get(&mut self, label: Label) -> &mut Fragment {
+        match label {
+            Label::Entry => &mut self.entry,
+            Label::Id(id) => self.fragments.get_mut(&id).unwrap(),
+            Label::Exit => &mut self.exit,
+        }
     }
 
     pub fn push(&mut self, instruction: Instruction) {
-        self.fragments
-            .get_mut(&self.cursor)
-            .unwrap()
-            .instructions
-            .push(instruction);
+        self.get(self.cursor).instructions.push(instruction);
     }
 
     pub fn jump(&mut self, to: Label) {
         self.push(Instruction::Jump(to));
-        self.fragments
-            .get_mut(&to)
-            .unwrap()
-            .predecessors
-            .push(self.cursor);
+        let cursor = self.cursor;
+        self.get(to).predecessors.push(cursor);
     }
 
     pub fn branch(&mut self, cond: Var, to: Label, or: Label) {
         self.push(Instruction::Branch(cond, to, or));
-        self.fragments
-            .get_mut(&to)
-            .unwrap()
-            .predecessors
-            .push(self.cursor);
-        self.fragments
-            .get_mut(&or)
-            .unwrap()
-            .predecessors
-            .push(self.cursor);
+        let cursor = self.cursor;
+        self.get(to).predecessors.push(cursor);
+        self.get(or).predecessors.push(cursor);
     }
 
     pub fn phi(&mut self, label: Label, dst: Var, src: Vec<(Label, Var)>) {
-        self.fragments
-            .get_mut(&label)
-            .unwrap()
-            .phis
-            .push((dst, src));
+        self.get(label).phis.push((dst, src));
     }
 
     pub fn seal(&mut self, label: Label) -> Result<(), Fault> {
@@ -136,7 +116,7 @@ impl Context {
             return Ok(());
         }
         if let Some(phis) = self.incompleted.remove(&label) {
-            let preds = self.fragments.get(&label).unwrap().predecessors.clone();
+            let preds = self.get(label).predecessors.clone();
             for (key, var) in phis {
                 let mut operands = Vec::new();
                 for pred in preds.clone() {
@@ -159,13 +139,13 @@ impl Context {
             return Ok(*var);
         }
 
-        let predecessors = self.fragments.get(&label).unwrap().predecessors.clone();
+        let predecessors = self.get(label).predecessors.clone();
         let var = if !self.sealed.contains(&label) {
             let var = self.var();
             self.incompleted.entry(label).or_default().insert(id, var);
             var
         } else if predecessors.is_empty() {
-            return Err(Fault::NoReturnValue);
+            return Err(Fault::Todo);
         } else if predecessors.len() == 1 {
             self.lookup(predecessors[0], id)?
         } else {
@@ -214,7 +194,13 @@ pub enum Instruction {
 
 pub type Var = usize;
 
-pub type Label = usize;
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
+pub enum Label {
+    #[default]
+    Entry,
+    Id(usize),
+    Exit,
+}
 
 pub struct Dst(Option<Var>);
 

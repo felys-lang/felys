@@ -1,5 +1,5 @@
 use crate::ast::{Impl, Item, Root};
-use crate::cyrene::{Context, Function, Group, Meta, Namespace};
+use crate::cyrene::{Function, Group, Meta, Namespace};
 use crate::demiurge::Demiurge;
 use crate::error::Fault;
 use crate::philia093::Intern;
@@ -36,7 +36,7 @@ impl Cyrene {
         Ok(Demiurge {
             groups: meta.groups,
             fns,
-            main: main.ok_or(Fault::EntryNotFound)?,
+            main: main.ok_or(Fault::MainNotFound)?,
             intern: meta.intern,
         })
     }
@@ -75,23 +75,14 @@ impl Item {
     ) -> Result<(), Fault> {
         match self {
             Item::Fn(id, args, block) => {
-                let mut stk = Vec::new();
-                let mut ctx = match args {
-                    Some(vec) => Context::new(vec.iter()),
-                    None => Context::new([].iter()),
+                let function = match args {
+                    Some(vec) => block.build(vec.iter(), meta)?,
+                    None => block.build([].iter(), meta)?,
                 };
-                block.ir(&mut ctx, &mut stk, meta)?;
                 let src = meta.ns.get([*id].iter())?;
-                ctx.seal(ctx.cursor)?;
-                fns.insert(src, ctx.export());
+                fns.insert(src, function);
             }
-            Item::Main(args, block) => {
-                let mut stk = Vec::new();
-                let mut ctx = Context::new([*args].iter());
-                block.ir(&mut ctx, &mut stk, meta)?;
-                ctx.seal(ctx.cursor)?;
-                *main = Some(ctx.export());
-            }
+            Item::Main(args, block) => *main = Some(block.build([*args].iter(), meta)?),
             Item::Impl(id, impls) => {
                 for implementation in impls.iter() {
                     implementation.cfg(*id, meta, fns)?;
@@ -125,25 +116,20 @@ impl Impl {
         meta: &mut Meta,
         fns: &mut HashMap<usize, Function>,
     ) -> Result<(), Fault> {
-        let mut stk = Vec::new();
         match self {
             Impl::Associated(sid, args, block) => {
-                let mut ctx = match args {
-                    Some(vec) => Context::new(vec.iter()),
-                    None => Context::new([].iter()),
+                let function = match args {
+                    Some(vec) => block.build(vec.iter(), meta)?,
+                    None => block.build([].iter(), meta)?,
                 };
-                block.ir(&mut ctx, &mut stk, meta)?;
-                ctx.seal(ctx.cursor)?;
                 let src = meta.ns.get([id, *sid].iter())?;
-                fns.insert(src, ctx.export());
+                fns.insert(src, function);
             }
             Impl::Method(sid, args, block) => {
                 let s = meta.intern.id("self");
-                let mut ctx = Context::new([s].iter().chain(args));
-                block.ir(&mut ctx, &mut stk, meta)?;
-                ctx.seal(ctx.cursor)?;
+                let function = block.build([s].iter().chain(args), meta)?;
                 let src = meta.ns.get([id, *sid].iter())?;
-                fns.insert(src, ctx.export());
+                fns.insert(src, function);
             }
         }
         Ok(())
