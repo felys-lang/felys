@@ -1,11 +1,20 @@
 use crate::ast::{BinOp, UnaOp};
 use crate::cyrene::{Const, Fragment, Instruction, Label, Var};
-use crate::demiurge::Function;
+use crate::demiurge::{Demiurge, Function};
 use crate::error::Fault;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::ops::{Add, Div, Mul, Rem};
+use std::ops::{Add, Div, Mul, Rem, Sub};
 
-#[derive(Clone, PartialEq)]
+impl Demiurge {
+    pub fn dec(&self) -> Result<(), Fault> {
+        for function in self.fns.values() {
+            function.optimize()?;
+        }
+        self.main.optimize()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 enum Lattice {
     Top,
     Const(Const),
@@ -54,6 +63,9 @@ impl Function {
 
         let mut ctx = Context::default();
         ctx.flow.push_back((Label::Entry, Label::Entry));
+        for var in self.args.iter() {
+            ctx.values.insert(*var, Lattice::Bottom);
+        }
 
         while !ctx.flow.is_empty() || !ctx.ssa.is_empty() {
             while let Some((pred, label)) = ctx.flow.pop_front() {
@@ -178,7 +190,7 @@ impl Instruction {
                 match val {
                     Lattice::Const(Const::Bool(true)) => ctx.flow.push_back((label, *yes)),
                     Lattice::Const(Const::Bool(false)) => ctx.flow.push_back((label, *no)),
-                    Lattice::Const(_) => return Err(Fault::Todo),
+                    Lattice::Const(_) => return Err(Fault::InvalidOperation),
                     Lattice::Bottom => {
                         ctx.flow.push_back((label, *yes));
                         ctx.flow.push_back((label, *no));
@@ -232,7 +244,7 @@ impl Const {
     fn or(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
             Const::Bool(x) => *x || rhs.bool()?,
-            _ => return Err(Fault::Todo),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(Const::Bool(value))
     }
@@ -240,7 +252,7 @@ impl Const {
     fn and(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
             Const::Bool(x) => *x && rhs.bool()?,
-            _ => return Err(Fault::Todo),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(Const::Bool(value))
     }
@@ -249,7 +261,7 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x) > rhs.int()?,
             Const::Float(x) => f64::from_bits(*x) > rhs.float()?,
-            _ => return Err(Fault::Todo),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(Const::Bool(value))
     }
@@ -258,7 +270,7 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x) >= rhs.int()?,
             Const::Float(x) => f64::from_bits(*x) >= rhs.float()?,
-            _ => return Err(Fault::Todo),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(Const::Bool(value))
     }
@@ -267,7 +279,7 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x) < rhs.int()?,
             Const::Float(x) => f64::from_bits(*x) < rhs.float()?,
-            _ => return Err(Fault::Todo),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(Const::Bool(value))
     }
@@ -276,7 +288,7 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x) <= rhs.int()?,
             Const::Float(x) => f64::from_bits(*x) <= rhs.float()?,
-            _ => return Err(Fault::Todo),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(Const::Bool(value))
     }
@@ -303,37 +315,49 @@ impl Const {
 
     fn add(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
-            Const::Int(x) => (*x).checked_add(rhs.int()?).ok_or(Fault::Todo)?.into(),
+            Const::Int(x) => (*x)
+                .checked_add(rhs.int()?)
+                .ok_or(Fault::InvalidOperation)?
+                .into(),
             Const::Float(x) => f64::from_bits(*x).add(rhs.float()?).into(),
             Const::Str(x) => format!("{}{}", x, rhs.str()?).into(),
-            _ => return Err(Fault::Todo),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(value)
     }
 
     fn sub(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
-            Const::Int(x) => Const::from((*x).checked_sub(rhs.int()?).ok_or(Fault::Todo)?),
-            Const::Float(x) => Const::from(f64::from_bits(*x) - rhs.float()?),
-            _ => return Err(Fault::Todo),
+            Const::Int(x) => Const::from(
+                (*x).checked_sub(rhs.int()?)
+                    .ok_or(Fault::InvalidOperation)?,
+            ),
+            Const::Float(x) => f64::from_bits(*x).sub(rhs.float()?).into(),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(value)
     }
 
     fn mul(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
-            Const::Int(x) => (*x).checked_mul(rhs.int()?).ok_or(Fault::Todo)?.into(),
+            Const::Int(x) => (*x)
+                .checked_mul(rhs.int()?)
+                .ok_or(Fault::InvalidOperation)?
+                .into(),
             Const::Float(x) => f64::from_bits(*x).mul(rhs.float()?).into(),
-            _ => return Err(Fault::Todo),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(value)
     }
 
     fn div(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
-            Const::Int(x) => (*x).checked_div(rhs.int()?).ok_or(Fault::Todo)?.into(),
+            Const::Int(x) => (*x)
+                .checked_div(rhs.int()?)
+                .ok_or(Fault::InvalidOperation)?
+                .into(),
             Const::Float(x) => f64::from_bits(*x).div(rhs.float()?).into(),
-            _ => return Err(Fault::Todo),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(value)
     }
@@ -342,19 +366,19 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x).rem(rhs.int()?).into(),
             Const::Float(x) => f64::from_bits(*x).rem(rhs.float()?).into(),
-            _ => return Err(Fault::Todo),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(value)
     }
 
-    fn dot(&self, rhs: &Const) -> Result<Const, Fault> {
-        Err(Fault::Todo)
+    fn dot(&self, _: &Const) -> Result<Const, Fault> {
+        Err(Fault::InvalidOperation)
     }
 
     fn not(&self) -> Result<Const, Fault> {
         let value = match self {
             Const::Bool(x) => (!x).into(),
-            _ => return Err(Fault::Todo),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(value)
     }
@@ -363,7 +387,7 @@ impl Const {
         if matches!(self, Const::Int(_) | Const::Float(_)) {
             Ok(self.clone())
         } else {
-            Err(Fault::Todo)
+            Err(Fault::InvalidOperation)
         }
     }
 
@@ -371,7 +395,7 @@ impl Const {
         let value = match self {
             Const::Int(x) => (-*x).into(),
             Const::Float(x) => (-f64::from_bits(*x)).into(),
-            _ => return Err(Fault::Todo),
+            _ => return Err(Fault::InvalidOperation),
         };
         Ok(value)
     }
@@ -380,7 +404,7 @@ impl Const {
         if let Const::Int(x) = self {
             Ok(*x)
         } else {
-            Err(Fault::Todo)
+            Err(Fault::InvalidOperation)
         }
     }
 
@@ -388,7 +412,7 @@ impl Const {
         if let Const::Float(x) = self {
             Ok(f64::from_bits(*x))
         } else {
-            Err(Fault::Todo)
+            Err(Fault::InvalidOperation)
         }
     }
 
@@ -396,7 +420,7 @@ impl Const {
         if let Const::Bool(x) = self {
             Ok(*x)
         } else {
-            Err(Fault::Todo)
+            Err(Fault::InvalidOperation)
         }
     }
 
@@ -404,7 +428,7 @@ impl Const {
         if let Const::Str(x) = self {
             Ok(x)
         } else {
-            Err(Fault::Todo)
+            Err(Fault::InvalidOperation)
         }
     }
 }

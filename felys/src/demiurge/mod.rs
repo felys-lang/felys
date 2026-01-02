@@ -1,5 +1,5 @@
-mod codegen;
 mod bytecode;
+mod codegen;
 mod dce;
 
 pub use bytecode::*;

@@ -9,19 +9,21 @@ type Stack = Vec<(Label, Label, Option<Option<Id>>)>;
 impl Block {
     pub fn build<'a>(
         &self,
-        args: impl Iterator<Item=&'a usize>,
+        args: impl Iterator<Item = &'a usize>,
         meta: &Meta,
     ) -> Result<Function, Fault> {
         let mut stk = Vec::new();
         let mut ctx = Context::default();
         ctx.seal(Label::Entry)?;
-        for (var, id) in args.enumerate() {
+        for id in args {
+            let var = ctx.var();
             ctx.define(ctx.cursor, Id::Interned(*id), var);
         }
 
         if let Ok(var) = self.ir(&mut ctx, &mut stk, meta)?.var() {
             ctx.define(ctx.cursor, Id::Ret, var);
         }
+        ctx.jump(Label::Exit);
         ctx.seal(Label::Exit)?;
 
         ctx.cursor = Label::Exit;
@@ -114,7 +116,7 @@ impl Expr {
                     (Some(x), Some(Some(id))) => {
                         ctx.define(ctx.cursor, *id, x?.var()?);
                     }
-                    _ => return Err(Fault::Todo),
+                    _ => return Err(Fault::UndeterminedValue),
                 }
                 ctx.jump(*end);
                 ctx.unreachable()
@@ -124,12 +126,12 @@ impl Expr {
                 ctx.jump(*start);
                 ctx.unreachable()
             }
-            Expr::For(_, _, _) => todo!(),
+            Expr::For(_, _, _) => Err(Fault::NotImplemented),
             Expr::If(expr, block, alter) => {
                 let then = ctx.label();
                 let otherwise = ctx.label();
                 let join = ctx.label();
-                let mut ret = Err(Fault::Todo);
+                let mut ret = Err(Fault::UndeterminedValue);
 
                 ctx.add(then);
                 ctx.add(otherwise);
@@ -332,18 +334,18 @@ impl Lit {
                 let value = meta
                     .intern
                     .get(x)
-                    .ok_or(Fault::StrNotInterned)?
+                    .ok_or(Fault::InvalidConstant)?
                     .parse()
-                    .map_err(|_| Fault::InvalidConst)?;
+                    .map_err(|_| Fault::InvalidConstant)?;
                 Const::Int(value)
             }
             Lit::Float(x) => {
                 let value = meta
                     .intern
                     .get(x)
-                    .ok_or(Fault::StrNotInterned)?
+                    .ok_or(Fault::InvalidConstant)?
                     .parse::<f64>()
-                    .map_err(|_| Fault::InvalidConst)?
+                    .map_err(|_| Fault::InvalidConstant)?
                     .to_bits();
                 Const::Float(value)
             }
@@ -356,19 +358,19 @@ impl Lit {
                 for chunk in x {
                     match chunk {
                         Chunk::Slice(x) => {
-                            let s = meta.intern.get(x).ok_or(Fault::InvalidConst)?;
+                            let s = meta.intern.get(x).unwrap();
                             value.push_str(s);
                         }
                         Chunk::Unicode(x) => {
-                            let hex = meta.intern.get(x).ok_or(Fault::InvalidConst)?;
+                            let hex = meta.intern.get(x).unwrap();
                             let c = u32::from_str_radix(hex, 16)
                                 .ok()
                                 .and_then(char::from_u32)
-                                .ok_or(Fault::InvalidConst)?;
+                                .ok_or(Fault::InvalidConstant)?;
                             value.push(c)
                         }
                         Chunk::Escape(x) => {
-                            let str = meta.intern.get(x).ok_or(Fault::InvalidConst)?;
+                            let str = meta.intern.get(x).unwrap();
                             let c = match str {
                                 "\'" => '\'',
                                 "\"" => '"',
@@ -376,7 +378,7 @@ impl Lit {
                                 "t" => '\t',
                                 "r" => '\r',
                                 "\\" => '\\',
-                                _ => return Err(Fault::InvalidConst),
+                                _ => return Err(Fault::InvalidConstant),
                             };
                             value.push(c)
                         }

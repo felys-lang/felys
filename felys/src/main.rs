@@ -10,16 +10,13 @@ mod philia093;
 
 const CODE: &str = r#"
 fn main(args) {
-    i = 0;
-    if true {
-        if false {
-            return 3;
-        }
-        i = 1;
-    } else {
-        i = 2;
+    x = 1;
+    if false {
+        // 这部分代码不可达
+        y = 10; // y 应该是 Top
+        z = y + 1; // z 应该是 Top
     }
-    return i;
+    x
 }
 "#;
 
@@ -27,11 +24,8 @@ fn main() -> Result<(), Fault> {
     let philia093 = PhiLia093::from(CODE.to_string());
     let cyrene = philia093.parse()?;
     let demiurge = cyrene.cfg()?;
-    println!("{:?}", demiurge.main);
-    // let elysia = demiurge.codegen()?;
-    // println!("{:?}", elysia.main);
-    // println!("{:?}", elysia.text);
-    // println!("{:?}", elysia.data);
-    // println!("{:?}", elysia.lookup);
-    Ok(())
+    println!("{:?}", demiurge.main.entry);
+    println!("{:?}", demiurge.main.fragments);
+    println!("{:?}", demiurge.main.exit);
+    demiurge.dec()
 }

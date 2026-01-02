@@ -11,6 +11,7 @@ pub struct Demiurge {
 
 #[derive(Debug)]
 pub struct Function {
+    pub args: Vec<usize>,
     pub entry: Fragment,
     pub fragments: HashMap<usize, Fragment>,
     pub exit: Fragment,

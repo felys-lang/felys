@@ -1,11 +1,12 @@
 #[derive(Clone, Debug)]
 pub enum Fault {
     FailedToParse,
-    NoReturnValue,
+    UnacceptableVoid,
     InvalidPath,
     BlockEarlyEnd,
     MainNotFound,
-    StrNotInterned,
-    InvalidConst,
-    Todo,
+    InvalidConstant,
+    InvalidOperation,
+    UndeterminedValue,
+    NotImplemented,
 }

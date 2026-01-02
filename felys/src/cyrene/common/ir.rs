@@ -38,8 +38,13 @@ pub enum Const {
 }
 
 impl Context {
-    pub fn export(self) -> Function {
+    pub fn export(mut self) -> Function {
+        let args = self
+            .defs
+            .remove(&Label::Entry)
+            .map_or_else(Vec::new, |map| map.into_values().collect());
         Function {
+            args,
             entry: self.entry,
             fragments: self.fragments,
             exit: self.exit,
@@ -139,7 +144,7 @@ impl Context {
             self.incompleted.entry(label).or_default().insert(id, var);
             var
         } else if predecessors.is_empty() {
-            return Err(Fault::Todo);
+            panic!();
         } else if predecessors.len() == 1 {
             self.lookup(predecessors[0], id)?
         } else {
@@ -199,7 +204,7 @@ pub struct Dst(Option<Var>);
 
 impl Dst {
     pub fn var(&self) -> Result<Var, Fault> {
-        self.0.ok_or(Fault::NoReturnValue)
+        self.0.ok_or(Fault::UnacceptableVoid)
     }
 
     pub fn void() -> Self {
