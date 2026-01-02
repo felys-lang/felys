@@ -6,11 +6,11 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
 impl Demiurge {
-    pub fn dec(&self) -> Result<(), Fault> {
-        for function in self.fns.values() {
-            function.optimize()?;
+    pub fn dec(&mut self) -> Result<(), Fault> {
+        for function in self.fns.values_mut() {
+            function.rewrite()?;
         }
-        self.main.optimize()
+        self.main.rewrite()
     }
 }
 
@@ -75,7 +75,18 @@ impl Context {
 }
 
 impl Function {
-    fn optimize(&self) -> Result<(), Fault> {
+    fn rewrite(&mut self) -> Result<(), Fault> {
+        let ctx = self.analyze()?;
+        self.entry.rewrite(Label::Entry, &ctx)?;
+        self.fragments
+            .retain(|id, _| ctx.visited.contains(&Label::Id(*id)));
+        for (id, fragment) in self.fragments.iter_mut() {
+            fragment.rewrite(Label::Id(*id), &ctx)?;
+        }
+        self.exit.rewrite(Label::Exit, &ctx)
+    }
+
+    fn analyze(&self) -> Result<Context, Fault> {
         let usage = self.usage();
 
         let mut ctx = Context::new(self.vars);
@@ -91,20 +102,20 @@ impl Function {
                 }
                 ctx.edges.insert((pred, label));
                 let fragment = self.get(label).unwrap();
-                fragment.optimize(label, &mut ctx)?;
+                fragment.analyze(label, &mut ctx)?;
             }
             while let Some(var) = ctx.ssa.pop_front() {
                 if let Some(users) = usage.get(&var) {
                     for (label, idx) in users {
                         if ctx.visited.contains(label) {
                             let instruction = self.loc(*label, *idx);
-                            instruction.optimize(*label, &mut ctx)?;
+                            instruction.analyze(*label, &mut ctx)?;
                         }
                     }
                 }
             }
         }
-        Ok(())
+        Ok(ctx)
     }
 
     fn usage(&self) -> HashMap<Var, Vec<(Label, usize)>> {
@@ -133,7 +144,17 @@ impl Function {
 }
 
 impl Fragment {
-    fn optimize(&self, label: Label, ctx: &mut Context) -> Result<(), Fault> {
+    fn rewrite(&mut self, label: Label, ctx: &Context) -> Result<(), Fault> {
+        for (_, inputs) in self.phis.iter_mut() {
+            inputs.retain(|(pred, _)| ctx.edges.contains(&(*pred, label)))
+        }
+        for instruction in self.instructions.iter_mut() {
+            instruction.rewrite(ctx)?;
+        }
+        Ok(())
+    }
+
+    fn analyze(&self, label: Label, ctx: &mut Context) -> Result<(), Fault> {
         for (var, inputs) in self.phis.iter() {
             let mut new = Lattice::Top;
             for (pred, var) in inputs {
@@ -146,7 +167,7 @@ impl Fragment {
         }
         if ctx.visited.insert(label) {
             for instruction in self.instructions.iter() {
-                instruction.optimize(label, ctx)?;
+                instruction.analyze(label, ctx)?;
             }
         }
         Ok(())
@@ -180,7 +201,25 @@ impl Fragment {
 }
 
 impl Instruction {
-    fn optimize(&self, label: Label, ctx: &mut Context) -> Result<(), Fault> {
+    fn rewrite(&mut self, ctx: &Context) -> Result<(), Fault> {
+        match self {
+            Instruction::Binary(dst, _, _, _) | Instruction::Unary(dst, _, _) => {
+                if let Lattice::Const(c) = ctx.get(*dst) {
+                    *self = Instruction::Load(*dst, c.clone());
+                }
+            }
+            Instruction::Branch(cond, yes, no) => {
+                if let Lattice::Const(c) = ctx.get(*cond) {
+                    let label = if c.bool()? { yes } else { no };
+                    *self = Instruction::Jump(*label);
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn analyze(&self, label: Label, ctx: &mut Context) -> Result<(), Fault> {
         match self {
             Instruction::Load(var, c) => ctx.update(*var, Lattice::Const(c.clone())),
             Instruction::Binary(var, lhs, op, rhs) => {

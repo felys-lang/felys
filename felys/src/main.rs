@@ -11,6 +11,7 @@ mod philia093;
 const CODE: &str = r#"
 fn main(args) {
     x = 1;
+    x = x + 2;
     if false {
         // 这部分代码不可达
         y = 10; // y 应该是 Top
@@ -23,9 +24,10 @@ fn main(args) {
 fn main() -> Result<(), Fault> {
     let philia093 = PhiLia093::from(CODE.to_string());
     let cyrene = philia093.parse()?;
-    let demiurge = cyrene.cfg()?;
+    let mut demiurge = cyrene.cfg()?;
+    demiurge.dec()?;
     println!("{:?}", demiurge.main.entry);
     println!("{:?}", demiurge.main.fragments);
     println!("{:?}", demiurge.main.exit);
-    demiurge.dec()
+    Ok(())
 }
