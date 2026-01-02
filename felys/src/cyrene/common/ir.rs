@@ -45,6 +45,7 @@ impl Context {
             .map_or_else(Vec::new, |map| map.into_values().collect());
         Function {
             args,
+            vars: self.vars,
             entry: self.entry,
             fragments: self.fragments,
             exit: self.exit,

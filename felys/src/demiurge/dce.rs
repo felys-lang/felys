@@ -37,9 +37,8 @@ impl Lattice {
     }
 }
 
-#[derive(Default)]
 struct Context {
-    values: HashMap<Var, Lattice>,
+    values: Vec<Lattice>,
     edges: HashSet<(Label, Label)>,
     visited: HashSet<Label>,
 
@@ -48,8 +47,26 @@ struct Context {
 }
 
 impl Context {
+    fn new(capacity: usize) -> Self {
+        Self {
+            values: Vec::with_capacity(capacity),
+            edges: HashSet::new(),
+            visited: HashSet::new(),
+            flow: VecDeque::new(),
+            ssa: VecDeque::new(),
+        }
+    }
+
+    fn get(&self, var: Var) -> &Lattice {
+        self.values.get(var).unwrap_or(&Lattice::Top)
+    }
+
     fn update(&mut self, var: Var, new: Lattice) {
-        let old = self.values.entry(var).or_insert(Lattice::Top);
+        if var >= self.values.len() {
+            self.values.resize(var + 1, Lattice::Top);
+        }
+
+        let old = &mut self.values[var];
         if *old != new {
             *old = new;
             self.ssa.push_back(var);
@@ -61,10 +78,10 @@ impl Function {
     fn optimize(&self) -> Result<(), Fault> {
         let usage = self.usage();
 
-        let mut ctx = Context::default();
+        let mut ctx = Context::new(self.vars);
         ctx.flow.push_back((Label::Entry, Label::Entry));
         for var in self.args.iter() {
-            ctx.values.insert(*var, Lattice::Bottom);
+            ctx.update(*var, Lattice::Bottom);
         }
 
         while !ctx.flow.is_empty() || !ctx.ssa.is_empty() {
@@ -121,7 +138,7 @@ impl Fragment {
             let mut new = Lattice::Top;
             for (pred, var) in inputs {
                 if ctx.edges.contains(&(*pred, label)) {
-                    let input = ctx.values.get(var).unwrap_or(&Lattice::Top);
+                    let input = ctx.get(*var);
                     new = new.meet(input);
                 }
             }
@@ -167,18 +184,15 @@ impl Instruction {
         match self {
             Instruction::Load(var, c) => ctx.update(*var, Lattice::Const(c.clone())),
             Instruction::Binary(var, lhs, op, rhs) => {
-                let l = ctx.values.get(lhs).unwrap_or(&Lattice::Top);
-                let r = ctx.values.get(rhs).unwrap_or(&Lattice::Top);
-                let new = match (l, r) {
-                    (Lattice::Const(lc), Lattice::Const(rc)) => Lattice::Const(lc.binary(op, rc)?),
+                let new = match (ctx.get(*lhs), ctx.get(*rhs)) {
+                    (Lattice::Const(l), Lattice::Const(r)) => Lattice::Const(l.binary(op, r)?),
                     (Lattice::Bottom, _) | (_, Lattice::Bottom) => Lattice::Bottom,
                     _ => Lattice::Top,
                 };
                 ctx.update(*var, new);
             }
             Instruction::Unary(var, op, inner) => {
-                let val = ctx.values.get(inner).unwrap_or(&Lattice::Top);
-                let new = match val {
+                let new = match ctx.get(*inner) {
                     Lattice::Top => Lattice::Top,
                     Lattice::Const(c) => Lattice::Const(c.unary(op)?),
                     Lattice::Bottom => Lattice::Bottom,
@@ -186,7 +200,7 @@ impl Instruction {
                 ctx.update(*var, new);
             }
             Instruction::Branch(cond, yes, no) => {
-                let val = ctx.values.get(cond).unwrap_or(&Lattice::Top);
+                let val = ctx.get(*cond);
                 match val {
                     Lattice::Const(Const::Bool(true)) => ctx.flow.push_back((label, *yes)),
                     Lattice::Const(Const::Bool(false)) => ctx.flow.push_back((label, *no)),
