@@ -27,8 +27,8 @@ impl Block {
         ctx.seal(Label::Exit)?;
 
         ctx.cursor = Label::Exit;
-        let ret = ctx.lookup(ctx.cursor, Id::Ret)?;
-        ctx.push(Instruction::Return(ret));
+        let var = ctx.lookup(ctx.cursor, Id::Ret)?;
+        ctx.ret(var);
         Ok(ctx.export())
     }
 

@@ -1,5 +1,5 @@
 use crate::ast::{BinOp, UnaOp};
-use crate::cyrene::{Const, Fragment, Instruction, Label, Var};
+use crate::cyrene::{Const, Fragment, Instruction, Label, Terminator, Var};
 use crate::demiurge::{Demiurge, Function};
 use crate::error::Fault;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -19,6 +19,11 @@ enum Lattice {
     Top,
     Const(Const),
     Bottom,
+}
+
+enum Id {
+    Ins(usize),
+    Term,
 }
 
 impl Lattice {
@@ -105,12 +110,25 @@ impl Function {
                 fragment.analyze(label, &mut ctx)?;
             }
             while let Some(var) = ctx.ssa.pop_front() {
-                if let Some(users) = usage.get(&var) {
-                    for (label, idx) in users {
-                        if ctx.visited.contains(label) {
-                            let instruction = self.loc(*label, *idx);
-                            instruction.analyze(*label, &mut ctx)?;
-                        }
+                let Some(users) = usage.get(&var) else {
+                    continue;
+                };
+                for (label, id) in users {
+                    if !ctx.visited.contains(label) {
+                        continue;
+                    }
+                    let fragment = self.get(*label).unwrap();
+                    match id {
+                        Id::Ins(index) => fragment
+                            .instructions
+                            .get(*index)
+                            .unwrap()
+                            .analyze(&mut ctx)?,
+                        Id::Term => fragment
+                            .terminator
+                            .as_ref()
+                            .unwrap()
+                            .analyze(*label, &mut ctx)?,
                     }
                 }
             }
@@ -118,7 +136,7 @@ impl Function {
         Ok(ctx)
     }
 
-    fn usage(&self) -> HashMap<Var, Vec<(Label, usize)>> {
+    fn usage(&self) -> HashMap<Var, Vec<(Label, Id)>> {
         let mut map = HashMap::new();
         self.entry.usage(Label::Entry, &mut map);
         for (id, fragment) in &self.fragments {
@@ -126,20 +144,6 @@ impl Function {
         }
         self.exit.usage(Label::Entry, &mut map);
         map
-    }
-
-    fn loc(&self, label: Label, index: usize) -> &Instruction {
-        match label {
-            Label::Entry => self.entry.instructions.get(index).unwrap(),
-            Label::Id(id) => self
-                .fragments
-                .get(&id)
-                .unwrap()
-                .instructions
-                .get(index)
-                .unwrap(),
-            Label::Exit => self.exit.instructions.get(index).unwrap(),
-        }
     }
 }
 
@@ -151,7 +155,7 @@ impl Fragment {
         for instruction in self.instructions.iter_mut() {
             instruction.rewrite(ctx)?;
         }
-        Ok(())
+        self.terminator.as_mut().unwrap().rewrite(ctx)
     }
 
     fn analyze(&self, label: Label, ctx: &mut Context) -> Result<(), Fault> {
@@ -167,36 +171,18 @@ impl Fragment {
         }
         if ctx.visited.insert(label) {
             for instruction in self.instructions.iter() {
-                instruction.analyze(label, ctx)?;
+                instruction.analyze(ctx)?;
             }
+            self.terminator.as_ref().unwrap().analyze(label, ctx)?;
         }
         Ok(())
     }
 
-    fn usage(&self, label: Label, map: &mut HashMap<Var, Vec<(Label, usize)>>) {
+    fn usage(&self, label: Label, map: &mut HashMap<Var, Vec<(Label, Id)>>) {
         for (i, instruction) in self.instructions.iter().enumerate() {
-            let mut update = |var: Var| {
-                map.entry(var).or_default().push((label, i));
-            };
-            match instruction {
-                Instruction::Field(_, x, _) => update(*x),
-                Instruction::Binary(_, l, _, r) => {
-                    update(*l);
-                    update(*r);
-                }
-                Instruction::Unary(_, _, x) => update(*x),
-                Instruction::Branch(x, _, _) => update(*x),
-                Instruction::Return(x) => update(*x),
-                Instruction::Push(x) => update(*x),
-                Instruction::Call(_, x) => update(*x),
-                Instruction::Index(_, src, x) => {
-                    update(*src);
-                    update(*x);
-                }
-                Instruction::Method(_, x, _) => update(*x),
-                _ => {}
-            }
+            instruction.usage(i, label, map);
         }
+        self.terminator.as_ref().unwrap().usage(label, map);
     }
 }
 
@@ -208,18 +194,12 @@ impl Instruction {
                     *self = Instruction::Load(*dst, c.clone());
                 }
             }
-            Instruction::Branch(cond, yes, no) => {
-                if let Lattice::Const(c) = ctx.get(*cond) {
-                    let label = if c.bool()? { yes } else { no };
-                    *self = Instruction::Jump(*label);
-                }
-            }
             _ => {}
         }
         Ok(())
     }
 
-    fn analyze(&self, label: Label, ctx: &mut Context) -> Result<(), Fault> {
+    fn analyze(&self, ctx: &mut Context) -> Result<(), Fault> {
         match self {
             Instruction::Load(var, c) => ctx.update(*var, Lattice::Const(c.clone())),
             Instruction::Binary(var, lhs, op, rhs) => {
@@ -238,7 +218,56 @@ impl Instruction {
                 };
                 ctx.update(*var, new);
             }
-            Instruction::Branch(cond, yes, no) => {
+            Instruction::Field(dst, _, _)
+            | Instruction::Func(dst, _)
+            | Instruction::Call(dst, _)
+            | Instruction::List(dst)
+            | Instruction::Tuple(dst)
+            | Instruction::Index(dst, _, _)
+            | Instruction::Method(dst, _, _)
+            | Instruction::Group(dst, _) => ctx.update(*dst, Lattice::Bottom),
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn usage(&self, i: usize, label: Label, map: &mut HashMap<Var, Vec<(Label, Id)>>) {
+        let mut update = |var: Var| {
+            map.entry(var).or_default().push((label, Id::Ins(i)));
+        };
+        match self {
+            Instruction::Field(_, x, _) => update(*x),
+            Instruction::Binary(_, l, _, r) => {
+                update(*l);
+                update(*r);
+            }
+            Instruction::Unary(_, _, x) => update(*x),
+            Instruction::Push(x) => update(*x),
+            Instruction::Call(_, x) => update(*x),
+            Instruction::Index(_, src, x) => {
+                update(*src);
+                update(*x);
+            }
+            Instruction::Method(_, x, _) => update(*x),
+            _ => {}
+        }
+    }
+}
+
+impl Terminator {
+    fn rewrite(&mut self, ctx: &Context) -> Result<(), Fault> {
+        if let Terminator::Branch(cond, yes, no) = self
+            && let Lattice::Const(c) = ctx.get(*cond)
+        {
+            let label = if c.bool()? { yes } else { no };
+            *self = Terminator::Jump(*label);
+        }
+        Ok(())
+    }
+
+    fn analyze(&self, label: Label, ctx: &mut Context) -> Result<(), Fault> {
+        match self {
+            Terminator::Branch(cond, yes, no) => {
                 let val = ctx.get(*cond);
                 match val {
                     Lattice::Const(Const::Bool(true)) => ctx.flow.push_back((label, *yes)),
@@ -251,18 +280,21 @@ impl Instruction {
                     Lattice::Top => {}
                 }
             }
-            Instruction::Jump(next) => ctx.flow.push_back((label, *next)),
-            Instruction::Field(dst, _, _)
-            | Instruction::Func(dst, _)
-            | Instruction::Call(dst, _)
-            | Instruction::List(dst)
-            | Instruction::Tuple(dst)
-            | Instruction::Index(dst, _, _)
-            | Instruction::Method(dst, _, _)
-            | Instruction::Group(dst, _) => ctx.update(*dst, Lattice::Bottom),
+            Terminator::Jump(next) => ctx.flow.push_back((label, *next)),
             _ => {}
         }
         Ok(())
+    }
+
+    fn usage(&self, label: Label, map: &mut HashMap<Var, Vec<(Label, Id)>>) {
+        let mut update = |var: Var| {
+            map.entry(var).or_default().push((label, Id::Term));
+        };
+        match self {
+            Terminator::Branch(x, _, _) => update(*x),
+            Terminator::Return(x) => update(*x),
+            _ => {}
+        }
     }
 }
 

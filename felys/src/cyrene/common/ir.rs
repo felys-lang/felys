@@ -95,16 +95,20 @@ impl Context {
     }
 
     pub fn jump(&mut self, to: Label) {
-        self.push(Instruction::Jump(to));
+        self.get(self.cursor).terminator = Some(Terminator::Jump(to));
         let cursor = self.cursor;
         self.get(to).predecessors.push(cursor);
     }
 
     pub fn branch(&mut self, cond: Var, to: Label, or: Label) {
-        self.push(Instruction::Branch(cond, to, or));
+        self.get(self.cursor).terminator = Some(Terminator::Branch(cond, to, or));
         let cursor = self.cursor;
         self.get(to).predecessors.push(cursor);
         self.get(or).predecessors.push(cursor);
+    }
+
+    pub fn ret(&mut self, var: Var) {
+        self.get(self.cursor).terminator = Some(Terminator::Return(var));
     }
 
     pub fn phi(&mut self, label: Label, dst: Var, src: Vec<(Label, Var)>) {
@@ -169,6 +173,7 @@ pub struct Fragment {
     pub phis: Vec<(Var, Vec<(Label, Var)>)>,
     pub predecessors: Vec<Label>,
     pub instructions: Vec<Instruction>,
+    pub terminator: Option<Terminator>,
 }
 
 #[derive(Debug)]
@@ -178,9 +183,6 @@ pub enum Instruction {
     Load(Var, Const),
     Binary(Var, Var, BinOp, Var),
     Unary(Var, UnaOp, Var),
-    Branch(Var, Label, Label),
-    Jump(Label),
-    Return(Var),
     Buffer,
     Push(Var),
     Call(Var, Var),
@@ -189,6 +191,13 @@ pub enum Instruction {
     Index(Var, Var, Var),
     Method(Var, Var, usize),
     Group(Var, usize),
+}
+
+#[derive(Debug)]
+pub enum Terminator {
+    Branch(Var, Label, Label),
+    Jump(Label),
+    Return(Var),
 }
 
 pub type Var = usize;
