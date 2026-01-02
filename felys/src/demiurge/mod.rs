@@ -1,6 +1,6 @@
 mod codegen;
 mod bytecode;
-mod folding;
+mod dce;
 
 pub use bytecode::*;
 pub use codegen::*;

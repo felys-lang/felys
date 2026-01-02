@@ -1,15 +1,9 @@
 use crate::ast::{BinOp, Lit, UnaOp};
+use crate::demiurge::Function;
 use crate::error::Fault;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::rc::Rc;
-
-#[derive(Debug)]
-pub struct Function {
-    pub entry: Fragment,
-    pub fragments: HashMap<usize, Fragment>,
-    pub exit: Fragment,
-}
 
 #[derive(Default)]
 pub struct Context {
@@ -37,7 +31,7 @@ pub enum Id {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Const {
-    Int(usize),
+    Int(isize),
     Float(u64),
     Bool(bool),
     Str(Rc<str>),
@@ -178,7 +172,6 @@ pub enum Instruction {
     Load(Var, Const),
     Binary(Var, Var, BinOp, Var),
     Unary(Var, UnaOp, Var),
-    Copy(Var, Var),
     Branch(Var, Label, Label),
     Jump(Label),
     Return(Var),

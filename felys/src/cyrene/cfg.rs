@@ -1,6 +1,7 @@
 use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Stmt};
 use crate::cyrene::common::Context;
-use crate::cyrene::{Const, Dst, Function, Id, Instruction, Label, Meta, Var};
+use crate::cyrene::{Const, Dst, Id, Instruction, Label, Meta, Var};
+use crate::demiurge::Function;
 use crate::error::Fault;
 
 type Stack = Vec<(Label, Label, Option<Option<Id>>)>;
@@ -8,7 +9,7 @@ type Stack = Vec<(Label, Label, Option<Option<Id>>)>;
 impl Block {
     pub fn build<'a>(
         &self,
-        args: impl Iterator<Item = &'a usize>,
+        args: impl Iterator<Item=&'a usize>,
         meta: &Meta,
     ) -> Result<Function, Fault> {
         let mut stk = Vec::new();
