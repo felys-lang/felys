@@ -5,11 +5,11 @@ use crate::error::Fault;
 use std::collections::HashMap;
 
 impl Demiurge {
-    pub fn dce(mut self) -> Result<Self, Fault> {
+    pub fn optimize(mut self) -> Result<Self, Fault> {
         for function in self.fns.values_mut() {
-            function.dce()?;
+            function.optimize()?;
         }
-        self.main.dce()?;
+        self.main.optimize()?;
         Ok(self)
     }
 }
@@ -20,27 +20,11 @@ enum Id {
 }
 
 impl Function {
-    fn dce(&mut self) -> Result<(), Fault> {
+    fn optimize(&mut self) -> Result<(), Fault> {
         let ctx = self.context()?;
-        self.fragments
-            .retain(|id, _| ctx.visited.contains(&Label::Id(*id)));
-
-        let mut renamer = Renamer::new();
-        let mut changed = true;
-        while changed {
-            changed = false;
-            for (id, fragment) in self.fragments.iter_mut() {
-                if fragment.rename(Label::Id(*id), &ctx, &mut renamer) {
-                    changed = true;
-                }
-            }
-        }
-
-        self.entry.rewrite(&ctx, &renamer)?;
-        for (_, fragment) in self.fragments.iter_mut() {
-            fragment.rewrite(&ctx, &renamer)?;
-        }
-        self.exit.rewrite(&ctx, &renamer)
+        self.rewrite(&ctx)?;
+        self.rename(&ctx)?;
+        self.sweep(&ctx)
     }
 
     fn context(&self) -> Result<Context, Fault> {
@@ -49,7 +33,7 @@ impl Function {
         for (id, fragment) in &self.fragments {
             fragment.usage(Label::Id(*id), &mut usage);
         }
-        self.exit.usage(Label::Entry, &mut usage);
+        self.exit.usage(Label::Exit, &mut usage);
 
         let mut ctx = Context::new(self.vars);
         ctx.flow.push_back((Label::Entry, Label::Entry));
@@ -92,10 +76,43 @@ impl Function {
         }
         Ok(ctx)
     }
+
+    fn rewrite(&mut self, ctx: &Context) -> Result<(), Fault> {
+        self.entry.rewrite(ctx)?;
+        for (_, fragment) in self.fragments.iter_mut() {
+            fragment.rewrite(ctx)?;
+        }
+        self.exit.rewrite(ctx)
+    }
+
+    fn rename(&mut self, ctx: &Context) -> Result<(), Fault> {
+        let mut renamer = Renamer::new();
+        let mut changed = true;
+        while changed {
+            changed = false;
+            for (id, fragment) in self.fragments.iter_mut() {
+                if fragment.simplify(Label::Id(*id), ctx, &mut renamer) {
+                    changed = true;
+                }
+            }
+        }
+
+        self.entry.rename(&renamer)?;
+        for (_, fragment) in self.fragments.iter_mut() {
+            fragment.rename(&renamer)?;
+        }
+        self.exit.rename(&renamer)
+    }
+
+    fn sweep(&mut self, ctx: &Context) -> Result<(), Fault> {
+        self.fragments
+            .retain(|id, _| ctx.visited.contains(&Label::Id(*id)));
+        Ok(())
+    }
 }
 
 impl Fragment {
-    fn rename(&mut self, label: Label, ctx: &Context, renamer: &mut Renamer) -> bool {
+    fn simplify(&mut self, label: Label, ctx: &Context, renamer: &mut Renamer) -> bool {
         let mut changed = false;
         for (_, inputs) in self.phis.iter_mut() {
             let len = inputs.len();
@@ -133,11 +150,18 @@ impl Fragment {
         changed
     }
 
-    fn rewrite(&mut self, ctx: &Context, renamer: &Renamer) -> Result<(), Fault> {
+    fn rewrite(&mut self, ctx: &Context) -> Result<(), Fault> {
         for instruction in self.instructions.iter_mut() {
-            instruction.rewrite(ctx, renamer)?;
+            instruction.rewrite(ctx)?;
         }
-        self.terminator.as_mut().unwrap().rewrite(ctx, renamer)
+        self.terminator.as_mut().unwrap().rewrite(ctx)
+    }
+
+    fn rename(&mut self, renamer: &Renamer) -> Result<(), Fault> {
+        for instruction in self.instructions.iter_mut() {
+            instruction.rename(renamer)?;
+        }
+        self.terminator.as_mut().unwrap().rename(renamer)
     }
 
     fn analyze(&self, label: Label, ctx: &mut Context) -> Result<(), Fault> {
@@ -169,24 +193,32 @@ impl Fragment {
 }
 
 impl Instruction {
-    fn rewrite(&mut self, ctx: &Context, renamer: &Renamer) -> Result<(), Fault> {
+    fn rewrite(&mut self, ctx: &Context) -> Result<(), Fault> {
         match self {
-            Instruction::Binary(dst, lhs, _, rhs) => {
+            Instruction::Binary(dst, _, _, _) => {
                 if let Lattice::Const(c) = ctx.get(*dst) {
                     *self = Instruction::Load(*dst, c.clone());
-                    return Ok(());
                 }
+            }
+            Instruction::Unary(dst, _, _) => {
+                if let Lattice::Const(c) = ctx.get(*dst) {
+                    *self = Instruction::Load(*dst, c.clone());
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn rename(&mut self, renamer: &Renamer) -> Result<(), Fault> {
+        match self {
+            Instruction::Binary(_, lhs, _, rhs) => {
                 *lhs = renamer.get(*lhs);
                 *rhs = renamer.get(*rhs);
             }
-            Instruction::Unary(dst, _, inner) => {
-                if let Lattice::Const(c) = ctx.get(*dst) {
-                    *self = Instruction::Load(*dst, c.clone());
-                    return Ok(());
-                }
-                *inner = renamer.get(*inner);
+            Instruction::Unary(_, _, var) | Instruction::Field(_, var, _) => {
+                *var = renamer.get(*var)
             }
-            Instruction::Field(_, var, _) => *var = renamer.get(*var),
             Instruction::Call(_, var, params)
             | Instruction::Method(_, var, _, params)
             | Instruction::List(var, params)
@@ -261,17 +293,20 @@ impl Instruction {
 }
 
 impl Terminator {
-    fn rewrite(&mut self, ctx: &Context, renamer: &Renamer) -> Result<(), Fault> {
+    fn rewrite(&mut self, ctx: &Context) -> Result<(), Fault> {
+        if let Terminator::Branch(cond, yes, no) = self
+            && let Lattice::Const(c) = ctx.get(*cond)
+        {
+            let label = if c.bool()? { yes } else { no };
+            *self = Terminator::Jump(*label);
+            return Ok(());
+        }
+        Ok(())
+    }
+
+    fn rename(&mut self, renamer: &Renamer) -> Result<(), Fault> {
         match self {
-            Terminator::Branch(cond, yes, no) => {
-                if let Lattice::Const(c) = ctx.get(*cond) {
-                    let label = if c.bool()? { yes } else { no };
-                    *self = Terminator::Jump(*label);
-                    return Ok(());
-                }
-                *cond = renamer.get(*cond)
-            }
-            Terminator::Return(var) => *var = renamer.get(*var),
+            Terminator::Branch(var, _, _) | Terminator::Return(var) => *var = renamer.get(*var),
             _ => {}
         }
         Ok(())

@@ -1,7 +1,7 @@
 mod bytecode;
 mod codegen;
 mod context;
-mod dce;
+mod optimize;
 mod eval;
 
 pub use bytecode::*;
