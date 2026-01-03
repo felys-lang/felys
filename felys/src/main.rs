@@ -24,8 +24,7 @@ fn main(args) {
 fn main() -> Result<(), Fault> {
     let philia093 = PhiLia093::from(CODE.to_string());
     let cyrene = philia093.parse()?;
-    let mut demiurge = cyrene.cfg()?;
-    demiurge.dec()?;
+    let demiurge = cyrene.cfg()?.dce()?;
     println!("{:?}", demiurge.main.entry);
     println!("{:?}", demiurge.main.fragments);
     println!("{:?}", demiurge.main.exit);
