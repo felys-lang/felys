@@ -1,5 +1,6 @@
 mod bytecode;
 mod codegen;
+mod context;
 mod dce;
 mod eval;
 

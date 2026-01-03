@@ -183,13 +183,11 @@ pub enum Instruction {
     Load(Var, Const),
     Binary(Var, Var, BinOp, Var),
     Unary(Var, UnaOp, Var),
-    Buffer,
-    Push(Var),
-    Call(Var, Var),
-    List(Var),
-    Tuple(Var),
+    Call(Var, Var, Vec<Var>),
+    List(Var, Vec<Var>),
+    Tuple(Var, Vec<Var>),
     Index(Var, Var, Var),
-    Method(Var, Var, usize),
+    Method(Var, Var, usize, Vec<Var>),
     Group(Var, usize),
 }
 

@@ -1,7 +1,8 @@
 use crate::cyrene::{Const, Fragment, Instruction, Label, Terminator, Var};
+use crate::demiurge::context::{Context, Lattice, Renamer};
 use crate::demiurge::{Demiurge, Function};
 use crate::error::Fault;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::HashMap;
 
 impl Demiurge {
     pub fn dce(mut self) -> Result<Self, Fault> {
@@ -10,90 +11,6 @@ impl Demiurge {
         }
         self.main.dce()?;
         Ok(self)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-enum Lattice {
-    Top,
-    Const(Const),
-    Bottom,
-}
-
-impl Lattice {
-    fn meet(&self, other: &Self) -> Self {
-        match (self, other) {
-            (Lattice::Top, x) | (x, Lattice::Top) => x.clone(),
-            (Lattice::Const(l), Lattice::Const(r)) => {
-                if l == r {
-                    Lattice::Const(l.clone())
-                } else {
-                    Lattice::Bottom
-                }
-            }
-            (Lattice::Bottom, _) | (_, Lattice::Bottom) => Lattice::Bottom,
-        }
-    }
-}
-
-struct Renamer {
-    map: HashMap<Var, Var>,
-}
-
-impl Renamer {
-    fn new() -> Self {
-        Self {
-            map: HashMap::new(),
-        }
-    }
-
-    fn insert(&mut self, from: Var, to: Var) {
-        self.map.insert(from, to);
-    }
-
-    fn get(&self, var: Var) -> Var {
-        let mut current = var;
-        let mut visited = HashSet::new();
-        while let Some(&next) = self.map.get(&current) {
-            if !visited.insert(next) {
-                break;
-            }
-            current = next;
-        }
-        current
-    }
-}
-
-struct Context {
-    values: Vec<Lattice>,
-    edges: HashSet<(Label, Label)>,
-    visited: HashSet<Label>,
-
-    flow: VecDeque<(Label, Label)>,
-    ssa: VecDeque<Var>,
-}
-
-impl Context {
-    fn new(vars: usize) -> Self {
-        Self {
-            values: vec![Lattice::Top; vars],
-            edges: HashSet::new(),
-            visited: HashSet::new(),
-            flow: VecDeque::new(),
-            ssa: VecDeque::new(),
-        }
-    }
-
-    fn get(&self, var: Var) -> &Lattice {
-        self.values.get(var).unwrap_or(&Lattice::Top)
-    }
-
-    fn update(&mut self, var: Var, new: Lattice) {
-        let old = &mut self.values[var];
-        if *old != new {
-            *old = new;
-            self.ssa.push_back(var);
-        }
     }
 }
 
@@ -269,11 +186,13 @@ impl Instruction {
                 }
                 *inner = renamer.get(*inner);
             }
-            Instruction::Field(_, var, _)
-            | Instruction::Push(var)
-            | Instruction::Call(_, var)
-            | Instruction::Method(_, var, _) => {
+            Instruction::Field(_, var, _) => *var = renamer.get(*var),
+            Instruction::Call(_, var, params)
+            | Instruction::Method(_, var, _, params)
+            | Instruction::List(var, params)
+            | Instruction::Tuple(var, params) => {
                 *var = renamer.get(*var);
+                params.iter_mut().for_each(|x| *x = renamer.get(*x));
             }
             Instruction::Index(_, var, index) => {
                 *var = renamer.get(*var);
@@ -305,13 +224,12 @@ impl Instruction {
             }
             Instruction::Field(dst, _, _)
             | Instruction::Func(dst, _)
-            | Instruction::Call(dst, _)
-            | Instruction::List(dst)
-            | Instruction::Tuple(dst)
+            | Instruction::Call(dst, _, _)
+            | Instruction::List(dst, _)
+            | Instruction::Tuple(dst, _)
             | Instruction::Index(dst, _, _)
-            | Instruction::Method(dst, _, _)
+            | Instruction::Method(dst, _, _, _)
             | Instruction::Group(dst, _) => ctx.update(*dst, Lattice::Bottom),
-            _ => {}
         }
         Ok(())
     }
@@ -321,19 +239,22 @@ impl Instruction {
             map.entry(var).or_default().push((label, Id::Ins(i)));
         };
         match self {
-            Instruction::Field(_, x, _) => update(*x),
+            Instruction::Field(_, x, _) | Instruction::Unary(_, _, x) => update(*x),
             Instruction::Binary(_, l, _, r) => {
                 update(*l);
                 update(*r);
             }
-            Instruction::Unary(_, _, x) => update(*x),
-            Instruction::Push(x) => update(*x),
-            Instruction::Call(_, x) => update(*x),
             Instruction::Index(_, src, x) => {
                 update(*src);
                 update(*x);
             }
-            Instruction::Method(_, x, _) => update(*x),
+            Instruction::Call(_, x, params)
+            | Instruction::Method(_, x, _, params)
+            | Instruction::List(x, params)
+            | Instruction::Tuple(x, params) => {
+                update(*x);
+                params.iter().for_each(|x| update(*x));
+            }
             _ => {}
         }
     }

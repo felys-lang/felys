@@ -235,15 +235,15 @@ impl Expr {
             }
             Expr::Call(expr, args) => {
                 let callable = expr.ir(ctx, stk, meta)?.var()?;
-                ctx.push(Instruction::Buffer);
+                let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let element = arg.ir(ctx, stk, meta)?.var()?;
-                        ctx.push(Instruction::Push(element));
+                        let param = arg.ir(ctx, stk, meta)?.var()?;
+                        params.push(param);
                     }
                 }
                 let var = ctx.var();
-                ctx.push(Instruction::Call(var, callable));
+                ctx.push(Instruction::Call(var, callable, params));
                 Ok(var.into())
             }
             Expr::Field(expr, id) => {
@@ -254,15 +254,15 @@ impl Expr {
             }
             Expr::Method(expr, id, args) => {
                 let src = expr.ir(ctx, stk, meta)?.var()?;
-                ctx.push(Instruction::Buffer);
+                let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let element = arg.ir(ctx, stk, meta)?.var()?;
-                        ctx.push(Instruction::Push(element));
+                        let param = arg.ir(ctx, stk, meta)?.var()?;
+                        params.push(param);
                     }
                 }
                 let var = ctx.var();
-                ctx.push(Instruction::Method(var, src, *id));
+                ctx.push(Instruction::Method(var, src, *id, params));
                 Ok(var.into())
             }
             Expr::Index(expr, index) => {
@@ -273,25 +273,25 @@ impl Expr {
                 Ok(var.into())
             }
             Expr::Tuple(args) => {
-                ctx.push(Instruction::Buffer);
+                let mut params = Vec::new();
                 for arg in args.iter() {
-                    let element = arg.ir(ctx, stk, meta)?.var()?;
-                    ctx.push(Instruction::Push(element));
+                    let param = arg.ir(ctx, stk, meta)?.var()?;
+                    params.push(param);
                 }
                 let var = ctx.var();
-                ctx.push(Instruction::Tuple(var));
+                ctx.push(Instruction::Tuple(var, params));
                 Ok(var.into())
             }
             Expr::List(args) => {
-                ctx.push(Instruction::Buffer);
+                let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let element = arg.ir(ctx, stk, meta)?.var()?;
-                        ctx.push(Instruction::Push(element));
+                        let param = arg.ir(ctx, stk, meta)?.var()?;
+                        params.push(param);
                     }
                 }
                 let var = ctx.var();
-                ctx.push(Instruction::List(var));
+                ctx.push(Instruction::List(var, params));
                 Ok(var.into())
             }
             Expr::Lit(lit) => lit.ir(ctx, meta),
