@@ -12,7 +12,7 @@ const CODE: &str = r#"
 fn main(args) {
     x = 1;
     x = x + 2;
-    x = x;
+    x = args;
     if false {
         // 这部分代码不可达
         y = 10; // y 应该是 Top

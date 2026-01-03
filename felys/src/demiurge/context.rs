@@ -52,7 +52,7 @@ impl Lattice {
     }
 }
 
-pub struct Context {
+pub struct Meta {
     values: Vec<Lattice>,
     pub edges: HashSet<(Label, Label)>,
     pub visited: HashSet<Label>,
@@ -61,7 +61,7 @@ pub struct Context {
     pub ssa: VecDeque<Var>,
 }
 
-impl Context {
+impl Meta {
     pub fn new(vars: usize) -> Self {
         Self {
             values: vec![Lattice::Top; vars],
