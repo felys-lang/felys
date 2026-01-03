@@ -8,9 +8,9 @@ use std::ops::{Add, Div, Mul, Rem, Sub};
 impl Demiurge {
     pub fn dec(&mut self) -> Result<(), Fault> {
         for function in self.fns.values_mut() {
-            function.rewrite()?;
+            function.dce()?;
         }
-        self.main.rewrite()
+        self.main.dce()
     }
 }
 
@@ -39,6 +39,34 @@ impl Lattice {
             }
             (Lattice::Bottom, _) | (_, Lattice::Bottom) => Lattice::Bottom,
         }
+    }
+}
+
+struct Renamer {
+    map: HashMap<Var, Var>,
+}
+
+impl Renamer {
+    fn new() -> Self {
+        Self {
+            map: HashMap::new(),
+        }
+    }
+
+    fn insert(&mut self, from: Var, to: Var) {
+        self.map.insert(from, to);
+    }
+
+    fn get(&self, var: Var) -> Var {
+        let mut current = var;
+        let mut visited = HashSet::new();
+        while let Some(&next) = self.map.get(&current) {
+            if !visited.insert(next) {
+                break;
+            }
+            current = next;
+        }
+        current
     }
 }
 
@@ -80,15 +108,27 @@ impl Context {
 }
 
 impl Function {
-    fn rewrite(&mut self) -> Result<(), Fault> {
+    fn dce(&mut self) -> Result<(), Fault> {
         let ctx = self.analyze()?;
-        self.entry.rewrite(Label::Entry, &ctx)?;
         self.fragments
             .retain(|id, _| ctx.visited.contains(&Label::Id(*id)));
-        for (id, fragment) in self.fragments.iter_mut() {
-            fragment.rewrite(Label::Id(*id), &ctx)?;
+
+        let mut renamer = Renamer::new();
+        let mut changed = true;
+        while changed {
+            changed = false;
+            for (id, fragment) in self.fragments.iter_mut() {
+                if fragment.rename(Label::Id(*id), &ctx, &mut renamer) {
+                    changed = true;
+                }
+            }
         }
-        self.exit.rewrite(Label::Exit, &ctx)
+
+        self.entry.rewrite(&ctx, &renamer)?;
+        for (_, fragment) in self.fragments.iter_mut() {
+            fragment.rewrite(&ctx, &renamer)?;
+        }
+        self.exit.rewrite(&ctx, &renamer)
     }
 
     fn analyze(&self) -> Result<Context, Fault> {
@@ -148,14 +188,49 @@ impl Function {
 }
 
 impl Fragment {
-    fn rewrite(&mut self, label: Label, ctx: &Context) -> Result<(), Fault> {
+    fn rename(&mut self, label: Label, ctx: &Context, renamer: &mut Renamer) -> bool {
+        let mut changed = false;
         for (_, inputs) in self.phis.iter_mut() {
-            inputs.retain(|(pred, _)| ctx.edges.contains(&(*pred, label)))
+            let len = inputs.len();
+            inputs.retain(|(pred, _)| ctx.edges.contains(&(*pred, label)));
+            if len != inputs.len() {
+                changed = true;
+            }
         }
+
+        self.phis.retain(|(var, input)| {
+            let mut trivial = true;
+            let mut candidate = None;
+            for (_, src) in input {
+                let resolved = renamer.get(*src);
+                if resolved == *var {
+                    continue;
+                }
+                if let Some(c) = candidate {
+                    if c != resolved {
+                        trivial = false;
+                        break;
+                    }
+                } else {
+                    candidate = Some(resolved);
+                }
+            }
+
+            if trivial && let Some(replacement) = candidate {
+                renamer.insert(*var, replacement);
+                changed = true;
+                return false;
+            }
+            true
+        });
+        changed
+    }
+
+    fn rewrite(&mut self, ctx: &Context, renamer: &Renamer) -> Result<(), Fault> {
         for instruction in self.instructions.iter_mut() {
-            instruction.rewrite(ctx)?;
+            instruction.rewrite(ctx, renamer)?;
         }
-        self.terminator.as_mut().unwrap().rewrite(ctx)
+        self.terminator.as_mut().unwrap().rewrite(ctx, renamer)
     }
 
     fn analyze(&self, label: Label, ctx: &mut Context) -> Result<(), Fault> {
@@ -187,12 +262,32 @@ impl Fragment {
 }
 
 impl Instruction {
-    fn rewrite(&mut self, ctx: &Context) -> Result<(), Fault> {
+    fn rewrite(&mut self, ctx: &Context, renamer: &Renamer) -> Result<(), Fault> {
         match self {
-            Instruction::Binary(dst, _, _, _) | Instruction::Unary(dst, _, _) => {
+            Instruction::Binary(dst, lhs, _, rhs) => {
                 if let Lattice::Const(c) = ctx.get(*dst) {
                     *self = Instruction::Load(*dst, c.clone());
+                    return Ok(());
                 }
+                *lhs = renamer.get(*lhs);
+                *rhs = renamer.get(*rhs);
+            }
+            Instruction::Unary(dst, _, inner) => {
+                if let Lattice::Const(c) = ctx.get(*dst) {
+                    *self = Instruction::Load(*dst, c.clone());
+                    return Ok(());
+                }
+                *inner = renamer.get(*inner);
+            }
+            Instruction::Field(_, var, _)
+            | Instruction::Push(var)
+            | Instruction::Call(_, var)
+            | Instruction::Method(_, var, _) => {
+                *var = renamer.get(*var);
+            }
+            Instruction::Index(_, var, index) => {
+                *var = renamer.get(*var);
+                *index = renamer.get(*index);
             }
             _ => {}
         }
@@ -255,12 +350,18 @@ impl Instruction {
 }
 
 impl Terminator {
-    fn rewrite(&mut self, ctx: &Context) -> Result<(), Fault> {
-        if let Terminator::Branch(cond, yes, no) = self
-            && let Lattice::Const(c) = ctx.get(*cond)
-        {
-            let label = if c.bool()? { yes } else { no };
-            *self = Terminator::Jump(*label);
+    fn rewrite(&mut self, ctx: &Context, renamer: &Renamer) -> Result<(), Fault> {
+        match self {
+            Terminator::Branch(cond, yes, no) => {
+                if let Lattice::Const(c) = ctx.get(*cond) {
+                    let label = if c.bool()? { yes } else { no };
+                    *self = Terminator::Jump(*label);
+                    return Ok(());
+                }
+                *cond = renamer.get(*cond)
+            }
+            Terminator::Return(var) => *var = renamer.get(*var),
+            _ => {}
         }
         Ok(())
     }
