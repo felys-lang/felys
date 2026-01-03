@@ -151,9 +151,18 @@ impl Fragment {
     }
 
     fn rewrite(&mut self, ctx: &Context) -> Result<(), Fault> {
+        let mut new = Vec::new();
+        self.phis.retain(|(x, _)| {
+            if let Lattice::Const(c) = ctx.get(*x) {
+                new.push(Instruction::Load(*x, c.clone()));
+                return false;
+            }
+            true
+        });
         for instruction in self.instructions.iter_mut() {
             instruction.rewrite(ctx)?;
         }
+        self.instructions.splice(0..0, new);
         self.terminator.as_mut().unwrap().rewrite(ctx)
     }
 
