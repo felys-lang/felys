@@ -1,33 +1,5 @@
 use crate::cyrene::{Const, Label, Var};
-use std::collections::{HashMap, HashSet, VecDeque};
-
-pub struct Renamer {
-    map: HashMap<Var, Var>,
-}
-
-impl Renamer {
-    pub fn new() -> Self {
-        Self {
-            map: HashMap::new(),
-        }
-    }
-
-    pub fn insert(&mut self, from: Var, to: Var) {
-        self.map.insert(from, to);
-    }
-
-    pub fn get(&self, var: Var) -> Var {
-        let mut current = var;
-        let mut visited = HashSet::new();
-        while let Some(&next) = self.map.get(&current) {
-            if !visited.insert(next) {
-                break;
-            }
-            current = next;
-        }
-        current
-    }
-}
+use std::collections::{HashSet, VecDeque};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Lattice {

@@ -1,7 +1,6 @@
 mod bytecode;
 mod codegen;
 mod context;
-mod optimize;
 mod eval;
 mod stages;
 

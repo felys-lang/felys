@@ -1,5 +1,5 @@
 use crate::cyrene::{Const, Fragment, Instruction, Label, Terminator, Var};
-use crate::demiurge::context::{Meta, Lattice};
+use crate::demiurge::context::{Lattice, Meta};
 use crate::demiurge::Function;
 use crate::error::Fault;
 use std::collections::HashMap;
@@ -16,27 +16,27 @@ impl Function {
             fragment.usage(label, &mut usage);
         }
 
-        let mut ctx = Meta::new(self.vars);
-        ctx.flow.push_back((Label::Entry, Label::Entry));
+        let mut meta = Meta::new(self.vars);
+        meta.flow.push_back((Label::Entry, Label::Entry));
         for var in self.args.iter() {
-            ctx.update(*var, Lattice::Bottom);
+            meta.update(*var, Lattice::Bottom);
         }
 
-        while !ctx.flow.is_empty() || !ctx.ssa.is_empty() {
-            while let Some((pred, label)) = ctx.flow.pop_front() {
-                if ctx.edges.contains(&(pred, label)) {
+        while !meta.flow.is_empty() || !meta.ssa.is_empty() {
+            while let Some((pred, label)) = meta.flow.pop_front() {
+                if meta.edges.contains(&(pred, label)) {
                     continue;
                 }
-                ctx.edges.insert((pred, label));
+                meta.edges.insert((pred, label));
                 let fragment = self.get(label).unwrap();
-                fragment.analyze(label, &mut ctx)?;
+                fragment.analyze(label, &mut meta)?;
             }
-            while let Some(var) = ctx.ssa.pop_front() {
+            while let Some(var) = meta.ssa.pop_front() {
                 let Some(users) = usage.get(&var) else {
                     continue;
                 };
                 for (label, id) in users {
-                    if !ctx.visited.contains(label) {
+                    if !meta.visited.contains(label) {
                         continue;
                     }
                     let fragment = self.get(*label).unwrap();
@@ -45,37 +45,37 @@ impl Function {
                             .instructions
                             .get(*index)
                             .unwrap()
-                            .analyze(&mut ctx)?,
+                            .analyze(&mut meta)?,
                         Id::Term => fragment
                             .terminator
                             .as_ref()
                             .unwrap()
-                            .analyze(*label, &mut ctx)?,
+                            .analyze(*label, &mut meta)?,
                     }
                 }
             }
         }
-        Ok(ctx)
+        Ok(meta)
     }
 }
 
 impl Fragment {
-    fn analyze(&self, label: Label, ctx: &mut Meta) -> Result<(), Fault> {
+    fn analyze(&self, label: Label, meta: &mut Meta) -> Result<(), Fault> {
         for (var, inputs) in self.phis.iter() {
             let mut new = Lattice::Top;
             for (pred, var) in inputs {
-                if ctx.edges.contains(&(*pred, label)) {
-                    let input = ctx.get(*var);
+                if meta.edges.contains(&(*pred, label)) {
+                    let input = meta.get(*var);
                     new = new.meet(input);
                 }
             }
-            ctx.update(*var, new);
+            meta.update(*var, new);
         }
-        if ctx.visited.insert(label) {
+        if meta.visited.insert(label) {
             for instruction in self.instructions.iter() {
-                instruction.analyze(ctx)?;
+                instruction.analyze(meta)?;
             }
-            self.terminator.as_ref().unwrap().analyze(label, ctx)?;
+            self.terminator.as_ref().unwrap().analyze(label, meta)?;
         }
         Ok(())
     }
@@ -89,24 +89,24 @@ impl Fragment {
 }
 
 impl Instruction {
-    fn analyze(&self, ctx: &mut Meta) -> Result<(), Fault> {
+    fn analyze(&self, meta: &mut Meta) -> Result<(), Fault> {
         match self {
-            Instruction::Load(var, c) => ctx.update(*var, Lattice::Const(c.clone())),
+            Instruction::Load(var, c) => meta.update(*var, Lattice::Const(c.clone())),
             Instruction::Binary(var, lhs, op, rhs) => {
-                let new = match (ctx.get(*lhs), ctx.get(*rhs)) {
+                let new = match (meta.get(*lhs), meta.get(*rhs)) {
                     (Lattice::Const(l), Lattice::Const(r)) => Lattice::Const(l.binary(op, r)?),
                     (Lattice::Bottom, _) | (_, Lattice::Bottom) => Lattice::Bottom,
                     _ => Lattice::Top,
                 };
-                ctx.update(*var, new);
+                meta.update(*var, new);
             }
             Instruction::Unary(var, op, inner) => {
-                let new = match ctx.get(*inner) {
+                let new = match meta.get(*inner) {
                     Lattice::Top => Lattice::Top,
                     Lattice::Const(c) => Lattice::Const(c.unary(op)?),
                     Lattice::Bottom => Lattice::Bottom,
                 };
-                ctx.update(*var, new);
+                meta.update(*var, new);
             }
             Instruction::Field(dst, _, _)
             | Instruction::Func(dst, _)
@@ -115,7 +115,7 @@ impl Instruction {
             | Instruction::Tuple(dst, _)
             | Instruction::Index(dst, _, _)
             | Instruction::Method(dst, _, _, _)
-            | Instruction::Group(dst, _) => ctx.update(*dst, Lattice::Bottom),
+            | Instruction::Group(dst, _) => meta.update(*dst, Lattice::Bottom),
         }
         Ok(())
     }
@@ -147,22 +147,22 @@ impl Instruction {
 }
 
 impl Terminator {
-    fn analyze(&self, label: Label, ctx: &mut Meta) -> Result<(), Fault> {
+    fn analyze(&self, label: Label, meta: &mut Meta) -> Result<(), Fault> {
         match self {
             Terminator::Branch(cond, yes, no) => {
-                let val = ctx.get(*cond);
+                let val = meta.get(*cond);
                 match val {
-                    Lattice::Const(Const::Bool(true)) => ctx.flow.push_back((label, *yes)),
-                    Lattice::Const(Const::Bool(false)) => ctx.flow.push_back((label, *no)),
+                    Lattice::Const(Const::Bool(true)) => meta.flow.push_back((label, *yes)),
+                    Lattice::Const(Const::Bool(false)) => meta.flow.push_back((label, *no)),
                     Lattice::Const(_) => return Err(Fault::InvalidOperation),
                     Lattice::Bottom => {
-                        ctx.flow.push_back((label, *yes));
-                        ctx.flow.push_back((label, *no));
+                        meta.flow.push_back((label, *yes));
+                        meta.flow.push_back((label, *no));
                     }
                     Lattice::Top => {}
                 }
             }
-            Terminator::Jump(next) => ctx.flow.push_back((label, *next)),
+            Terminator::Jump(next) => meta.flow.push_back((label, *next)),
             _ => {}
         }
         Ok(())

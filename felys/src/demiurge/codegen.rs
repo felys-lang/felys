@@ -1,4 +1,5 @@
 use crate::cyrene::{Fragment, Group, Label};
+use crate::error::Fault;
 use crate::philia093::Intern;
 use std::collections::HashMap;
 
@@ -16,6 +17,16 @@ pub struct Function {
     pub entry: Fragment,
     pub fragments: HashMap<usize, Fragment>,
     pub exit: Fragment,
+}
+
+impl Demiurge {
+    pub fn optimize(mut self) -> Result<Self, Fault> {
+        for function in self.fns.values_mut() {
+            function.optimize()?;
+        }
+        self.main.optimize()?;
+        Ok(self)
+    }
 }
 
 impl Function {

@@ -1,15 +1,44 @@
-use crate::cyrene::{Fragment, Instruction, Label, Terminator};
-use crate::demiurge::context::{Meta, Renamer};
+use crate::cyrene::{Fragment, Instruction, Label, Terminator, Var};
+use crate::demiurge::context::Meta;
 use crate::demiurge::Function;
+use std::collections::{HashMap, HashSet};
+
+struct Renamer {
+    map: HashMap<Var, Var>,
+}
+
+impl Renamer {
+    fn new() -> Self {
+        Self {
+            map: HashMap::new(),
+        }
+    }
+
+    fn insert(&mut self, from: Var, to: Var) {
+        self.map.insert(from, to);
+    }
+
+    fn get(&self, var: Var) -> Var {
+        let mut current = var;
+        let mut visited = HashSet::new();
+        while let Some(&next) = self.map.get(&current) {
+            if !visited.insert(next) {
+                break;
+            }
+            current = next;
+        }
+        current
+    }
+}
 
 impl Function {
-    pub fn rename(&mut self, ctx: &Meta) {
+    pub fn rename(&mut self, meta: &Meta) {
         let mut renamer = Renamer::new();
         let mut changed = true;
         while changed {
             changed = false;
             for (label, fragment) in self.dangerous() {
-                if fragment.simplify(label, ctx, &mut renamer) {
+                if fragment.simplify(label, meta, &mut renamer) {
                     changed = true;
                 }
             }
@@ -22,11 +51,11 @@ impl Function {
 }
 
 impl Fragment {
-    fn simplify(&mut self, label: Label, ctx: &Meta, renamer: &mut Renamer) -> bool {
+    fn simplify(&mut self, label: Label, meta: &Meta, renamer: &mut Renamer) -> bool {
         let mut changed = false;
         for (_, inputs) in self.phis.iter_mut() {
             let len = inputs.len();
-            inputs.retain(|(pred, _)| ctx.edges.contains(&(*pred, label)));
+            inputs.retain(|(pred, _)| meta.edges.contains(&(*pred, label)));
             if len != inputs.len() {
                 changed = true;
             }
