@@ -1,6 +1,6 @@
 mod bytecode;
 mod codegen;
-mod context;
+mod meta;
 mod eval;
 mod stages;
 

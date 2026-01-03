@@ -1,6 +1,8 @@
 mod builder;
 mod cfg;
-mod common;
+mod ir;
+mod meta;
 
 pub use builder::*;
-pub use common::*;
+pub use ir::*;
+pub use meta::*;

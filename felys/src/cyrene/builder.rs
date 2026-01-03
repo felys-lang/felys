@@ -1,5 +1,5 @@
 use crate::ast::{Impl, Item, Root};
-use crate::cyrene::{Group, Meta, Namespace};
+use crate::cyrene::meta::{Group, Meta, Namespace};
 use crate::demiurge::{Demiurge, Function};
 use crate::error::Fault;
 use crate::philia093::Intern;

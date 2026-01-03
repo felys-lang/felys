@@ -1,5 +1,5 @@
 use crate::cyrene::{Fragment, Instruction, Label, Terminator, Var};
-use crate::demiurge::context::Meta;
+use crate::demiurge::meta::Meta;
 use crate::demiurge::Function;
 use std::collections::{HashMap, HashSet, VecDeque};
 

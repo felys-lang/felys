@@ -1,6 +1,6 @@
 use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Stmt};
-use crate::cyrene::common::Context;
-use crate::cyrene::{Const, Dst, Id, Instruction, Label, Meta, Var};
+use crate::cyrene::ir::{Const, Context, Dst, Id, Instruction, Label, Var};
+use crate::cyrene::meta::Meta;
 use crate::demiurge::Function;
 use crate::error::Fault;
 

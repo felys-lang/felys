@@ -1,5 +1,5 @@
 use crate::cyrene::{Fragment, Instruction, Terminator};
-use crate::demiurge::context::{Lattice, Meta};
+use crate::demiurge::meta::{Lattice, Meta};
 use crate::demiurge::Function;
 use crate::error::Fault;
 
