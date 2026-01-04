@@ -6,16 +6,20 @@ impl Function {
         let mut changed = true;
         while changed {
             changed = false;
-            let ctx = self.analyze()?;
-            if self.rewrite(&ctx)? {
+            let meta = self.analyze()?;
+            if self.rewrite(&meta)? {
                 changed = true;
             }
 
-            if self.rename(&ctx) {
+            if self.rename(&meta) {
                 changed = true;
             }
 
-            if self.sweep(&ctx) {
+            if self.sweep() {
+                changed = true;
+            }
+
+            if self.compact() {
                 changed = true;
             }
         }

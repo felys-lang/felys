@@ -1,5 +1,4 @@
 use crate::cyrene::{Fragment, Instruction, Label, Terminator, Var};
-use crate::demiurge::meta::Meta;
 use crate::demiurge::Function;
 use std::collections::{HashMap, HashSet, VecDeque};
 
@@ -18,10 +17,7 @@ enum Id {
 }
 
 impl Function {
-    pub fn sweep(&mut self, meta: &Meta) -> bool {
-        self.fragments
-            .retain(|id, _| meta.visited.contains(&Label::Id(*id)));
-
+    pub fn sweep(&mut self) -> bool {
         let mut ctx = Context::default();
         for arg in self.args.iter() {
             ctx.defs.insert(*arg, (Label::Entry, Id::Arg));
@@ -77,7 +73,7 @@ impl Fragment {
                 i += 1;
                 keep
             });
-        } else if !ctx.worklist.is_empty() {
+        } else if !self.instructions.is_empty() {
             self.instructions.clear();
             changed = true;
         }

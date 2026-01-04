@@ -59,4 +59,12 @@ impl Function {
             Label::Exit => Some(&self.exit),
         }
     }
+
+    pub fn modify(&mut self, label: Label) -> Option<&mut Fragment> {
+        match label {
+            Label::Entry => Some(&mut self.entry),
+            Label::Id(id) => self.fragments.get_mut(&id),
+            Label::Exit => Some(&mut self.exit),
+        }
+    }
 }

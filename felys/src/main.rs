@@ -30,7 +30,9 @@ fn main() -> Result<(), Fault> {
     let cyrene = philia093.parse()?;
     let demiurge = cyrene.cfg()?.optimize()?;
     println!("{:?}", demiurge.main.entry);
-    println!("{:?}", demiurge.main.fragments);
+    for frag in demiurge.main.fragments {
+        println!("{:?}", frag);
+    }
     println!("{:?}", demiurge.main.exit);
     Ok(())
 }
