@@ -18,7 +18,7 @@ enum Id {
 }
 
 impl Function {
-    pub fn sweep(&mut self, meta: &Meta) {
+    pub fn sweep(&mut self, meta: &Meta) -> bool {
         self.fragments
             .retain(|id, _| meta.visited.contains(&Label::Id(*id)));
 
@@ -54,27 +54,42 @@ impl Function {
             }
         }
 
+        let mut changed = false;
         for (label, fragment) in self.dangerous() {
-            fragment.sweep(label, &ctx);
+            if fragment.sweep(label, &ctx) {
+                changed = true;
+            }
         }
+        changed
     }
 }
 
 impl Fragment {
-    fn sweep(&mut self, label: Label, ctx: &Context) {
+    fn sweep(&mut self, label: Label, ctx: &Context) -> bool {
+        let mut changed = false;
         if let Some(indices) = ctx.keep.get(&label) {
-            let mut new = Vec::new();
-            for (i, inst) in self.instructions.drain(..).enumerate() {
-                if indices.contains(&i) {
-                    new.push(inst);
+            let mut i = 0;
+            self.instructions.retain(|_| {
+                let keep = indices.contains(&i);
+                if !keep {
+                    changed = true
                 }
-            }
-            self.instructions = new;
-        } else {
+                i += 1;
+                keep
+            });
+        } else if !ctx.worklist.is_empty() {
             self.instructions.clear();
+            changed = true;
         }
 
-        self.phis.retain(|(var, _)| ctx.active.contains(var));
+        self.phis.retain(|(var, _)| {
+            let keep = ctx.active.contains(var);
+            if !keep {
+                changed = true
+            }
+            keep
+        });
+        changed
     }
 
     fn initialize(&self, label: Label, ctx: &mut Context) {

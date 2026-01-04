@@ -10,15 +10,18 @@ mod philia093;
 
 const CODE: &str = r#"
 fn main(args) {
-    x = 1;
-    x = x + 2;
-    x = args;
-    if false {
-        // 这部分代码不可达
-        y = 10; // y 应该是 Top
-        z = y + 1; // z 应该是 Top
+    if true {
+        if true {
+            if true {
+                if true {
+                    if true {
+                        return args;
+                    }
+                }
+            }
+        }
     }
-    x
+    0
 }
 "#;
 
