@@ -46,11 +46,12 @@ impl Instruction {
             Instruction::Binary(dst, _, _, _) | Instruction::Unary(dst, _, _) => {
                 if let Lattice::Const(c) = meta.get(*dst) {
                     *self = Instruction::Load(*dst, c.clone());
+                    return Ok(true);
                 }
-                Ok(true)
             }
-            _ => Ok(false),
+            _ => {}
         }
+        Ok(false)
     }
 }
 
