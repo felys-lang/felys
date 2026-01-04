@@ -16,7 +16,7 @@ pub struct Group {
 }
 
 impl Group {
-    pub fn new<'a>(fields: impl Iterator<Item = &'a usize>) -> Self {
+    pub fn new<'a>(fields: impl Iterator<Item=&'a usize>) -> Self {
         let mut indices = HashMap::new();
         for (i, field) in fields.enumerate() {
             indices.insert(*field, i);
@@ -46,7 +46,7 @@ impl Namespace {
         }
     }
 
-    pub fn add<'a>(&mut self, path: impl Iterator<Item = &'a usize>) -> Result<usize, Fault> {
+    pub fn add<'a>(&mut self, path: impl Iterator<Item=&'a usize>) -> Result<usize, Fault> {
         let mut map = &mut self.tree;
         let mut iter = path.peekable();
 
@@ -69,7 +69,7 @@ impl Namespace {
         Err(Fault::InvalidPath)
     }
 
-    pub fn get<'a>(&self, path: impl Iterator<Item = &'a usize>) -> Result<usize, Fault> {
+    pub fn get<'a>(&self, path: impl Iterator<Item=&'a usize>) -> Result<usize, Fault> {
         let mut map = &self.tree;
         let mut iter = path.peekable();
 
