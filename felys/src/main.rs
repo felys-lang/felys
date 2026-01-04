@@ -10,16 +10,10 @@ mod philia093;
 
 const CODE: &str = r#"
 fn main(args) {
-    if true {
-        if true {
-            if true {
-                if true {
-                    if true {
-                        return args;
-                    }
-                }
-            }
-        }
+    x = 1;
+    x = 2;
+    if false {
+        x = 3;
     }
     0
 }

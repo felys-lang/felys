@@ -1,7 +1,6 @@
-use crate::cyrene::{Fragment, Instruction, Label, Terminator, Var};
-use crate::demiurge::meta::Meta;
+use crate::cyrene::{Fragment, Instruction, Terminator, Var};
 use crate::demiurge::Function;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 struct Renamer {
     map: HashMap<Var, Var>,
@@ -20,11 +19,7 @@ impl Renamer {
 
     fn get(&self, var: Var, changed: &mut bool) -> Var {
         let mut current = var;
-        let mut visited = HashSet::new();
         while let Some(&next) = self.map.get(&current) {
-            if !visited.insert(next) {
-                break;
-            }
             current = next;
         }
         if current != var {
@@ -35,15 +30,15 @@ impl Renamer {
 }
 
 impl Function {
-    pub fn rename(&mut self, meta: &Meta) -> bool {
+    pub fn rename(&mut self) -> bool {
         let mut renamer = Renamer::new();
         let mut changed = false;
 
         let mut again = true;
         while again {
             again = false;
-            for (label, fragment) in self.dangerous() {
-                if fragment.simplify(label, meta, &mut renamer, &mut changed) {
+            for (_, fragment) in self.dangerous() {
+                if fragment.simplify(&mut renamer, &mut changed) {
                     again = true;
                 }
             }
@@ -59,28 +54,8 @@ impl Function {
 }
 
 impl Fragment {
-    fn simplify(
-        &mut self,
-        label: Label,
-        meta: &Meta,
-        renamer: &mut Renamer,
-        changed: &mut bool,
-    ) -> bool {
+    fn simplify(&mut self, renamer: &mut Renamer, changed: &mut bool) -> bool {
         let mut again = false;
-        for (_, inputs) in self.phis.iter_mut() {
-            let len = inputs.len();
-            inputs.retain(|(pred, _)| {
-                let keep = meta.edges.contains(&(*pred, label));
-                if !keep {
-                    *changed = true;
-                }
-                keep
-            });
-            if len != inputs.len() {
-                again = true;
-            }
-        }
-
         self.phis.retain(|(var, input)| {
             let mut trivial = true;
             let mut candidate = None;
@@ -116,6 +91,12 @@ impl Fragment {
 
     fn rename(&mut self, renamer: &Renamer) -> bool {
         let mut changed = false;
+        for (_, inputs) in &mut self.phis {
+            for (_, var) in inputs {
+                *var = renamer.get(*var, &mut changed);
+            }
+        }
+
         for instruction in self.instructions.iter_mut() {
             if instruction.rename(renamer) {
                 changed = true;

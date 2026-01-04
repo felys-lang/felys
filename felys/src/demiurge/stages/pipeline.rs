@@ -7,11 +7,16 @@ impl Function {
         while changed {
             changed = false;
             let meta = self.analyze()?;
-            if self.rewrite(&meta)? {
+
+            if self.prune(&meta) {
                 changed = true;
             }
 
-            if self.rename(&meta) {
+            if self.rewrite(&meta) {
+                changed = true;
+            }
+
+            if self.rename() {
                 changed = true;
             }
 
@@ -19,9 +24,9 @@ impl Function {
                 changed = true;
             }
 
-            if self.compact() {
-                changed = true;
-            }
+            // if self.compact() {
+            //     changed = true;
+            // }
         }
         Ok(())
     }
