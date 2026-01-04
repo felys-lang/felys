@@ -5,7 +5,6 @@ impl Function {
     pub fn optimize(&mut self) -> Result<(), Fault> {
         let mut changed = true;
         while changed {
-            println!("pass");
             changed = false;
             let meta = self.analyze()?;
 
