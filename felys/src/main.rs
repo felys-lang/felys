@@ -8,12 +8,36 @@ mod elysia;
 mod error;
 mod philia093;
 
+// const CODE: &str = r#"
+// fn main(args) {
+//     x = 1;
+//     x = 2;
+//     if false {
+//         x = 3;
+//     }
+//     0
+// }
+// "#;
+
+// const CODE: &str = r#"
+// fn main(args) {
+//     if true {
+//         if false {
+//             return args;
+//         }
+//     }
+//     0
+// }
+// "#;
+
 const CODE: &str = r#"
 fn main(args) {
-    x = 1;
-    x = 2;
-    if false {
-        x = 3;
+    while true {
+        if args {
+            break;
+        } else {
+            break;
+        }
     }
     0
 }

@@ -44,6 +44,10 @@ impl Function {
             }
         }
 
+        if renamer.map.is_empty() {
+            return changed;
+        }
+
         for (_, fragment) in self.dangerous() {
             if fragment.rename(&renamer) {
                 changed = true;

@@ -5,6 +5,7 @@ impl Function {
     pub fn optimize(&mut self) -> Result<(), Fault> {
         let mut changed = true;
         while changed {
+            println!("pass");
             changed = false;
             let meta = self.analyze()?;
 
@@ -15,18 +16,18 @@ impl Function {
             if self.rewrite(&meta) {
                 changed = true;
             }
-
+            
             if self.rename() {
                 changed = true;
             }
-
+            
             if self.sweep() {
                 changed = true;
             }
-
-            // if self.compact() {
-            //     changed = true;
-            // }
+            
+            if self.compact() {
+                changed = true;
+            }
         }
         Ok(())
     }
