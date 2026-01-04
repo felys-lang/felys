@@ -105,7 +105,7 @@ impl Expr {
             Expr::Block(block) => block.ir(ctx, stk, meta),
             Expr::Break(expr) => {
                 let expr = expr.as_ref().map(|x| x.ir(ctx, stk, meta));
-                let (_, end, wb) = stk.last_mut().unwrap();
+                let (_, end, wb) = stk.last_mut().ok_or(Fault::OutsideLoop)?;
                 match (expr, wb) {
                     (None, None) | (None, Some(None)) => {}
                     (Some(x), Some(wb)) if wb.is_none() => {
@@ -122,7 +122,7 @@ impl Expr {
                 ctx.unreachable()
             }
             Expr::Continue => {
-                let (start, _, _) = stk.last().unwrap();
+                let (start, _, _) = stk.last().ok_or(Fault::OutsideLoop)?;
                 ctx.jump(*start);
                 ctx.unreachable()
             }
@@ -179,7 +179,7 @@ impl Expr {
 
                 ctx.cursor = body;
                 stk.push((body, end, Some(None)));
-                block.ir(ctx, stk, meta)?.var()?;
+                block.ir(ctx, stk, meta)?;
                 let wb = stk.pop().unwrap().2.unwrap();
                 ctx.jump(body);
                 ctx.seal(body)?;

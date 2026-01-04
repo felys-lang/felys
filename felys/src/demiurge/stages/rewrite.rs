@@ -73,21 +73,23 @@ impl Instruction {
 
 impl Terminator {
     fn rewrite(&mut self, meta: &Meta, wb: &mut Option<Label>) -> bool {
-        if let Terminator::Branch(cond, yes, no) = self
-            && let Lattice::Const(c) = meta.get(*cond)
-        {
-            let (target, dead) = if c.bool().unwrap() {
-                (yes, no)
-            } else {
-                (no, yes)
-            };
-            if target != dead {
-                *wb = Some(*dead)
+        if let Terminator::Branch(cond, yes, no) = self {
+            if let Lattice::Const(c) = meta.get(*cond) {
+                let (target, dead) = if c.bool().unwrap() {
+                    (yes, no)
+                } else {
+                    (no, yes)
+                };
+                if target != dead {
+                    *wb = Some(*dead)
+                }
+                *self = Terminator::Jump(*target);
+                return true;
+            } else if yes == no {
+                *self = Terminator::Jump(*yes);
+                return true;
             }
-            *self = Terminator::Jump(*target);
-            true
-        } else {
-            false
         }
+        false
     }
 }

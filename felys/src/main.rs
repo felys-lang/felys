@@ -30,16 +30,22 @@ mod philia093;
 // }
 // "#;
 
+// const CODE: &str = r#"
+// fn main(args) {
+//     while true {
+//         if args {
+//             break;
+//         } else {
+//             break;
+//         }
+//     }
+//     0
+// }
+// "#;
+
 const CODE: &str = r#"
 fn main(args) {
-    while true {
-        if args {
-            break;
-        } else {
-            break;
-        }
-    }
-    0
+    1 + loop { break; }
 }
 "#;
 

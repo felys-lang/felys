@@ -16,15 +16,15 @@ impl Function {
             if self.rewrite(&meta) {
                 changed = true;
             }
-            
+
             if self.rename() {
                 changed = true;
             }
-            
-            if self.sweep() {
+
+            if self.sweep()? {
                 changed = true;
             }
-            
+
             if self.compact() {
                 changed = true;
             }

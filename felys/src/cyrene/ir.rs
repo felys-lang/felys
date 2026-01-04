@@ -3,6 +3,7 @@ use crate::demiurge::Function;
 use crate::error::Fault;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
+use std::panic::Location;
 use std::rc::Rc;
 
 #[derive(Default)]
@@ -149,7 +150,7 @@ impl Context {
             self.incompleted.entry(label).or_default().insert(id, var);
             var
         } else if predecessors.is_empty() {
-            panic!();
+            return Err(Fault::ValueNotDefined);
         } else if predecessors.len() == 1 {
             self.lookup(predecessors[0], id)?
         } else {
@@ -211,8 +212,9 @@ pub enum Label {
 pub struct Dst(Option<Var>);
 
 impl Dst {
+    #[track_caller]
     pub fn var(&self) -> Result<Var, Fault> {
-        self.0.ok_or(Fault::UnacceptableVoid)
+        self.0.ok_or(Fault::UnacceptableVoid(Location::caller()))
     }
 
     pub fn void() -> Self {

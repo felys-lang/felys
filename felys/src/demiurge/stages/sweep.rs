@@ -1,5 +1,6 @@
 use crate::cyrene::{Fragment, Instruction, Label, Terminator, Var};
 use crate::demiurge::Function;
+use crate::error::Fault;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Default)]
@@ -17,7 +18,7 @@ enum Id {
 }
 
 impl Function {
-    pub fn sweep(&mut self) -> bool {
+    pub fn sweep(&mut self) -> Result<bool, Fault> {
         let mut ctx = Context::default();
         for arg in self.args.iter() {
             ctx.defs.insert(*arg, (Label::Entry, Id::Arg));
@@ -28,7 +29,7 @@ impl Function {
         }
 
         while let Some(var) = ctx.worklist.pop_front() {
-            let (label, id) = ctx.defs.get(&var).unwrap();
+            let (label, id) = ctx.defs.get(&var).ok_or(Fault::ValueUnreachable)?;
             let fragment = self.get(*label).unwrap();
 
             match id {
@@ -56,7 +57,7 @@ impl Function {
                 changed = true;
             }
         }
-        changed
+        Ok(changed)
     }
 }
 
