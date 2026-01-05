@@ -1,5 +1,4 @@
-use crate::cyrene::{Label, Terminator};
-use crate::demiurge::Function;
+use crate::cyrene::{Function, Label, Terminator};
 
 impl Function {
     pub fn compact(&mut self) -> bool {

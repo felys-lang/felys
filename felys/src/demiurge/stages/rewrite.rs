@@ -1,6 +1,5 @@
-use crate::cyrene::{Fragment, Instruction, Label, Terminator};
+use crate::cyrene::{Fragment, Function, Instruction, Label, Terminator};
 use crate::demiurge::meta::{Lattice, Meta};
-use crate::demiurge::Function;
 
 impl Function {
     pub fn rewrite(&mut self, meta: &Meta) -> bool {

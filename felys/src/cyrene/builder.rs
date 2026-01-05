@@ -1,6 +1,7 @@
 use crate::ast::{Impl, Item, Root};
 use crate::cyrene::meta::{Group, Meta, Namespace};
-use crate::demiurge::{Demiurge, Function};
+use crate::cyrene::Function;
+use crate::demiurge::Demiurge;
 use crate::error::Fault;
 use crate::philia093::Intern;
 use std::collections::HashMap;

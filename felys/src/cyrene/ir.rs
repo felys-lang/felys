@@ -1,5 +1,4 @@
 use crate::ast::{BinOp, Lit, UnaOp};
-use crate::demiurge::Function;
 use crate::error::Fault;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
@@ -9,8 +8,6 @@ use std::rc::Rc;
 #[derive(Default)]
 pub struct Context {
     ids: usize,
-    vars: usize,
-    labels: usize,
     pub cursor: Label,
     pub cache: HashMap<Lit, Const>,
 
@@ -18,9 +15,29 @@ pub struct Context {
     incompleted: HashMap<Label, HashMap<Id, Var>>,
     sealed: HashSet<Label>,
 
+    vars: usize,
+    labels: usize,
     entry: Fragment,
     fragments: HashMap<usize, Fragment>,
     exit: Fragment,
+}
+
+#[derive(Debug)]
+pub struct Function {
+    pub args: Vec<usize>,
+    pub vars: usize,
+    pub labels: usize,
+    pub entry: Fragment,
+    pub fragments: HashMap<usize, Fragment>,
+    pub exit: Fragment,
+}
+
+impl Function {
+    pub fn label(&mut self) -> Label {
+        let label = self.labels;
+        self.labels += 1;
+        Label::Id(label)
+    }
 }
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
@@ -47,6 +64,7 @@ impl Context {
         Function {
             args,
             vars: self.vars,
+            labels: self.labels,
             entry: self.entry,
             fragments: self.fragments,
             exit: self.exit,

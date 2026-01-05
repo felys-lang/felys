@@ -1,5 +1,4 @@
-use crate::cyrene::{Fragment, Instruction, Label, Terminator, Var};
-use crate::demiurge::Function;
+use crate::cyrene::{Fragment, Function, Instruction, Label, Terminator, Var};
 use crate::error::Fault;
 use std::collections::{HashMap, HashSet, VecDeque};
 

@@ -1,6 +1,5 @@
-use crate::cyrene::{Const, Fragment, Instruction, Label, Terminator, Var};
+use crate::cyrene::{Const, Fragment, Function, Instruction, Label, Terminator, Var};
 use crate::demiurge::meta::{Lattice, Meta};
-use crate::demiurge::Function;
 use crate::error::Fault;
 use std::collections::HashMap;
 

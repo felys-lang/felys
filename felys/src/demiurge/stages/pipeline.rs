@@ -1,5 +1,16 @@
-use crate::demiurge::Function;
+use crate::cyrene::Function;
+use crate::demiurge::Demiurge;
 use crate::error::Fault;
+
+impl Demiurge {
+    pub fn optimize(mut self) -> Result<Self, Fault> {
+        for function in self.fns.values_mut() {
+            function.optimize()?;
+        }
+        self.main.optimize()?;
+        Ok(self)
+    }
+}
 
 impl Function {
     pub fn optimize(&mut self) -> Result<(), Fault> {

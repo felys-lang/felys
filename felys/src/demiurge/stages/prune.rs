@@ -1,6 +1,5 @@
-use crate::cyrene::Label;
+use crate::cyrene::{Function, Label};
 use crate::demiurge::meta::Meta;
-use crate::demiurge::Function;
 use std::collections::HashSet;
 
 impl Function {
