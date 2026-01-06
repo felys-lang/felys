@@ -13,7 +13,7 @@ impl Demiurge {
 }
 
 impl Function {
-    pub fn optimize(&mut self) -> Result<(), Fault> {
+    fn optimize(&mut self) -> Result<(), Fault> {
         let mut changed = true;
         while changed {
             changed = false;

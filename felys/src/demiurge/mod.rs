@@ -2,6 +2,6 @@ mod bytecode;
 mod codegen;
 mod meta;
 mod eval;
-mod stages;
+mod optimize;
 
 pub use bytecode::*;

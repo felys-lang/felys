@@ -62,8 +62,15 @@ impl<T: Hash + Eq + Clone> Pooling<T> {
 impl Function {
     fn codegen(&mut self, ctx: &mut Context) -> Vec<Bytecode> {
         self.split();
-        let mut copies = self.copies();
+        let copies = self.copies();
+        self.destruct(ctx, copies)
+    }
 
+    fn destruct(
+        &mut self,
+        ctx: &mut Context,
+        mut copies: HashMap<Label, Vec<(Var, Var)>>,
+    ) -> Vec<Bytecode> {
         let mut index = 0;
         let mut map = HashMap::new();
         for label in self.order() {
