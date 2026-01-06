@@ -108,7 +108,7 @@ impl Instruction {
                 meta.update(*var, new);
             }
             Instruction::Field(dst, _, _)
-            | Instruction::Func(dst, _)
+            | Instruction::Function(dst, _)
             | Instruction::Call(dst, _, _)
             | Instruction::List(dst, _)
             | Instruction::Tuple(dst, _)

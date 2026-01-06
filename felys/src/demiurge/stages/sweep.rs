@@ -51,7 +51,7 @@ impl Function {
         }
 
         let mut changed = false;
-        for (label, fragment) in self.dangerous() {
+        for (label, fragment) in self.cautious() {
             if fragment.sweep(label, &ctx) {
                 changed = true;
             }
@@ -132,7 +132,7 @@ impl Instruction {
     fn dst(&self) -> Var {
         match self {
             Instruction::Field(dst, _, _)
-            | Instruction::Func(dst, _)
+            | Instruction::Function(dst, _)
             | Instruction::Load(dst, _)
             | Instruction::Binary(dst, _, _, _)
             | Instruction::Unary(dst, _, _)

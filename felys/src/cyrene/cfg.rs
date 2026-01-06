@@ -314,7 +314,7 @@ impl Expr {
                     ctx.push(Instruction::Group(var, id));
                 } else {
                     let id = meta.ns.get(path.iter())?;
-                    ctx.push(Instruction::Func(var, id));
+                    ctx.push(Instruction::Function(var, id));
                 }
                 Ok(var.into())
             }

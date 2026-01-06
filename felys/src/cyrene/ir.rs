@@ -204,7 +204,8 @@ pub struct Fragment {
 #[derive(Debug)]
 pub enum Instruction {
     Field(Var, Var, usize),
-    Func(Var, usize),
+    Group(Var, usize),
+    Function(Var, usize),
     Load(Var, Const),
     Binary(Var, Var, BinOp, Var),
     Unary(Var, UnaOp, Var),
@@ -213,7 +214,6 @@ pub enum Instruction {
     Tuple(Var, Vec<Var>),
     Index(Var, Var, Var),
     Method(Var, Var, usize, Vec<Var>),
-    Group(Var, usize),
 }
 
 #[derive(Debug)]

@@ -13,7 +13,7 @@ impl Function {
         let mut changed = self.prune(meta);
 
         let mut writebacks = Vec::new();
-        for (label, fragment) in self.dangerous() {
+        for (label, fragment) in self.cautious() {
             let mut wb = Writeback::None;
             if fragment.rewrite(meta, &mut wb) {
                 changed = true;
@@ -67,7 +67,7 @@ impl Function {
             return false;
         }
 
-        for (_, fragment) in self.dangerous() {
+        for (_, fragment) in self.cautious() {
             fragment
                 .predecessors
                 .retain(|label| !eliminated.contains(label));
@@ -75,7 +75,6 @@ impl Function {
                 .phis
                 .iter_mut()
                 .for_each(|(_, inputs)| inputs.retain(|(label, _)| !eliminated.contains(label)));
-            fragment.phis.retain(|(_, inputs)| !inputs.is_empty());
         }
         true
     }

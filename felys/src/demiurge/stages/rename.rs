@@ -36,7 +36,7 @@ impl Function {
         let mut again = true;
         while again {
             again = false;
-            for (_, fragment) in self.dangerous() {
+            for (_, fragment) in self.cautious() {
                 if fragment.simplify(&mut renamer, &mut changed) {
                     again = true;
                 }
@@ -47,7 +47,7 @@ impl Function {
             return changed;
         }
 
-        for (_, fragment) in self.dangerous() {
+        for (_, fragment) in self.cautious() {
             if fragment.rename(&renamer) {
                 changed = true;
             }

@@ -22,7 +22,7 @@ impl Function {
             .chain([(Label::Exit, &self.exit)])
     }
 
-    pub fn dangerous(&mut self) -> impl Iterator<Item = (Label, &mut Fragment)> {
+    pub fn cautious(&mut self) -> impl Iterator<Item = (Label, &mut Fragment)> {
         let fragments = self
             .fragments
             .iter_mut()
@@ -32,27 +32,34 @@ impl Function {
             .chain(fragments)
             .chain([(Label::Exit, &mut self.exit)])
     }
+
+    pub fn order(&self) -> impl Iterator<Item = Label> {
+        let mut order = self.fragments.keys().cloned().collect::<Vec<_>>();
+        order.sort_unstable();
+        [Label::Entry]
+            .into_iter()
+            .chain(order.into_iter().map(Label::Id))
+            .chain([Label::Exit])
+    }
 }
 
 #[derive(Debug)]
 pub enum Bytecode {
     Field(Reg, Reg, usize),
-    Func(Reg, Idx),
+    Group(Reg, Idx),
+    Function(Reg, Idx),
     Load(Reg, Idx),
     Binary(Reg, Reg, BinOp, Reg),
     Unary(Reg, UnaOp, Reg),
-    Copy(Reg, Reg),
-    Branch(Reg, bool, Idx),
-    Jump(Idx),
-    Return(Option<Reg>),
-    Buffer,
-    Push(Reg),
-    Call(Reg, Reg),
-    List(Reg),
-    Tuple(Reg),
+    Call(Reg, Reg, Vec<Reg>),
+    List(Reg, Vec<Reg>),
+    Tuple(Reg, Vec<Reg>),
     Index(Reg, Reg, Reg),
-    Method(Reg, Reg, usize),
-    Group(Reg, Idx),
+    Method(Reg, Reg, usize, Vec<Reg>),
+    Branch(Reg, Idx, Idx),
+    Jump(Idx),
+    Return(Reg),
+    Copy(Reg, Reg),
 }
 
 pub type Reg = usize;
