@@ -9,7 +9,7 @@ type Stack = Vec<(Label, Label, Option<Option<Id>>)>;
 impl Block {
     pub fn build<'a>(
         &self,
-        args: impl Iterator<Item=&'a usize>,
+        args: impl Iterator<Item = &'a usize>,
         meta: &Meta,
     ) -> Result<Function, Fault> {
         let mut stk = Vec::new();

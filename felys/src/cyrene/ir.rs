@@ -7,22 +7,16 @@ use std::rc::Rc;
 
 #[derive(Default)]
 pub struct Context {
-    ids: usize,
     pub cursor: Label,
     pub cache: HashMap<Lit, Const>,
-
+    f: Function,
+    ids: usize,
     defs: HashMap<Label, HashMap<Id, Var>>,
     incompleted: HashMap<Label, HashMap<Id, Var>>,
     sealed: HashSet<Label>,
-
-    vars: usize,
-    labels: usize,
-    entry: Fragment,
-    fragments: HashMap<usize, Fragment>,
-    exit: Fragment,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Function {
     pub args: Vec<usize>,
     pub vars: usize,
@@ -33,10 +27,37 @@ pub struct Function {
 }
 
 impl Function {
+    pub fn var(&mut self) -> Var {
+        let var = self.vars;
+        self.vars += 1;
+        var
+    }
+
     pub fn label(&mut self) -> Label {
         let label = self.labels;
         self.labels += 1;
         Label::Id(label)
+    }
+
+    pub fn add(&mut self, label: Label) -> &mut Fragment {
+        let Label::Id(id) = label else { panic!() };
+        self.fragments.entry(id).or_default()
+    }
+
+    pub fn get(&self, label: Label) -> Option<&Fragment> {
+        match label {
+            Label::Entry => Some(&self.entry),
+            Label::Id(id) => self.fragments.get(&id),
+            Label::Exit => Some(&self.exit),
+        }
+    }
+
+    pub fn modify(&mut self, label: Label) -> Option<&mut Fragment> {
+        match label {
+            Label::Entry => Some(&mut self.entry),
+            Label::Id(id) => self.fragments.get_mut(&id),
+            Label::Exit => Some(&mut self.exit),
+        }
     }
 }
 
@@ -61,14 +82,8 @@ impl Context {
             .defs
             .remove(&Label::Entry)
             .map_or_else(Vec::new, |map| map.into_values().collect());
-        Function {
-            args,
-            vars: self.vars,
-            labels: self.labels,
-            entry: self.entry,
-            fragments: self.fragments,
-            exit: self.exit,
-        }
+        self.f.args = args;
+        self.f
     }
 
     pub fn id(&mut self) -> Id {
@@ -78,60 +93,51 @@ impl Context {
     }
 
     pub fn var(&mut self) -> Var {
-        let var = self.vars;
-        self.vars += 1;
-        var
+        self.f.var()
     }
 
     pub fn label(&mut self) -> Label {
-        let label = self.labels;
-        self.labels += 1;
-        Label::Id(label)
+        self.f.label()
+    }
+
+    pub fn add(&mut self, label: Label) {
+        self.f.add(label);
     }
 
     pub fn unreachable(&mut self) -> Result<Dst, Fault> {
-        let dead = self.label();
+        let dead = self.f.label();
         self.add(dead);
         self.cursor = dead;
         Ok(Dst::void())
     }
 
-    pub fn add(&mut self, label: Label) {
-        let Label::Id(id) = label else { return };
-        self.fragments.insert(id, Fragment::default());
-    }
-
-    pub fn get(&mut self, label: Label) -> &mut Fragment {
-        match label {
-            Label::Entry => &mut self.entry,
-            Label::Id(id) => self.fragments.get_mut(&id).unwrap(),
-            Label::Exit => &mut self.exit,
-        }
-    }
-
     pub fn push(&mut self, instruction: Instruction) {
-        self.get(self.cursor).instructions.push(instruction);
+        self.f
+            .modify(self.cursor)
+            .unwrap()
+            .instructions
+            .push(instruction);
     }
 
     pub fn jump(&mut self, to: Label) {
-        self.get(self.cursor).terminator = Some(Terminator::Jump(to));
+        self.f.modify(self.cursor).unwrap().terminator = Some(Terminator::Jump(to));
         let cursor = self.cursor;
-        self.get(to).predecessors.push(cursor);
+        self.f.modify(to).unwrap().predecessors.push(cursor);
     }
 
     pub fn branch(&mut self, cond: Var, to: Label, or: Label) {
-        self.get(self.cursor).terminator = Some(Terminator::Branch(cond, to, or));
+        self.f.modify(self.cursor).unwrap().terminator = Some(Terminator::Branch(cond, to, or));
         let cursor = self.cursor;
-        self.get(to).predecessors.push(cursor);
-        self.get(or).predecessors.push(cursor);
+        self.f.modify(to).unwrap().predecessors.push(cursor);
+        self.f.modify(or).unwrap().predecessors.push(cursor);
     }
 
     pub fn ret(&mut self, var: Var) {
-        self.get(self.cursor).terminator = Some(Terminator::Return(var));
+        self.f.modify(self.cursor).unwrap().terminator = Some(Terminator::Return(var));
     }
 
     pub fn phi(&mut self, label: Label, dst: Var, src: Vec<(Label, Var)>) {
-        self.get(label).phis.push((dst, src));
+        self.f.modify(label).unwrap().phis.push((dst, src));
     }
 
     pub fn seal(&mut self, label: Label) -> Result<(), Fault> {
@@ -139,7 +145,7 @@ impl Context {
             return Ok(());
         }
         if let Some(phis) = self.incompleted.remove(&label) {
-            let preds = self.get(label).predecessors.clone();
+            let preds = self.f.get(label).unwrap().predecessors.clone();
             for (key, var) in phis {
                 let mut operands = Vec::new();
                 for pred in preds.clone() {
@@ -162,9 +168,9 @@ impl Context {
             return Ok(*var);
         }
 
-        let predecessors = self.get(label).predecessors.clone();
+        let predecessors = self.f.get(label).unwrap().predecessors.clone();
         let var = if !self.sealed.contains(&label) {
-            let var = self.var();
+            let var = self.f.var();
             self.incompleted.entry(label).or_default().insert(id, var);
             var
         } else if predecessors.is_empty() {
@@ -172,7 +178,7 @@ impl Context {
         } else if predecessors.len() == 1 {
             self.lookup(predecessors[0], id)?
         } else {
-            let var = self.var();
+            let var = self.f.var();
             self.define(label, id, var);
             let mut operands = Vec::new();
             for pred in predecessors {

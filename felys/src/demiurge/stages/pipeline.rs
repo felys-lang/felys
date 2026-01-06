@@ -19,10 +19,6 @@ impl Function {
             changed = false;
             let meta = self.analyze()?;
 
-            if self.prune(&meta) {
-                changed = true;
-            }
-
             if self.rewrite(&meta) {
                 changed = true;
             }

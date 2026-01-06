@@ -1,37 +1,88 @@
 use crate::cyrene::{Fragment, Function, Instruction, Label, Terminator};
 use crate::demiurge::meta::{Lattice, Meta};
+use std::collections::HashSet;
+
+enum Writeback {
+    All(Label),
+    Once(Label),
+    None,
+}
 
 impl Function {
     pub fn rewrite(&mut self, meta: &Meta) -> bool {
-        let mut changed = false;
+        let mut changed = self.prune(meta);
 
         let mut writebacks = Vec::new();
         for (label, fragment) in self.dangerous() {
-            let mut wb = None;
+            let mut wb = Writeback::None;
             if fragment.rewrite(meta, &mut wb) {
                 changed = true;
             }
-            if let Some(wb) = wb {
-                writebacks.push((wb, label));
-            }
+            writebacks.push((wb, label));
         }
 
-        for (from, delete) in writebacks {
-            let Some(frag) = self.modify(from) else {
-                continue;
-            };
-            frag.predecessors.retain(|x| *x != delete);
-            for (_, inputs) in frag.phis.iter_mut() {
-                inputs.retain(|(x, _)| *x != delete);
+        for (wb, delete) in writebacks {
+            match wb {
+                Writeback::All(from) => {
+                    let Some(frag) = self.modify(from) else {
+                        continue;
+                    };
+                    frag.predecessors.retain(|x| *x != delete);
+                    for (_, inputs) in frag.phis.iter_mut() {
+                        inputs.retain(|(x, _)| *x != delete);
+                    }
+                }
+                Writeback::Once(from) => {
+                    let Some(frag) = self.modify(from) else {
+                        continue;
+                    };
+                    if let Some(idx) = frag.predecessors.iter().position(|x| *x == delete) {
+                        frag.predecessors.remove(idx);
+                    }
+                    for (_, inputs) in frag.phis.iter_mut() {
+                        if let Some(idx) = inputs.iter().position(|(x, _)| *x == delete) {
+                            inputs.remove(idx);
+                        }
+                    }
+                }
+                Writeback::None => {}
             }
         }
 
         changed
     }
+
+    fn prune(&mut self, meta: &Meta) -> bool {
+        let mut eliminated = HashSet::new();
+        self.fragments.retain(|id, _| {
+            let label = Label::Id(*id);
+            let keep = meta.visited.contains(&label);
+            if !keep {
+                eliminated.insert(label);
+            }
+            keep
+        });
+
+        if eliminated.is_empty() {
+            return false;
+        }
+
+        for (_, fragment) in self.dangerous() {
+            fragment
+                .predecessors
+                .retain(|label| !eliminated.contains(label));
+            fragment
+                .phis
+                .iter_mut()
+                .for_each(|(_, inputs)| inputs.retain(|(label, _)| !eliminated.contains(label)));
+            fragment.phis.retain(|(_, inputs)| !inputs.is_empty());
+        }
+        true
+    }
 }
 
 impl Fragment {
-    fn rewrite(&mut self, meta: &Meta, wb: &mut Option<Label>) -> bool {
+    fn rewrite(&mut self, meta: &Meta, wb: &mut Writeback) -> bool {
         let mut changed = false;
         let mut new = Vec::new();
         self.phis.retain(|(x, _)| {
@@ -71,20 +122,21 @@ impl Instruction {
 }
 
 impl Terminator {
-    fn rewrite(&mut self, meta: &Meta, wb: &mut Option<Label>) -> bool {
+    fn rewrite(&mut self, meta: &Meta, wb: &mut Writeback) -> bool {
         if let Terminator::Branch(cond, yes, no) = self {
-            if let Lattice::Const(c) = meta.get(*cond) {
-                let (target, dead) = if c.bool().unwrap() {
-                    (yes, no)
+            if let Lattice::Const(c) = meta.get(*cond)
+                && let Ok(b) = c.bool()
+            {
+                let (target, dead) = if b { (yes, no) } else { (no, yes) };
+                *wb = if target == dead {
+                    Writeback::Once(*dead)
                 } else {
-                    (no, yes)
+                    Writeback::All(*dead)
                 };
-                if target != dead {
-                    *wb = Some(*dead)
-                }
                 *self = Terminator::Jump(*target);
                 return true;
             } else if yes == no {
+                *wb = Writeback::Once(*no);
                 *self = Terminator::Jump(*yes);
                 return true;
             }

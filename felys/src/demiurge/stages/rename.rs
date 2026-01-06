@@ -77,24 +77,21 @@ impl Fragment {
                 }
             }
 
-            let keep = if trivial && let Some(replacement) = candidate {
+            if trivial && let Some(replacement) = candidate {
                 renamer.insert(*var, replacement);
+                *changed = true;
                 again = true;
                 false
             } else {
                 true
-            };
-            if !keep {
-                *changed = true;
             }
-            keep
         });
         again
     }
 
     fn rename(&mut self, renamer: &Renamer) -> bool {
         let mut changed = false;
-        for (_, inputs) in &mut self.phis {
+        for (_, inputs) in self.phis.iter_mut() {
             for (_, var) in inputs {
                 *var = renamer.get(*var, &mut changed);
             }
