@@ -201,6 +201,16 @@ pub struct Fragment {
     pub terminator: Option<Terminator>,
 }
 
+impl Fragment {
+    pub fn successors(&self) -> Vec<Label> {
+        match self.terminator.as_ref().unwrap() {
+            Terminator::Branch(_, yes, no) => vec![*yes, *no],
+            Terminator::Jump(target) => vec![*target],
+            Terminator::Return(_) => vec![],
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum Instruction {
     Field(Var, Var, usize),
