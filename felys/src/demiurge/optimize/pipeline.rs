@@ -30,9 +30,9 @@ impl Function {
                 changed = true;
             }
 
-            // if self.compact() {
-            //     changed = true;
-            // }
+            if self.compact() {
+                changed = true;
+            }
 
             if !changed {
                 break;

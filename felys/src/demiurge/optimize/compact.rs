@@ -19,9 +19,8 @@ impl Function {
 
             let predecessor = self.modify(pred).unwrap();
             match predecessor.terminator.as_mut().unwrap() {
-                Terminator::Branch(_, _, _) => {}
                 Terminator::Jump(x) => *x = target,
-                Terminator::Return(_) => {}
+                _ => continue,
             }
 
             let successor = self.modify(target).unwrap();
