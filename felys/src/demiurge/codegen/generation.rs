@@ -1,4 +1,5 @@
-use crate::cyrene::{Const, Function, Instruction, Label, Terminator, Var};
+use crate::cyrene::{Const, Function, Instruction, Label, Terminator};
+use crate::demiurge::codegen::copies::Copy;
 use crate::demiurge::{Bytecode, Demiurge};
 use crate::elysia::Elysia;
 use std::collections::HashMap;
@@ -62,13 +63,14 @@ impl Demiurge {
 impl Function {
     fn codegen(&mut self, ctx: &mut Context) -> Vec<Bytecode> {
         let copies = self.copies();
+        self.register(&copies);
         self.lowering(ctx, copies)
     }
 
     fn lowering(
         &mut self,
         ctx: &mut Context,
-        mut copies: HashMap<Label, Vec<(Var, Var)>>,
+        mut copies: HashMap<Label, Vec<Copy>>,
     ) -> Vec<Bytecode> {
         let mut index = 0;
         let mut map = HashMap::new();
@@ -87,7 +89,7 @@ impl Function {
                 .remove(&label)
                 .unwrap_or_default()
                 .into_iter()
-                .map(|(dst, src)| Bytecode::Copy(dst, src));
+                .map(|copy| copy.codegen());
             let body = fragment.instructions.iter().map(|x| x.codegen(ctx));
             let goto = fragment.terminator.as_ref().unwrap().codegen(&map);
             bytecodes.extend(body);
@@ -129,5 +131,11 @@ impl Terminator {
             Terminator::Jump(to) => Bytecode::Jump(*map.get(to).unwrap()),
             Terminator::Return(var) => Bytecode::Return(*var),
         }
+    }
+}
+
+impl Copy {
+    fn codegen(&self) -> Bytecode {
+        Bytecode::Copy(self.0, self.1)
     }
 }

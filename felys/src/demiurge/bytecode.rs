@@ -1,7 +1,7 @@
 use crate::ast::{BinOp, UnaOp};
-use crate::cyrene::{Fragment, Function, Group, Label};
+use crate::cyrene::{Fragment, Function, Group, Label, Terminator};
 use crate::philia093::Intern;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub struct Demiurge {
     pub groups: HashMap<usize, Group>,
@@ -40,6 +40,30 @@ impl Function {
             .into_iter()
             .chain(order.into_iter().map(Label::Id))
             .chain([Label::Exit])
+    }
+
+    pub fn rpo(&self) -> Vec<Label> {
+        let mut order = Vec::new();
+        let mut visited = HashSet::new();
+        fn dfs(f: &Function, label: Label, visited: &mut HashSet<Label>, order: &mut Vec<Label>) {
+            if !visited.insert(label) {
+                return;
+            }
+            match f.get(label).unwrap().terminator.as_ref().unwrap() {
+                Terminator::Branch(_, yes, no) => {
+                    dfs(f, *yes, visited, order);
+                    dfs(f, *no, visited, order);
+                }
+                Terminator::Jump(target) => {
+                    dfs(f, *target, visited, order);
+                }
+                Terminator::Return(_) => {}
+            }
+            order.push(label);
+        }
+        dfs(self, Label::Entry, &mut visited, &mut order);
+        order.reverse();
+        order
     }
 }
 

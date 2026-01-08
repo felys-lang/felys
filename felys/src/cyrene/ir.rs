@@ -9,6 +9,7 @@ use std::rc::Rc;
 pub struct Context {
     pub cursor: Label,
     pub cache: HashMap<Lit, Const>,
+    pub args: Vec<usize>,
     f: Function,
     ids: usize,
     defs: HashMap<Label, HashMap<Id, Var>>,
@@ -78,11 +79,7 @@ pub enum Const {
 
 impl Context {
     pub fn export(mut self) -> Function {
-        let args = self
-            .defs
-            .remove(&Label::Entry)
-            .map_or_else(Vec::new, |map| map.into_values().collect());
-        self.f.args = args;
+        self.f.args = self.args;
         self.f
     }
 

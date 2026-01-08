@@ -1,8 +1,10 @@
 use crate::cyrene::{Function, Label, Terminator, Var};
 use std::collections::HashMap;
 
+pub struct Copy(pub Var, pub Var);
+
 impl Function {
-    pub fn copies(&mut self) -> HashMap<Label, Vec<(Var, Var)>> {
+    pub fn copies(&mut self) -> HashMap<Label, Vec<Copy>> {
         self.split();
 
         let mut copies = HashMap::new();
@@ -12,26 +14,26 @@ impl Function {
                     copies
                         .entry(*from)
                         .or_insert_with(Vec::new)
-                        .push((*dst, *src));
+                        .push(Copy(*dst, *src));
                 }
             }
         }
 
         copies
             .iter_mut()
-            .for_each(|(_, pending)| *pending = self.decycle(pending));
+            .for_each(|(_, pending)| self.decycle(pending));
 
         copies
     }
 
-    fn decycle(&mut self, pending: &mut Vec<(Var, Var)>) -> Vec<(Var, Var)> {
-        pending.retain(|(dst, src)| dst != src);
+    fn decycle(&mut self, pending: &mut Vec<Copy>) {
+        pending.retain(|Copy(dst, src)| dst != src);
         let mut copies = Vec::new();
 
         while !pending.is_empty() {
             let ready = pending
                 .iter()
-                .position(|&(dst, _)| !pending.iter().any(|&(_, src)| src == dst));
+                .position(|Copy(dst, _)| !pending.iter().any(|Copy(_, src)| src == dst));
 
             if let Some(idx) = ready {
                 let copy = pending.swap_remove(idx);
@@ -39,18 +41,18 @@ impl Function {
                 continue;
             }
 
-            let (_, breakpoint) = pending[0];
+            let Copy(_, breakpoint) = pending[0];
             let temp = self.var();
-            copies.push((temp, breakpoint));
+            copies.push(Copy(temp, breakpoint));
 
-            for (_, src) in pending.iter_mut() {
+            for Copy(_, src) in pending.iter_mut() {
                 if *src == breakpoint {
                     *src = temp;
                 }
             }
         }
 
-        copies
+        *pending = copies
     }
 
     fn split(&mut self) {

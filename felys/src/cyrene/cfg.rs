@@ -16,6 +16,7 @@ impl Block {
         let mut ctx = Context::default();
         ctx.seal(Label::Entry)?;
         for id in args {
+            ctx.args.push(*id);
             let var = ctx.var();
             ctx.define(ctx.cursor, Id::Interned(*id), var);
         }
