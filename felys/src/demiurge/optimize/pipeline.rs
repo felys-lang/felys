@@ -23,17 +23,17 @@ impl Function {
                 changed = true;
             }
 
-            if self.rename() {
-                changed = true;
-            }
+            // if self.rename() {
+            //     changed = true;
+            // }
 
             if self.sweep()? {
                 changed = true;
             }
 
-            if self.compact() {
-                changed = true;
-            }
+            // if self.compact() {
+            //     changed = true;
+            // }
         }
         Ok(())
     }

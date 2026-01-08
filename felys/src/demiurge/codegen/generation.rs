@@ -63,7 +63,7 @@ impl Demiurge {
 impl Function {
     fn codegen(&mut self, ctx: &mut Context) -> Vec<Bytecode> {
         let copies = self.copies();
-        self.register(&copies);
+        let allocation = self.allocate(&copies);
         self.lowering(ctx, copies)
     }
 

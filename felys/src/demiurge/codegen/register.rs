@@ -1,8 +1,9 @@
 use crate::cyrene::{Function, Instruction, Label, Terminator, Var};
 use crate::demiurge::codegen::copies::Copy;
-use std::cmp::max;
+use crate::demiurge::Reg;
+use std::cmp::{max, Reverse};
 use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::collections::{BinaryHeap, HashMap};
 use std::hash::Hash;
 
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
@@ -20,13 +21,39 @@ struct Context {
 }
 
 impl Function {
-    pub fn register(&self, copies: &HashMap<Label, Vec<Copy>>) {
+    pub fn allocate(&self, copies: &HashMap<Label, Vec<Copy>>) -> HashMap<Var, Reg> {
         let ctx = self.precompute(copies);
-        let intervals = ctx
+        let mut intervals = ctx
             .uses
             .iter()
-            .map(|(var, last)| (*ctx.defs.get(var).unwrap(), *last))
+            .map(|(var, last)| (*var, *ctx.defs.get(var).unwrap(), *last))
             .collect::<Vec<_>>();
+        intervals.sort_by_key(|(_, start, _)| *start);
+
+        let mut active = BinaryHeap::<Reverse<(Var, Reg)>>::new();
+        let mut used = 0;
+        let mut registers = Vec::new();
+        let mut mapping = HashMap::new();
+
+        for (var, start, end) in intervals {
+            while let Some(Reverse((e, reg))) = active.peek().cloned() {
+                if e <= start {
+                    active.pop();
+                    registers.push(reg);
+                } else {
+                    break;
+                }
+            }
+
+            let reg = registers.pop().unwrap_or_else(|| {
+                used += 1;
+                used
+            });
+            mapping.insert(var, reg);
+            active.push(Reverse((end, reg)));
+        }
+
+        mapping
     }
 
     fn precompute(&self, copies: &HashMap<Label, Vec<Copy>>) -> Context {
