@@ -26,7 +26,7 @@ impl Function {
         let mut intervals = ctx
             .uses
             .iter()
-            .map(|(var, last)| (*var, *ctx.defs.get(var).unwrap(), *last))
+            .map(|(var, last)| (*var, ctx.defs[var], *last))
             .collect::<Vec<_>>();
         intervals.sort_by_key(|(_, start, _)| *start);
 
@@ -68,18 +68,18 @@ impl Function {
         for label in self.rpo() {
             let fragment = self.get(label).unwrap();
             for (idx, instruction) in fragment.instructions.iter().enumerate() {
-                instruction.update(index, &mut ctx);
+                instruction.dn(index, &mut ctx);
                 ctx.indices.insert((label, Id::Ins(idx)), index);
                 index += 1;
             }
             if let Some(copy) = copies.get(&label) {
                 for (idx, copy) in copy.iter().enumerate() {
-                    copy.uses(index, &mut ctx);
+                    copy.dn(index, &mut ctx);
                     ctx.indices.insert((label, Id::Copy(idx)), index);
                     index += 1;
                 }
             }
-            fragment.terminator.as_ref().unwrap().uses(index, &mut ctx);
+            fragment.terminator.as_ref().unwrap().dn(index, &mut ctx);
             ctx.indices.insert((label, Id::Term), index);
             index += 1;
         }
@@ -89,7 +89,7 @@ impl Function {
 }
 
 impl Instruction {
-    fn update(&self, index: usize, ctx: &mut Context) {
+    fn dn(&self, index: usize, ctx: &mut Context) {
         let mut update = |var: &Var| {
             match ctx.uses.entry(*var) {
                 Entry::Occupied(mut e) => {
@@ -134,7 +134,7 @@ impl Instruction {
 }
 
 impl Terminator {
-    fn uses(&self, index: usize, ctx: &mut Context) {
+    fn dn(&self, index: usize, ctx: &mut Context) {
         let mut update = |var: &Var| {
             match ctx.uses.entry(*var) {
                 Entry::Occupied(mut e) => {
@@ -156,7 +156,7 @@ impl Terminator {
 }
 
 impl Copy {
-    fn uses(&self, index: usize, ctx: &mut Context) {
+    fn dn(&self, index: usize, ctx: &mut Context) {
         let mut update = |var: &Var| {
             match ctx.uses.entry(*var) {
                 Entry::Occupied(mut e) => {

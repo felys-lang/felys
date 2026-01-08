@@ -1,6 +1,6 @@
-use crate::cyrene::{Const, Function, Instruction, Label, Terminator};
+use crate::cyrene::{Const, Function, Instruction, Label, Terminator, Var};
 use crate::demiurge::codegen::copies::Copy;
-use crate::demiurge::{Bytecode, Demiurge};
+use crate::demiurge::{Bytecode, Demiurge, Reg};
 use crate::elysia::Elysia;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -64,13 +64,13 @@ impl Function {
     fn codegen(&mut self, ctx: &mut Context) -> Vec<Bytecode> {
         let copies = self.copies();
         let allocation = self.allocate(&copies);
-        // println!("{:?}", allocation);
-        self.lowering(ctx, copies)
+        self.lowering(ctx, &allocation, copies)
     }
 
     fn lowering(
         &mut self,
         ctx: &mut Context,
+        alloc: &HashMap<Var, Reg>,
         mut copies: HashMap<Label, Vec<Copy>>,
     ) -> Vec<Bytecode> {
         let mut index = 0;
@@ -90,9 +90,12 @@ impl Function {
                 .remove(&label)
                 .unwrap_or_default()
                 .into_iter()
-                .map(|copy| copy.codegen());
-            let body = fragment.instructions.iter().map(|x| x.codegen(ctx));
-            let goto = fragment.terminator.as_ref().unwrap().codegen(&map);
+                .filter_map(|copy| copy.codegen(alloc));
+            let body = fragment
+                .instructions
+                .iter()
+                .filter_map(|x| x.codegen(alloc, ctx));
+            let goto = fragment.terminator.as_ref().unwrap().codegen(alloc, &map);
             bytecodes.extend(body);
             bytecodes.extend(copy);
             bytecodes.push(goto);
@@ -102,41 +105,63 @@ impl Function {
 }
 
 impl Instruction {
-    fn codegen(&self, ctx: &mut Context) -> Bytecode {
-        match self {
-            Instruction::Field(dst, src, idx) => Bytecode::Field(*dst, *src, *idx),
-            Instruction::Group(dst, id) => Bytecode::Group(*dst, ctx.groups.idx(*id)),
-            Instruction::Function(dst, id) => Bytecode::Function(*dst, ctx.functions.idx(*id)),
-            Instruction::Load(dst, id) => Bytecode::Load(*dst, ctx.consts.idx(id.clone())),
+    fn codegen(&self, alloc: &HashMap<Var, Reg>, ctx: &mut Context) -> Option<Bytecode> {
+        let bytecode = match self {
+            Instruction::Field(dst, src, idx) => {
+                Bytecode::Field(*alloc.get(dst)?, alloc[src], *idx)
+            }
+            Instruction::Group(dst, id) => Bytecode::Group(*alloc.get(dst)?, ctx.groups.idx(*id)),
+            Instruction::Function(dst, id) => {
+                Bytecode::Function(*alloc.get(dst)?, ctx.functions.idx(*id))
+            }
+            Instruction::Load(dst, id) => {
+                Bytecode::Load(*alloc.get(dst)?, ctx.consts.idx(id.clone()))
+            }
             Instruction::Binary(dst, lhs, op, rhs) => {
-                Bytecode::Binary(*dst, *lhs, op.clone(), *rhs)
+                Bytecode::Binary(*alloc.get(dst)?, alloc[lhs], op.clone(), alloc[rhs])
             }
-            Instruction::Unary(dst, op, src) => Bytecode::Unary(*dst, op.clone(), *src),
-            Instruction::Call(dst, src, args) => Bytecode::Call(*dst, *src, args.clone()),
-            Instruction::List(dst, args) => Bytecode::List(*dst, args.clone()),
-            Instruction::Tuple(dst, args) => Bytecode::Tuple(*dst, args.clone()),
-            Instruction::Index(dst, src, index) => Bytecode::Index(*dst, *src, *index),
-            Instruction::Method(dst, src, id, args) => {
-                Bytecode::Method(*dst, *src, *id, args.clone())
+            Instruction::Unary(dst, op, src) => {
+                Bytecode::Unary(*alloc.get(dst)?, op.clone(), alloc[src])
             }
-        }
+            Instruction::Call(dst, src, args) => {
+                Bytecode::Call(*alloc.get(dst)?, alloc[src], args.clone())
+            }
+            Instruction::List(dst, args) => {
+                Bytecode::List(*alloc.get(dst)?, args.iter().map(|x| alloc[x]).collect())
+            }
+            Instruction::Tuple(dst, args) => Bytecode::Tuple(
+                *alloc.get(dst)?,
+                args.iter()
+                    .map(|x| alloc.get(x).cloned())
+                    .collect::<Option<_>>()?,
+            ),
+            Instruction::Index(dst, src, index) => {
+                Bytecode::Index(*alloc.get(dst)?, alloc[src], alloc[index])
+            }
+            Instruction::Method(dst, src, id, args) => Bytecode::Method(
+                *alloc.get(dst)?,
+                alloc[src],
+                *id,
+                args.iter().map(|x| alloc[x]).collect(),
+            ),
+        };
+        Some(bytecode)
     }
 }
 
 impl Terminator {
-    fn codegen(&self, map: &HashMap<Label, usize>) -> Bytecode {
+    fn codegen(&self, alloc: &HashMap<Var, Reg>, map: &HashMap<Label, usize>) -> Bytecode {
         match self {
-            Terminator::Branch(cond, yes, no) => {
-                Bytecode::Branch(*cond, *map.get(yes).unwrap(), *map.get(no).unwrap())
-            }
-            Terminator::Jump(to) => Bytecode::Jump(*map.get(to).unwrap()),
-            Terminator::Return(var) => Bytecode::Return(*var),
+            Terminator::Branch(cond, yes, no) => Bytecode::Branch(alloc[cond], map[yes], map[no]),
+            Terminator::Jump(to) => Bytecode::Jump(map[to]),
+            Terminator::Return(var) => Bytecode::Return(alloc[var]),
         }
     }
 }
 
 impl Copy {
-    fn codegen(&self) -> Bytecode {
-        Bytecode::Copy(self.0, self.1)
+    fn codegen(&self, alloc: &HashMap<Var, Reg>) -> Option<Bytecode> {
+        let bytecode = Bytecode::Copy(*alloc.get(&self.0)?, alloc[&self.1]);
+        Some(bytecode)
     }
 }
