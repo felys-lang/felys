@@ -9,10 +9,9 @@ type Stack = Vec<(Label, Label, Option<Option<Id>>)>;
 impl Block {
     pub fn build(&self, args: Vec<usize>, meta: &Meta) -> Result<Function, Fault> {
         let mut stk = Vec::new();
-        let mut ctx = Context::default();
+        let mut ctx = Context::new(args.len());
         ctx.seal(Label::Entry)?;
         for id in args {
-            ctx.args.push(id);
             let var = ctx.var();
             ctx.define(ctx.cursor, Id::Interned(id), var);
         }

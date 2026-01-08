@@ -2,14 +2,13 @@ use crate::ast::{BinOp, Lit, UnaOp};
 use crate::error::Fault;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
+use std::ops::Range;
 use std::panic::Location;
 use std::rc::Rc;
 
-#[derive(Default)]
 pub struct Context {
     pub cursor: Label,
     pub cache: HashMap<Lit, Const>,
-    pub args: Vec<usize>,
     f: Function,
     ids: usize,
     defs: HashMap<Label, HashMap<Id, Var>>,
@@ -17,9 +16,9 @@ pub struct Context {
     sealed: HashSet<Label>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Function {
-    pub args: Vec<usize>,
+    pub args: Range<usize>,
     pub vars: usize,
     pub labels: usize,
     pub entry: Fragment,
@@ -78,8 +77,26 @@ pub enum Const {
 }
 
 impl Context {
-    pub fn export(mut self) -> Function {
-        self.f.args = self.args;
+    pub fn new(args: usize) -> Self {
+        Self {
+            cursor: Default::default(),
+            cache: Default::default(),
+            f: Function {
+                args: 0..args,
+                vars: 0,
+                labels: 0,
+                entry: Default::default(),
+                fragments: Default::default(),
+                exit: Default::default(),
+            },
+            ids: 0,
+            defs: Default::default(),
+            incompleted: Default::default(),
+            sealed: Default::default(),
+        }
+    }
+
+    pub fn export(self) -> Function {
         self.f
     }
 
@@ -196,16 +213,6 @@ pub struct Fragment {
     pub predecessors: Vec<Label>,
     pub instructions: Vec<Instruction>,
     pub terminator: Option<Terminator>,
-}
-
-impl Fragment {
-    pub fn successors(&self) -> Vec<Label> {
-        match self.terminator.as_ref().unwrap() {
-            Terminator::Branch(_, yes, no) => vec![*yes, *no],
-            Terminator::Jump(target) => vec![*target],
-            Terminator::Return(_) => vec![],
-        }
-    }
 }
 
 #[derive(Debug)]

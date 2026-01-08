@@ -17,8 +17,8 @@ impl Function {
 
         let mut meta = Meta::new(self.vars);
         meta.flow.push_back((Label::Entry, Label::Entry));
-        for var in self.args.iter() {
-            meta.update(*var, Lattice::Bottom);
+        for var in self.args.clone() {
+            meta.update(var, Lattice::Bottom);
         }
 
         while !meta.flow.is_empty() || !meta.ssa.is_empty() {

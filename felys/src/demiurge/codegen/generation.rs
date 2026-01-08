@@ -64,7 +64,7 @@ impl Function {
     fn codegen(&mut self, ctx: &mut Context) -> Vec<Bytecode> {
         let copies = self.copies();
         let allocation = self.allocate(&copies);
-        println!("{:?}", allocation);
+        // println!("{:?}", allocation);
         self.lowering(ctx, copies)
     }
 

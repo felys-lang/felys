@@ -46,8 +46,9 @@ impl Function {
             }
 
             let reg = registers.pop().unwrap_or_else(|| {
+                let new = used;
                 used += 1;
-                used
+                new
             });
             mapping.insert(var, reg);
             active.push(Reverse((end, reg)));
@@ -60,7 +61,7 @@ impl Function {
         let mut ctx = Context::default();
 
         let mut index = 0;
-        for i in 0..self.args.len() {
+        for i in self.args.clone() {
             ctx.defs.insert(i, index);
             index += 1;
         }

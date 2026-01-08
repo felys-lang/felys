@@ -1,65 +1,62 @@
-use crate::cyrene::{Function, Label, Terminator};
+use crate::cyrene::{Fragment, Function, Label, Terminator};
+use std::collections::VecDeque;
 
 impl Function {
     pub fn compact(&mut self) -> bool {
         let mut changed = false;
-
-        while let Some((id, target)) = self.redundant() {
-            let empty = Label::Id(id);
-            let predecessors = self.get(empty).unwrap().predecessors.clone();
-
-            for pred in predecessors.iter() {
-                let frag = self.modify(*pred).unwrap();
-                match frag.terminator.as_mut().unwrap() {
-                    Terminator::Jump(t) => {
-                        if *t == empty {
-                            *t = target;
-                        }
-                    }
-                    Terminator::Branch(_, yes, no) => {
-                        if *yes == empty {
-                            *yes = target;
-                        }
-                        if *no == empty {
-                            *no = target;
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
-            let frag = self.modify(target).unwrap();
-            frag.predecessors.retain(|x| *x != empty);
-            frag.predecessors.extend_from_slice(&predecessors);
-
-            for (_, inputs) in frag.phis.iter_mut() {
-                let Some((_, var)) = inputs.iter().find(|(x, _)| *x == empty) else {
-                    continue;
-                };
-                let var = *var;
-                inputs.retain(|(x, _)| *x != empty);
-                for pred in predecessors.iter() {
-                    inputs.push((*pred, var));
-                }
-            }
-
-            self.fragments.remove(&id);
-            changed = true;
+        let mut worklist = VecDeque::new();
+        for (label, _) in self.safe() {
+            worklist.push_back(label);
         }
+
+        while let Some(empty) = worklist.pop_front() {
+            let fragment = self.get(empty).unwrap();
+            let Some(target) = fragment.mergeable(empty) else {
+                continue;
+            };
+            changed = true;
+            let pred = fragment.predecessors[0];
+
+            let predecessor = self.modify(pred).unwrap();
+            match predecessor.terminator.as_mut().unwrap() {
+                Terminator::Branch(_, _, _) => {}
+                Terminator::Jump(x) => *x = target,
+                Terminator::Return(_) => {}
+            }
+
+            let successor = self.modify(target).unwrap();
+            successor.predecessors.iter_mut().for_each(|label| {
+                if label == &empty {
+                    *label = pred
+                }
+            });
+            successor.phis.iter_mut().for_each(|(_, inputs)| {
+                inputs.iter_mut().for_each(|(label, _)| {
+                    if label == &empty {
+                        *label = pred
+                    }
+                })
+            });
+
+            worklist.push_back(pred);
+            worklist.push_back(target);
+        }
+
         changed
     }
+}
 
-    fn redundant(&self) -> Option<(usize, Label)> {
-        let mut candidate = None;
-        for (id, frag) in self.fragments.iter() {
-            if frag.instructions.is_empty()
-                && frag.phis.is_empty()
-                && let Terminator::Jump(target) = frag.terminator.as_ref().unwrap()
-                && *target != Label::Id(*id)
-            {
-                candidate = Some((*id, *target));
-            }
+impl Fragment {
+    fn mergeable(&self, label: Label) -> Option<Label> {
+        if self.instructions.is_empty()
+            && self.phis.is_empty()
+            && self.predecessors.len() == 1
+            && let Terminator::Jump(target) = self.terminator.as_ref().unwrap()
+            && *target != label
+        {
+            Some(*target)
+        } else {
+            None
         }
-        candidate
     }
 }

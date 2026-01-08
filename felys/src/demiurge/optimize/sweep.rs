@@ -19,8 +19,8 @@ enum Id {
 impl Function {
     pub fn sweep(&mut self) -> Result<bool, Fault> {
         let mut ctx = Context::default();
-        for arg in self.args.iter() {
-            ctx.defs.insert(*arg, (Label::Entry, Id::Arg));
+        for arg in self.args.clone() {
+            ctx.defs.insert(arg, (Label::Entry, Id::Arg));
         }
 
         for (label, fragment) in self.safe() {
