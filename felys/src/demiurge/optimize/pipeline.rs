@@ -23,9 +23,9 @@ impl Function {
                 changed = true;
             }
 
-            // if self.rename() {
-            //     changed = true;
-            // }
+            if self.rename() {
+                changed = true;
+            }
 
             if self.sweep()? {
                 changed = true;

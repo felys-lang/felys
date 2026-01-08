@@ -7,18 +7,14 @@ use crate::error::Fault;
 type Stack = Vec<(Label, Label, Option<Option<Id>>)>;
 
 impl Block {
-    pub fn build<'a>(
-        &self,
-        args: impl Iterator<Item = &'a usize>,
-        meta: &Meta,
-    ) -> Result<Function, Fault> {
+    pub fn build(&self, args: Vec<usize>, meta: &Meta) -> Result<Function, Fault> {
         let mut stk = Vec::new();
         let mut ctx = Context::default();
         ctx.seal(Label::Entry)?;
         for id in args {
-            ctx.args.push(*id);
+            ctx.args.push(id);
             let var = ctx.var();
-            ctx.define(ctx.cursor, Id::Interned(*id), var);
+            ctx.define(ctx.cursor, Id::Interned(id), var);
         }
 
         if let Ok(var) = self.ir(&mut ctx, &mut stk, meta)?.var() {

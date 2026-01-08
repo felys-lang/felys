@@ -76,14 +76,12 @@ impl Item {
     ) -> Result<(), Fault> {
         match self {
             Item::Fn(id, args, block) => {
-                let function = match args {
-                    Some(vec) => block.build(vec.iter(), meta)?,
-                    None => block.build([].iter(), meta)?,
-                };
+                let args = args.as_ref().map(|x| x.vec()).unwrap_or_default();
+                let function = block.build(args, meta)?;
                 let src = meta.ns.get([*id].iter())?;
                 fns.insert(src, function);
             }
-            Item::Main(args, block) => *main = Some(block.build([*args].iter(), meta)?),
+            Item::Main(args, block) => *main = Some(block.build(vec![*args], meta)?),
             Item::Impl(id, impls) => {
                 for implementation in impls.iter() {
                     implementation.cfg(*id, meta, fns)?;
@@ -119,16 +117,15 @@ impl Impl {
     ) -> Result<(), Fault> {
         match self {
             Impl::Associated(sid, args, block) => {
-                let function = match args {
-                    Some(vec) => block.build(vec.iter(), meta)?,
-                    None => block.build([].iter(), meta)?,
-                };
+                let args = args.as_ref().map(|x| x.vec()).unwrap_or_default();
+                let function = block.build(args, meta)?;
                 let src = meta.ns.get([id, *sid].iter())?;
                 fns.insert(src, function);
             }
             Impl::Method(sid, args, block) => {
                 let s = meta.intern.id("self");
-                let function = block.build([s].iter().chain(args), meta)?;
+                let args = [s].iter().chain(args).cloned().collect();
+                let function = block.build(args, meta)?;
                 let src = meta.ns.get([id, *sid].iter())?;
                 fns.insert(src, function);
             }
