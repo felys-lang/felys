@@ -1,6 +1,7 @@
-use std::time::Instant;
+use crate::elysia::Object;
 use crate::error::Fault;
 use crate::philia093::PhiLia093;
+use std::time::Instant;
 
 mod ast;
 mod cyrene;
@@ -9,42 +10,44 @@ mod elysia;
 mod error;
 mod philia093;
 
-// const CODE: &str = r#"
-// fn main(args) {
-//     x = 1;
-//     x = 2;
-//     if false {
-//         x = 3;
-//     }
-//     0
-// }
-// "#;
-
-// const CODE: &str = r#"
-// fn main(args) {
-//     if true {
-//         if false {
-//             return args;
-//         }
-//     }
-//     0
-// }
-// "#;
-
-// const CODE: &str = r#"
-// fn main(args) {
-//     while true {
-//         if args {
-//             break;
-//         } else {
-//             break;
-//         }
-//     }
-//     0
-// }
-// "#;
-
-const CODE: &str = r#"
+const CODE: [&str; 6] = [
+    r#"
+fn main(args) {
+    x = 1;
+    x = 2;
+    if false {
+        x = 3;
+    }
+    0
+}
+"#,
+    r#"
+fn main(args) {
+    if true {
+        if true {
+            if true {
+                if false {
+                    return args;
+                }
+            }
+        }
+    }
+    0
+}
+"#,
+    r#"
+fn main(args) {
+    while true {
+        if args {
+            break;
+        } else {
+            break;
+        }
+    }
+    0
+}
+"#,
+    r#"
 group Vector3(x, y, z);
 group Matrix2x2(r1, r2);
 group ComplexState(id, data, active);
@@ -166,18 +169,58 @@ fn main(args) {
         item
     ];
 }
-"#;
+"#,
+    r#"
+fn main(args) {
+    x = "你好，世界！";
+    if args {
+        x = args;
+    }
+    x
+}
+"#,
+    r#"
+fn fib(n) {
+    if n <= 1 {
+        return n;
+    } else {
+        return fib(n - 1) + fib(n - 2);
+    }
+}
+
+fn main(args) {
+    fib(10)
+}
+"#,
+];
 
 fn main() -> Result<(), Fault> {
+    let philia093 = PhiLia093::from(CODE[5].to_string());
+
     let start = Instant::now();
-    let philia093 = PhiLia093::from(CODE.to_string());
     let cyrene = philia093.parse()?;
-    let demiurge = cyrene.cfg()?.optimize()?;
-    println!("{}", start.elapsed().as_micros());
-    println!("{:?}", demiurge.main.entry);
-    for frag in demiurge.main.fragments {
-        println!("{:?}", frag);
-    }
-    println!("{:?}", demiurge.main.exit);
+    println!("parse: {:?}", start.elapsed());
+
+    let start = Instant::now();
+    let demiurge = cyrene.cfg()?.optimize(0)?;
+    println!("optimize: {:?}", start.elapsed());
+
+    let start = Instant::now();
+    let elysia = demiurge.codegen();
+    println!("codegen: {:?}", start.elapsed());
+
+    let start = Instant::now();
+    let exit = elysia.exec(Object::Void)?;
+    println!("execution: {:?}", start.elapsed());
+
+    // use std::fs::File;
+    // use std::io::BufWriter;
+    // let file = File::create("test.bin").unwrap();
+    // let mut buf = BufWriter::new(file);
+    // let start = Instant::now();
+    // elysia.dump(&mut buf).map_err(|_| Fault::Runtime)?;
+    // println!("dump: {:?}", start.elapsed());
+
+    println!("{:?}", exit);
     Ok(())
 }
