@@ -14,5 +14,13 @@ pub enum Fault {
     ValueUnreachable,
     NotImplemented,
     ValueNotDefined,
-    Runtime
+    Here(String),
+}
+
+impl Fault {
+    #[track_caller]
+    pub fn here() -> Self {
+        let location = Location::caller();
+        Fault::Here(location.to_string())
+    }
 }

@@ -127,18 +127,17 @@ impl Instruction {
             Instruction::Unary(dst, op, src) => {
                 Bytecode::Unary(*alloc.get(dst)?, op.clone(), alloc[src])
             }
-            Instruction::Call(dst, src, args) => {
-                Bytecode::Call(*alloc.get(dst)?, alloc[src], args.clone())
-            }
+            Instruction::Call(dst, src, args) => Bytecode::Call(
+                *alloc.get(dst)?,
+                alloc[src],
+                args.iter().map(|x| alloc[x]).collect(),
+            ),
             Instruction::List(dst, args) => {
                 Bytecode::List(*alloc.get(dst)?, args.iter().map(|x| alloc[x]).collect())
             }
-            Instruction::Tuple(dst, args) => Bytecode::Tuple(
-                *alloc.get(dst)?,
-                args.iter()
-                    .map(|x| alloc.get(x).cloned())
-                    .collect::<Option<_>>()?,
-            ),
+            Instruction::Tuple(dst, args) => {
+                Bytecode::Tuple(*alloc.get(dst)?, args.iter().map(|x| alloc[x]).collect())
+            }
             Instruction::Index(dst, src, index) => {
                 Bytecode::Index(*alloc.get(dst)?, alloc[src], alloc[index])
             }

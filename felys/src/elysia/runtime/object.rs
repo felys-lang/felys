@@ -1,3 +1,4 @@
+use crate::ast::{BinOp, UnaOp};
 use crate::error::Fault;
 use std::rc::Rc;
 
@@ -25,7 +26,7 @@ impl Object {
         if let Object::List(x) = self {
             Ok(x.clone())
         } else {
-            Err(Fault::Runtime)
+            Err(Fault::here())
         }
     }
 
@@ -33,7 +34,7 @@ impl Object {
         if let Object::Group(x, elements) = self {
             Ok((*x, elements.clone()))
         } else {
-            Err(Fault::Runtime)
+            Err(Fault::here())
         }
     }
 
@@ -41,7 +42,7 @@ impl Object {
         if let Object::Pointer(ty, idx) = self {
             Ok((ty.clone(), *idx))
         } else {
-            Err(Fault::Runtime)
+            Err(Fault::here())
         }
     }
 
@@ -49,7 +50,7 @@ impl Object {
         if let Object::Bool(x) = self {
             Ok(*x)
         } else {
-            Err(Fault::Runtime)
+            Err(Fault::here())
         }
     }
 
@@ -57,7 +58,223 @@ impl Object {
         if let Object::Int(x) = self {
             Ok(*x)
         } else {
-            Err(Fault::Runtime)
+            Err(Fault::here())
         }
+    }
+
+    pub fn float(&self) -> Result<f64, Fault> {
+        if let Object::Float(x) = self {
+            Ok(*x)
+        } else {
+            Err(Fault::here())
+        }
+    }
+
+    pub fn str(&self) -> Result<&str, Fault> {
+        if let Object::Str(x) = self {
+            Ok(x)
+        } else {
+            Err(Fault::here())
+        }
+    }
+
+    pub fn binary(self, op: &BinOp, rhs: Object) -> Result<Object, Fault> {
+        match op {
+            BinOp::Or => self.or(rhs),
+            BinOp::And => self.and(rhs),
+            BinOp::Gt => self.gt(rhs),
+            BinOp::Ge => self.ge(rhs),
+            BinOp::Lt => self.lt(rhs),
+            BinOp::Le => self.le(rhs),
+            BinOp::Eq => self.eq(rhs),
+            BinOp::Ne => self.ne(rhs),
+            BinOp::Add => self.add(rhs),
+            BinOp::Sub => self.sub(rhs),
+            BinOp::Mul => self.mul(rhs),
+            BinOp::Div => self.div(rhs),
+            BinOp::Mod => self.rem(rhs),
+            BinOp::Dot => self.dot(rhs),
+        }
+    }
+
+    pub fn unary(self, op: &UnaOp) -> Result<Object, Fault> {
+        match op {
+            UnaOp::Not => self.not(),
+            UnaOp::Pos => self.pos(),
+            UnaOp::Neg => self.neg(),
+        }
+    }
+
+    fn or(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Bool(x) => x || rhs.bool()?,
+            _ => return Err(Fault::here()),
+        };
+        Ok(Object::Bool(value))
+    }
+
+    fn and(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Bool(x) => x && rhs.bool()?,
+            _ => return Err(Fault::here()),
+        };
+        Ok(Object::Bool(value))
+    }
+
+    fn gt(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Int(x) => x > rhs.int()?,
+            Object::Float(x) => x > rhs.float()?,
+            _ => return Err(Fault::here()),
+        };
+        Ok(Object::Bool(value))
+    }
+
+    fn ge(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Int(x) => x >= rhs.int()?,
+            Object::Float(x) => x >= rhs.float()?,
+            _ => return Err(Fault::here()),
+        };
+        Ok(Object::Bool(value))
+    }
+
+    fn lt(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Int(x) => x < rhs.int()?,
+            Object::Float(x) => x < rhs.float()?,
+            _ => return Err(Fault::here()),
+        };
+        Ok(Object::Bool(value))
+    }
+
+    fn le(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Int(x) => x <= rhs.int()?,
+            Object::Float(x) => x <= rhs.float()?,
+            _ => return Err(Fault::here()),
+        };
+        Ok(Object::Bool(value))
+    }
+
+    fn eq(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Int(x) => x == rhs.int()?,
+            Object::Float(x) => x == rhs.float()?,
+            Object::Bool(x) => x == rhs.bool()?,
+            Object::Str(x) => x.as_ref() == rhs.str()?,
+            _ => return Err(Fault::here()),
+        };
+        Ok(Object::Bool(value))
+    }
+
+    fn ne(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Int(x) => (x) != rhs.int()?,
+            Object::Float(x) => x != rhs.float()?,
+            Object::Bool(x) => x != rhs.bool()?,
+            Object::Str(x) => x.as_ref() != rhs.str()?,
+            _ => return Err(Fault::here()),
+        };
+        Ok(Object::Bool(value))
+    }
+
+    fn add(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Int(x) => x.checked_add(rhs.int()?).ok_or(Fault::here())?.into(),
+            Object::Float(x) => (x + rhs.float()?).into(),
+            Object::Str(x) => format!("{}{}", x, rhs.str()?).into(),
+            _ => return Err(Fault::here()),
+        };
+        Ok(value)
+    }
+
+    fn sub(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Int(x) => Object::from(x.checked_sub(rhs.int()?).ok_or(Fault::here())?),
+            Object::Float(x) => (x - rhs.float()?).into(),
+            _ => return Err(Fault::here()),
+        };
+        Ok(value)
+    }
+
+    fn mul(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Int(x) => x.checked_mul(rhs.int()?).ok_or(Fault::here())?.into(),
+            Object::Float(x) => (x * rhs.float()?).into(),
+            _ => return Err(Fault::here()),
+        };
+        Ok(value)
+    }
+
+    fn div(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Int(x) => x.checked_div(rhs.int()?).ok_or(Fault::here())?.into(),
+            Object::Float(x) => (x / rhs.float()?).into(),
+            _ => return Err(Fault::here()),
+        };
+        Ok(value)
+    }
+
+    fn rem(self, rhs: Object) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Int(x) => (x % rhs.int()?).into(),
+            Object::Float(x) => (x % rhs.float()?).into(),
+            _ => return Err(Fault::here()),
+        };
+        Ok(value)
+    }
+
+    fn dot(self, _: Object) -> Result<Object, Fault> {
+        Err(Fault::here())
+    }
+
+    fn not(self) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Bool(x) => (!x).into(),
+            _ => return Err(Fault::here()),
+        };
+        Ok(value)
+    }
+
+    fn pos(self) -> Result<Object, Fault> {
+        if matches!(self, Object::Int(_) | Object::Float(_)) {
+            Ok(self.clone())
+        } else {
+            Err(Fault::here())
+        }
+    }
+
+    fn neg(self) -> Result<Object, Fault> {
+        let value = match self {
+            Object::Int(x) => (-x).into(),
+            Object::Float(x) => (-x).into(),
+            _ => return Err(Fault::here()),
+        };
+        Ok(value)
+    }
+}
+
+impl From<f64> for Object {
+    fn from(x: f64) -> Object {
+        Object::Float(x)
+    }
+}
+
+impl From<isize> for Object {
+    fn from(x: isize) -> Object {
+        Object::Int(x)
+    }
+}
+
+impl From<bool> for Object {
+    fn from(x: bool) -> Object {
+        Object::Bool(x)
+    }
+}
+
+impl From<String> for Object {
+    fn from(x: String) -> Object {
+        Object::Str(x.into())
     }
 }
