@@ -1,5 +1,5 @@
 use crate::cyrene::{Const, Fragment, Function, Instruction, Label, Terminator, Var};
-use crate::error::Fault;
+use crate::fault::Fault;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Clone, PartialEq)]

@@ -1,5 +1,5 @@
 use crate::cyrene::Cyrene;
-use crate::error::Fault;
+use crate::fault::Fault;
 use crate::philia093::PhiLia093;
 
 impl PhiLia093 {

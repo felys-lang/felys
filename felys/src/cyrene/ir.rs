@@ -1,5 +1,5 @@
 use crate::ast::{BinOp, Lit, UnaOp};
-use crate::error::Fault;
+use crate::fault::Fault;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::ops::Range;

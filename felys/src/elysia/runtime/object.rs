@@ -1,5 +1,5 @@
 use crate::ast::{BinOp, UnaOp};
-use crate::error::Fault;
+use crate::fault::Fault;
 use std::rc::Rc;
 
 #[derive(Clone, Debug)]

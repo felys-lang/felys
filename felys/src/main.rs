@@ -1,5 +1,5 @@
 use crate::elysia::Object;
-use crate::error::Fault;
+use crate::fault::Fault;
 use crate::philia093::PhiLia093;
 use std::time::Instant;
 
@@ -7,7 +7,7 @@ mod ast;
 mod cyrene;
 mod demiurge;
 mod elysia;
-mod error;
+mod fault;
 mod philia093;
 
 const CODE: [&str; 6] = [

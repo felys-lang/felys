@@ -1,6 +1,6 @@
 use crate::ast::{BinOp, UnaOp};
 use crate::cyrene::Const;
-use crate::error::Fault;
+use crate::fault::Fault;
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
 impl Const {

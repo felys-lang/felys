@@ -2,7 +2,7 @@ use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Stmt};
 use crate::cyrene::ir::{Const, Context, Dst, Id, Instruction, Label, Var};
 use crate::cyrene::meta::Meta;
 use crate::cyrene::Function;
-use crate::error::Fault;
+use crate::fault::Fault;
 
 type Stack = Vec<(Label, Label, Option<Option<Id>>)>;
 

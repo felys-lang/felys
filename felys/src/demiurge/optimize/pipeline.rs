@@ -1,6 +1,6 @@
 use crate::cyrene::Function;
 use crate::demiurge::Demiurge;
-use crate::error::Fault;
+use crate::fault::Fault;
 
 impl Demiurge {
     pub fn optimize(mut self, depth: usize) -> Result<Self, Fault> {

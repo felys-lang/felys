@@ -2,7 +2,7 @@ use crate::cyrene::Const;
 use crate::demiurge::{Bytecode, Reg};
 use crate::elysia::runtime::object::{Object, Pointer};
 use crate::elysia::{Callable, Elysia};
-use crate::error::Fault;
+use crate::fault::Fault;
 
 impl Elysia {
     pub fn exec(&self, args: Object) -> Result<Object, Fault> {

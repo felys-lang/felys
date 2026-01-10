@@ -1,4 +1,4 @@
-use crate::error::Fault;
+use crate::fault::Fault;
 use crate::philia093::Intern;
 use std::collections::HashMap;
 
