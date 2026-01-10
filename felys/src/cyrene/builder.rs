@@ -29,7 +29,7 @@ impl Cyrene {
         }
 
         let mut fns = HashMap::new();
-        let mut main = None;
+        let mut main = Err(Fault::here());
         for item in self.root.0.iter() {
             item.cfg(&mut meta, &mut fns, &mut main)?;
         }
@@ -37,7 +37,7 @@ impl Cyrene {
         Ok(Demiurge {
             groups: meta.groups,
             fns,
-            main: main.ok_or(Fault::MainNotFound)?,
+            main: main?,
             intern: meta.intern,
         })
     }
@@ -72,7 +72,7 @@ impl Item {
         &self,
         meta: &mut Meta,
         fns: &mut HashMap<usize, Function>,
-        main: &mut Option<Function>,
+        main: &mut Result<Function, Fault>,
     ) -> Result<(), Fault> {
         match self {
             Item::Fn(id, args, block) => {
@@ -81,7 +81,12 @@ impl Item {
                 let src = meta.ns.get([*id].iter())?;
                 fns.insert(src, function);
             }
-            Item::Main(args, block) => *main = Some(block.build(vec![*args], meta)?),
+            Item::Main(args, block) => {
+                if main.is_ok() {
+                    return Err(Fault::here());
+                }
+                *main = block.build(vec![*args], meta);
+            }
             Item::Impl(id, impls) => {
                 for implementation in impls.iter() {
                     implementation.cfg(*id, meta, fns)?;

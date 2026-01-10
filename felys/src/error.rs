@@ -7,7 +7,6 @@ pub enum Fault {
     UnacceptableVoid(&'static Location<'static>),
     InvalidPath,
     BlockEarlyEnd,
-    MainNotFound,
     InvalidConstant,
     InvalidOperation,
     UndeterminedValue,
