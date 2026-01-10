@@ -14,4 +14,5 @@ pub enum Fault {
     ValueUnreachable,
     NotImplemented,
     ValueNotDefined,
+    Runtime
 }

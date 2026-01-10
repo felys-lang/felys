@@ -11,7 +11,7 @@ pub struct Demiurge {
 }
 
 impl Function {
-    pub fn safe(&self) -> impl Iterator<Item = (Label, &Fragment)> {
+    pub fn safe(&self) -> impl Iterator<Item=(Label, &Fragment)> {
         let fragments = self
             .fragments
             .iter()
@@ -22,7 +22,7 @@ impl Function {
             .chain([(Label::Exit, &self.exit)])
     }
 
-    pub fn cautious(&mut self) -> impl Iterator<Item = (Label, &mut Fragment)> {
+    pub fn cautious(&mut self) -> impl Iterator<Item=(Label, &mut Fragment)> {
         let fragments = self
             .fragments
             .iter_mut()
@@ -33,7 +33,7 @@ impl Function {
             .chain([(Label::Exit, &mut self.exit)])
     }
 
-    pub fn order(&self) -> impl Iterator<Item = Label> {
+    pub fn order(&self) -> impl Iterator<Item=Label> {
         let mut order = self.fragments.keys().cloned().collect::<Vec<_>>();
         order.sort_unstable();
         [Label::Entry]

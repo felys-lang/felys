@@ -21,7 +21,7 @@ struct Context {
 }
 
 impl Function {
-    pub fn allocate(&self, copies: &HashMap<Label, Vec<Copy>>) -> HashMap<Var, Reg> {
+    pub fn allocate(&self, copies: &HashMap<Label, Vec<Copy>>) -> (HashMap<Var, Reg>, usize) {
         let ctx = self.precompute(copies);
         let mut intervals = ctx
             .uses
@@ -54,7 +54,7 @@ impl Function {
             active.push(Reverse((end, reg)));
         }
 
-        mapping
+        (mapping, used)
     }
 
     fn precompute(&self, copies: &HashMap<Label, Vec<Copy>>) -> Context {

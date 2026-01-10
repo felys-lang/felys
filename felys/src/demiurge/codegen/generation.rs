@@ -1,7 +1,7 @@
 use crate::cyrene::{Const, Function, Instruction, Label, Terminator, Var};
 use crate::demiurge::codegen::copies::Copy;
 use crate::demiurge::{Bytecode, Demiurge, Reg};
-use crate::elysia::Elysia;
+use crate::elysia::{Callable, Elysia};
 use std::collections::HashMap;
 use std::hash::Hash;
 
@@ -61,10 +61,14 @@ impl Demiurge {
 }
 
 impl Function {
-    fn codegen(&mut self, ctx: &mut Context) -> Vec<Bytecode> {
+    fn codegen(&mut self, ctx: &mut Context) -> Callable {
         let copies = self.copies();
-        let allocation = self.allocate(&copies);
-        self.lowering(ctx, &allocation, copies)
+        let (allocation, used) = self.allocate(&copies);
+        Callable {
+            args: self.args.end,
+            registers: used,
+            bytecodes: self.lowering(ctx, &allocation, copies),
+        }
     }
 
     fn lowering(
