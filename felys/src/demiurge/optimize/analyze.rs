@@ -1,7 +1,62 @@
 use crate::cyrene::{Const, Fragment, Function, Instruction, Label, Terminator, Var};
-use crate::demiurge::meta::{Lattice, Meta};
 use crate::error::Fault;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Lattice {
+    Top,
+    Const(Const),
+    Bottom,
+}
+
+impl Lattice {
+    fn meet(&self, other: &Self) -> Self {
+        match (self, other) {
+            (Lattice::Top, x) | (x, Lattice::Top) => x.clone(),
+            (Lattice::Const(l), Lattice::Const(r)) => {
+                if l == r {
+                    Lattice::Const(l.clone())
+                } else {
+                    Lattice::Bottom
+                }
+            }
+            (Lattice::Bottom, _) | (_, Lattice::Bottom) => Lattice::Bottom,
+        }
+    }
+}
+
+pub struct Meta {
+    pub visited: HashSet<Label>,
+    values: Vec<Lattice>,
+    edges: HashSet<(Label, Label)>,
+
+    flow: VecDeque<(Label, Label)>,
+    ssa: VecDeque<Var>,
+}
+
+impl Meta {
+    fn new(vars: usize) -> Self {
+        Self {
+            values: vec![Lattice::Top; vars],
+            edges: HashSet::new(),
+            visited: HashSet::new(),
+            flow: VecDeque::new(),
+            ssa: VecDeque::new(),
+        }
+    }
+
+    pub fn get(&self, var: Var) -> &Lattice {
+        self.values.get(var).unwrap_or(&Lattice::Top)
+    }
+
+    fn update(&mut self, var: Var, new: Lattice) {
+        let old = &mut self.values[var];
+        if *old != new {
+            *old = new;
+            self.ssa.push_back(var);
+        }
+    }
+}
 
 enum Id {
     Ins(usize),
