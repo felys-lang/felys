@@ -2,8 +2,8 @@ use std::panic::Location;
 
 #[derive(Clone, Debug)]
 pub enum Fault {
+    PhiLia093(usize, usize, String, &'static str),
     OutsideLoop,
-    FailedToParse,
     UnacceptableVoid(&'static Location<'static>),
     InvalidPath,
     BlockEarlyEnd,
