@@ -23,10 +23,9 @@ impl Function {
 
         while !meta.flow.is_empty() || !meta.ssa.is_empty() {
             while let Some((pred, label)) = meta.flow.pop_front() {
-                if meta.edges.contains(&(pred, label)) {
+                if !meta.edges.insert((pred, label)) {
                     continue;
                 }
-                meta.edges.insert((pred, label));
                 let fragment = self.get(label).unwrap();
                 fragment.analyze(label, &mut meta)?;
             }

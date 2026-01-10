@@ -3,18 +3,18 @@ use crate::demiurge::Demiurge;
 use crate::error::Fault;
 
 impl Demiurge {
-    pub fn optimize(mut self, limit: usize) -> Result<Self, Fault> {
+    pub fn optimize(mut self, depth: usize) -> Result<Self, Fault> {
         for function in self.fns.values_mut() {
-            function.optimize(limit)?;
+            function.optimize(depth)?;
         }
-        self.main.optimize(limit)?;
+        self.main.optimize(depth)?;
         Ok(self)
     }
 }
 
 impl Function {
-    fn optimize(&mut self, limit: usize) -> Result<(), Fault> {
-        for _ in 0..limit {
+    fn optimize(&mut self, depth: usize) -> Result<(), Fault> {
+        for _ in 0..=depth {
             let mut changed = false;
             let meta = self.analyze()?;
 
