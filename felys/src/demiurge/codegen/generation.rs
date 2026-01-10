@@ -45,7 +45,7 @@ impl Demiurge {
             .into_values()
             .map(|mut x| x.codegen(&mut ctx))
             .collect();
-        let lookup = ctx
+        let router = ctx
             .groups
             .pool
             .into_iter()
@@ -55,7 +55,7 @@ impl Demiurge {
             main,
             text,
             data: ctx.consts.pool,
-            lookup,
+            router,
         }
     }
 }
