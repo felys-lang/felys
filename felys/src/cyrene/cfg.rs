@@ -23,7 +23,9 @@ impl Block {
         ctx.seal(Label::Exit)?;
 
         ctx.cursor = Label::Exit;
-        let var = ctx.lookup(ctx.cursor, Id::Ret)?;
+        let var = ctx
+            .lookup(ctx.cursor, Id::Ret)
+            .ok_or(Fault::FunctionNoReturn(self.clone()))?;
         ctx.ret(var);
         Ok(ctx.export())
     }
@@ -82,10 +84,10 @@ impl Pat {
                     pat.ir(ctx, op, field)?
                 }
             }
-            Pat::Ident(id) => {
-                let id = Id::Interned(*id);
+            Pat::Ident(x) => {
+                let id = Id::Interned(*x);
                 if let Some(bop) = op {
-                    let lhs = ctx.lookup(ctx.cursor, id)?;
+                    let lhs = ctx.lookup(ctx.cursor, id).unwrap();
                     let var = ctx.var();
                     ctx.push(Instruction::Binary(var, lhs, bop.clone(), rhs));
                     rhs = var;
@@ -161,7 +163,7 @@ impl Expr {
                         return Err(Fault::InconsistentIfElse(block.clone(), alter.clone()));
                     }
                 } else if ret.is_some() {
-                    return Err(Fault::InconsistentIfElse(block.clone(), alter.clone()));
+                    return Err(Fault::InconsistentIfElse(block.clone(), None));
                 }
 
                 ctx.jump(join);
@@ -169,7 +171,7 @@ impl Expr {
 
                 ctx.cursor = join;
                 if let Some(id) = ret {
-                    Ok(ctx.lookup(ctx.cursor, id)?.into())
+                    Ok(ctx.lookup(ctx.cursor, id).unwrap().into())
                 } else {
                     Ok(Dst::void())
                 }
@@ -193,7 +195,7 @@ impl Expr {
 
                 ctx.cursor = end;
                 if let Some(id) = wb {
-                    let var = ctx.lookup(ctx.cursor, id)?;
+                    let var = ctx.lookup(ctx.cursor, id).unwrap();
                     Ok(var.into())
                 } else {
                     Ok(Dst::void())
@@ -317,7 +319,7 @@ impl Path {
     fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Dst, Fault> {
         if self.0.len() == 1 {
             let id = Id::Interned(self.0.buffer()[0]);
-            if let Ok(var) = ctx.lookup(ctx.cursor, id) {
+            if let Some(var) = ctx.lookup(ctx.cursor, id) {
                 return Ok(var.into());
             }
         }

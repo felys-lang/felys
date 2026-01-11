@@ -10,10 +10,10 @@ pub enum Fault {
     PathNotExist(Path),
     DuplicatePath(BufVec<usize, 1>),
     InconsistentIfElse(Block, Option<Rc<Expr>>),
+    FunctionNoReturn(Block),
     UndeterminedValue,
     Internal,
     UnacceptableVoid,
-    ValueNotDefined,
 }
 
 impl Fault {
@@ -68,10 +68,14 @@ impl Fault {
                     block.recover(&mut msg, ERROR, 0, None, intern).unwrap();
                 }
             }
+            Fault::FunctionNoReturn(block) => {
+                msg.push_str("function body does not have return value\n");
+                msg.push_str(ERROR);
+                block.recover(&mut msg, ERROR, 0, None, intern).unwrap();
+            }
             Fault::UndeterminedValue => msg.push_str("undetermined value"),
             Fault::Internal => msg.push_str("internal error"),
             Fault::UnacceptableVoid => msg.push_str("unacceptable void"),
-            Fault::ValueNotDefined => msg.push_str("value not defined"),
         }
         msg.push_str("\nNote: ast recovery only reflect the structure but raw code");
         msg

@@ -162,7 +162,7 @@ impl Context {
             for (key, var) in phis {
                 let mut operands = Vec::new();
                 for pred in preds.clone() {
-                    let v = self.lookup(pred, key)?;
+                    let v = self.lookup(pred, key).unwrap();
                     operands.push((pred, v));
                 }
                 self.phi(label, var, operands);
@@ -176,9 +176,9 @@ impl Context {
         self.defs.entry(label).or_default().insert(id, value);
     }
 
-    pub fn lookup(&mut self, label: Label, id: Id) -> Result<Var, Fault> {
+    pub fn lookup(&mut self, label: Label, id: Id) -> Option<Var> {
         if let Some(var) = self.defs.get(&label).and_then(|x| x.get(&id)) {
-            return Ok(*var);
+            return Some(*var);
         }
 
         let predecessors = self.f.get(label).unwrap().predecessors.clone();
@@ -187,7 +187,7 @@ impl Context {
             self.incompleted.entry(label).or_default().insert(id, var);
             var
         } else if predecessors.is_empty() {
-            return Err(Fault::ValueNotDefined);
+            return None;
         } else if predecessors.len() == 1 {
             self.lookup(predecessors[0], id)?
         } else {
@@ -202,7 +202,7 @@ impl Context {
             var
         };
         self.define(label, id, var);
-        Ok(var)
+        Some(var)
     }
 }
 
