@@ -94,11 +94,8 @@ impl Function {
                 .remove(&label)
                 .unwrap_or_default()
                 .into_iter()
-                .filter_map(|copy| copy.codegen(alloc));
-            let body = fragment
-                .instructions
-                .iter()
-                .filter_map(|x| x.codegen(alloc, ctx));
+                .map(|copy| copy.codegen(alloc));
+            let body = fragment.instructions.iter().map(|x| x.codegen(alloc, ctx));
             let goto = fragment.terminator.as_ref().unwrap().codegen(alloc, &map);
             bytecodes.extend(body);
             bytecodes.extend(copy);
@@ -109,46 +106,52 @@ impl Function {
 }
 
 impl Instruction {
-    fn codegen(&self, alloc: &HashMap<Var, Reg>, ctx: &mut Context) -> Option<Bytecode> {
-        let bytecode = match self {
+    fn codegen(&self, alloc: &HashMap<Var, Reg>, ctx: &mut Context) -> Bytecode {
+        match self {
             Instruction::Field(dst, src, idx) => {
-                Bytecode::Field(*alloc.get(dst)?, alloc[src], *idx)
+                Bytecode::Field(*alloc.get(dst).unwrap_or(&0), alloc[src], *idx)
             }
-            Instruction::Group(dst, id) => Bytecode::Group(*alloc.get(dst)?, ctx.groups.idx(*id)),
+            Instruction::Group(dst, id) => {
+                Bytecode::Group(*alloc.get(dst).unwrap_or(&0), ctx.groups.idx(*id))
+            }
             Instruction::Function(dst, id) => {
-                Bytecode::Function(*alloc.get(dst)?, ctx.functions.idx(*id))
+                Bytecode::Function(*alloc.get(dst).unwrap_or(&0), ctx.functions.idx(*id))
             }
             Instruction::Load(dst, id) => {
-                Bytecode::Load(*alloc.get(dst)?, ctx.consts.idx(id.clone()))
+                Bytecode::Load(*alloc.get(dst).unwrap_or(&0), ctx.consts.idx(id.clone()))
             }
-            Instruction::Binary(dst, lhs, op, rhs) => {
-                Bytecode::Binary(*alloc.get(dst)?, alloc[lhs], op.clone(), alloc[rhs])
-            }
+            Instruction::Binary(dst, lhs, op, rhs) => Bytecode::Binary(
+                *alloc.get(dst).unwrap_or(&0),
+                alloc[lhs],
+                op.clone(),
+                alloc[rhs],
+            ),
             Instruction::Unary(dst, op, src) => {
-                Bytecode::Unary(*alloc.get(dst)?, op.clone(), alloc[src])
+                Bytecode::Unary(*alloc.get(dst).unwrap_or(&0), op.clone(), alloc[src])
             }
             Instruction::Call(dst, src, args) => Bytecode::Call(
-                *alloc.get(dst)?,
+                *alloc.get(dst).unwrap_or(&0),
                 alloc[src],
                 args.iter().map(|x| alloc[x]).collect(),
             ),
-            Instruction::List(dst, args) => {
-                Bytecode::List(*alloc.get(dst)?, args.iter().map(|x| alloc[x]).collect())
-            }
-            Instruction::Tuple(dst, args) => {
-                Bytecode::Tuple(*alloc.get(dst)?, args.iter().map(|x| alloc[x]).collect())
-            }
+            Instruction::List(dst, args) => Bytecode::List(
+                *alloc.get(dst).unwrap_or(&0),
+                args.iter().map(|x| alloc[x]).collect(),
+            ),
+            Instruction::Tuple(dst, args) => Bytecode::Tuple(
+                *alloc.get(dst).unwrap_or(&0),
+                args.iter().map(|x| alloc[x]).collect(),
+            ),
             Instruction::Index(dst, src, index) => {
-                Bytecode::Index(*alloc.get(dst)?, alloc[src], alloc[index])
+                Bytecode::Index(*alloc.get(dst).unwrap_or(&0), alloc[src], alloc[index])
             }
             Instruction::Method(dst, src, id, args) => Bytecode::Method(
-                *alloc.get(dst)?,
+                *alloc.get(dst).unwrap_or(&0),
                 alloc[src],
                 *id,
                 args.iter().map(|x| alloc[x]).collect(),
             ),
-        };
-        Some(bytecode)
+        }
     }
 }
 
@@ -163,8 +166,7 @@ impl Terminator {
 }
 
 impl Copy {
-    fn codegen(&self, alloc: &HashMap<Var, Reg>) -> Option<Bytecode> {
-        let bytecode = Bytecode::Copy(*alloc.get(&self.0)?, alloc[&self.1]);
-        Some(bytecode)
+    fn codegen(&self, alloc: &HashMap<Var, Reg>) -> Bytecode {
+        Bytecode::Copy(*alloc.get(&self.0).unwrap_or(&0), alloc[&self.1])
     }
 }

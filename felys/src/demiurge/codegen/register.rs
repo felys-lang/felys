@@ -31,7 +31,7 @@ impl Function {
         intervals.sort_by_key(|(_, start, _)| *start);
 
         let mut active = BinaryHeap::<Reverse<(Var, Reg)>>::new();
-        let mut used = 0;
+        let mut used = 1;
         let mut registers = Vec::new();
         let mut mapping = HashMap::new();
 
@@ -54,7 +54,7 @@ impl Function {
             active.push(Reverse((end, reg)));
         }
 
-        (mapping, used)
+        (mapping, used - 1)
     }
 
     fn precompute(&self, copies: &HashMap<Label, Vec<Copy>>) -> Context {

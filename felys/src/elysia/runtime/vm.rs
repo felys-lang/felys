@@ -15,7 +15,8 @@ impl Elysia {
                 .loc(frame.pc)
                 .map_err(|e| e.recover())?;
             frame.pc += 1;
-            if let Some(exit) = bytecode.exec(self, &mut runtime).map_err(|e| e.recover())? {
+            let result = bytecode.exec(self, &mut runtime);
+            if let Some(exit) = result.map_err(|e| e.recover())? {
                 break Ok(exit);
             }
         }
@@ -83,11 +84,17 @@ struct Frame {
 
 impl Frame {
     fn load(&self, reg: usize) -> Result<Object, Fault> {
-        self.registers.get(reg).cloned().ok_or(Fault::Internal)
+        if reg == 0 {
+            return Err(Fault::Internal);
+        }
+        self.registers.get(reg - 1).cloned().ok_or(Fault::Internal)
     }
 
     fn store(&mut self, reg: usize, obj: Object) -> Result<(), Fault> {
-        *self.registers.get_mut(reg).ok_or(Fault::Internal)? = obj;
+        if reg == 0 {
+            return Ok(());
+        }
+        *self.registers.get_mut(reg - 1).ok_or(Fault::Internal)? = obj;
         Ok(())
     }
 }
@@ -97,6 +104,10 @@ impl Callable {
         self.bytecodes.get(idx).ok_or(Fault::Internal)
     }
 
+    fn loader(&self) -> Vec<Object> {
+        Vec::with_capacity(self.registers)
+    }
+
     fn frame(&self, mut args: Vec<Object>) -> Result<Frame, Fault> {
         if args.len() != self.args {
             return Err(Fault::Internal);
@@ -104,7 +115,7 @@ impl Callable {
         args.resize(self.registers, Object::Void);
         let frame = Frame {
             pc: 0,
-            registers: args.into(),
+            registers: args.into_boxed_slice(),
         };
         Ok(frame)
     }
@@ -160,7 +171,7 @@ impl Bytecode {
                 match ty {
                     Pointer::Function => {
                         let callable = elysia.text.get(idx).ok_or(Fault::Internal)?;
-                        let mut objs = Vec::with_capacity(callable.registers);
+                        let mut objs = callable.loader();
                         for arg in args {
                             let obj = frame.load(*arg)?;
                             objs.push(obj);
@@ -225,7 +236,7 @@ impl Bytecode {
                     .get(id)
                     .ok_or(Fault::Internal)?;
                 let callable = elysia.text.get(*idx).ok_or(Fault::Internal)?;
-                let mut objs = Vec::with_capacity(callable.registers);
+                let mut objs = callable.loader();
                 objs.push(obj);
                 for arg in args {
                     let obj = frame.load(*arg)?;
