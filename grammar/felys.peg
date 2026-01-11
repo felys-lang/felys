@@ -169,8 +169,8 @@ peg params -> { BufVec<usize, 1> }:
     / first=IDENT more=(COMMA ident=IDENT)* COMMA? { BufVec::new([first], more) }
     ;
 
-peg path -> { BufVec<usize, 1> }:
-    / first=IDENT more=(COLON2 ident=[IDENT])* { BufVec::new([first], more) }
+peg path -> { Path }:
+    / first=IDENT more=(COLON2 ident=[IDENT])* { Path(BufVec::new([first], more)) }
     ;
 
 peg lit -> { Lit }:

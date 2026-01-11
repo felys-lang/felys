@@ -22,8 +22,11 @@ pub enum Expr {
     Lit(Lit),
     Paren(Rc<Expr>),
     Unary(UnaOp, Rc<Expr>),
-    Path(BufVec<usize, 1>),
+    Path(Path),
 }
+
+#[derive(Clone, Debug)]
+pub struct Path(pub BufVec<usize, 1>);
 
 #[derive(Clone, Debug)]
 pub enum BinOp {

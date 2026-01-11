@@ -1,4 +1,4 @@
-use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Stmt, UnaOp};
+use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Path, Stmt, UnaOp};
 use crate::philia093::Intern;
 use std::fmt::{Display, Formatter, Write};
 
@@ -200,17 +200,21 @@ impl Expr {
                 write!(f, "{op}")?;
                 expr.recover(f, start, indent, intern)
             }
-            Expr::Path(path) => {
-                let mut iter = path.iter();
-                if let Some(first) = iter.next() {
-                    write!(f, "{}", intern.get(first).unwrap())?;
-                }
-                for arg in iter {
-                    write!(f, "::{}", intern.get(arg).unwrap())?;
-                }
-                Ok(())
-            }
+            Expr::Path(path) => path.recover(f, intern),
         }
+    }
+}
+
+impl Path {
+    pub fn recover<W: Write>(&self, f: &mut W, intern: &Intern) -> std::fmt::Result {
+        let mut iter = self.0.iter();
+        if let Some(first) = iter.next() {
+            write!(f, "{}", intern.get(first).unwrap())?;
+        }
+        for arg in iter {
+            write!(f, "::{}", intern.get(arg).unwrap())?;
+        }
+        Ok(())
     }
 }
 

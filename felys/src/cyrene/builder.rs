@@ -1,4 +1,4 @@
-use crate::ast::{Impl, Item, Root};
+use crate::ast::{BufVec, Impl, Item, Root};
 use crate::cyrene::fault::Fault;
 use crate::cyrene::meta::{Group, Meta, Namespace};
 use crate::cyrene::Function;
@@ -53,7 +53,7 @@ impl Item {
             let gid = meta
                 .constructors
                 .add([*id].iter())
-                .ok_or(Fault::DuplicatePath)?;
+                .ok_or(Fault::DuplicatePath(BufVec::new([*id], vec![])))?;
             meta.groups.insert(gid, group);
         }
         Ok(())
@@ -67,7 +67,9 @@ impl Item {
                 }
             }
             Item::Fn(id, _, _) => {
-                meta.ns.add([*id].iter()).ok_or(Fault::DuplicatePath)?;
+                meta.ns
+                    .add([*id].iter())
+                    .ok_or(Fault::DuplicatePath(BufVec::new([*id], vec![])))?;
             }
             _ => {}
         }
@@ -103,11 +105,16 @@ impl Impl {
     fn attach(&self, id: usize, meta: &mut Meta) -> Result<(), Fault> {
         match self {
             Impl::Associated(sid, _, _) => {
-                meta.ns.add([id, *sid].iter()).ok_or(Fault::DuplicatePath)?;
+                meta.ns
+                    .add([id, *sid].iter())
+                    .ok_or(Fault::DuplicatePath(BufVec::new([id], vec![*sid])))?;
             }
             Impl::Method(sid, _, _) => {
                 let gid = meta.constructors.get([id].iter()).unwrap();
-                let src = meta.ns.add([id, *sid].iter()).ok_or(Fault::DuplicatePath)?;
+                let src = meta
+                    .ns
+                    .add([id, *sid].iter())
+                    .ok_or(Fault::DuplicatePath(BufVec::new([id], vec![*sid])))?;
                 let group = meta.groups.get_mut(&gid).unwrap();
                 group.methods.insert(*sid, src);
             }

@@ -1,4 +1,4 @@
-use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Stmt};
+use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Path, Stmt};
 use crate::cyrene::fault::Fault;
 use crate::cyrene::ir::{Const, Context, Dst, Id, Instruction, Label, Var};
 use crate::cyrene::meta::Meta;
@@ -300,24 +300,28 @@ impl Expr {
                 ctx.push(Instruction::Unary(var, op.clone(), i));
                 Ok(var.into())
             }
-            Expr::Path(path) => {
-                if path.len() == 1 {
-                    let id = Id::Interned(path.buffer()[0]);
-                    if let Ok(var) = ctx.lookup(ctx.cursor, id) {
-                        return Ok(var.into());
-                    }
-                }
-                let var = ctx.var();
-                if let Some(id) = meta.constructors.get(path.iter()) {
-                    ctx.push(Instruction::Group(var, id));
-                } else if let Some(id) = meta.ns.get(path.iter()) {
-                    ctx.push(Instruction::Function(var, id));
-                } else {
-                    return Err(Fault::PathNotExist(self.clone()));
-                }
-                Ok(var.into())
+            Expr::Path(path) => path.ir(ctx, meta),
+        }
+    }
+}
+
+impl Path {
+    fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Dst, Fault> {
+        if self.0.len() == 1 {
+            let id = Id::Interned(self.0.buffer()[0]);
+            if let Ok(var) = ctx.lookup(ctx.cursor, id) {
+                return Ok(var.into());
             }
         }
+        let var = ctx.var();
+        if let Some(id) = meta.constructors.get(self.0.iter()) {
+            ctx.push(Instruction::Group(var, id));
+        } else if let Some(id) = meta.ns.get(self.0.iter()) {
+            ctx.push(Instruction::Function(var, id));
+        } else {
+            return Err(Fault::PathNotExist(self.clone()));
+        }
+        Ok(var.into())
     }
 }
 

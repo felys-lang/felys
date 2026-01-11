@@ -1,4 +1,4 @@
-use crate::ast::{Expr, Stmt};
+use crate::ast::{BufVec, Expr, Path, Stmt};
 use crate::philia093::Intern;
 
 #[derive(Debug, Clone)]
@@ -6,8 +6,8 @@ pub enum Fault {
     MainNotFound,
     BlockEarlyReturn(Stmt),
     OutsideLoop(Expr),
-    PathNotExist(Expr),
-    DuplicatePath,
+    PathNotExist(Path),
+    DuplicatePath(BufVec<usize, 1>),
     UndeterminedValue,
     Internal,
     UnacceptableVoid,
@@ -30,12 +30,16 @@ impl Fault {
                 msg.push_str(START);
                 expr.recover(&mut msg, START, 0, intern).unwrap();
             }
-            Fault::PathNotExist(expr) => {
+            Fault::PathNotExist(path) => {
                 msg.push_str("this path does not lead to anywhere\n");
                 msg.push_str(START);
-                expr.recover(&mut msg, START, 0, intern).unwrap();
+                path.recover(&mut msg, intern).unwrap();
             }
-            Fault::DuplicatePath => msg.push_str("duplicate path"),
+            Fault::DuplicatePath(buf) => {
+                msg.push_str("this path is already defined\n");
+                msg.push_str(START);
+                Path(buf).recover(&mut msg, intern).unwrap();
+            }
             Fault::UndeterminedValue => msg.push_str("undetermined value"),
             Fault::Internal => msg.push_str("internal error"),
             Fault::UnacceptableVoid => msg.push_str("unacceptable void"),
