@@ -1,6 +1,38 @@
-use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Path, Stmt, UnaOp};
+use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Item, Lit, Pat, Path, Root, Stmt, UnaOp};
 use crate::philia093::Intern;
 use std::fmt::{Display, Formatter, Write};
+
+impl Root {
+    pub fn recover<W: Write>(
+        &self,
+        f: &mut W,
+        start: &'static str,
+        indent: usize,
+        intern: &Intern,
+    ) -> std::fmt::Result {
+        for item in self.0.iter() {
+            item.recover(f, start, indent, intern)?;
+        }
+        Ok(())
+    }
+}
+
+impl Item {
+    pub fn recover<W: Write>(
+        &self,
+        f: &mut W,
+        start: &'static str,
+        indent: usize,
+        intern: &Intern,
+    ) -> std::fmt::Result {
+        match self {
+            Item::Group(_, _) => Ok(()),
+            Item::Impl(_, _) => Ok(()),
+            Item::Fn(_, _, block) => block.recover(f, start, indent, None, intern),
+            Item::Main(_, block) => block.recover(f, start, indent, None, intern),
+        }
+    }
+}
 
 impl Stmt {
     pub fn recover<W: Write>(
@@ -33,12 +65,20 @@ impl Block {
         f: &mut W,
         start: &'static str,
         indent: usize,
+        pointer: Option<(usize, &'static str)>,
         intern: &Intern,
     ) -> std::fmt::Result {
         writeln!(f, "{{")?;
-        for stmt in self.0.iter() {
-            write!(f, "{}{}", start, "    ".repeat(indent + 1))?;
-            stmt.recover(f, start, indent + 1, intern)?;
+        for (i, stmt) in self.0.iter().enumerate() {
+            if let Some((ptr, replace)) = pointer
+                && ptr == i
+            {
+                write!(f, "{}{}", replace, "    ".repeat(indent + 1))?;
+                stmt.recover(f, replace, indent + 1, intern)?;
+            } else {
+                write!(f, "{}{}", start, "    ".repeat(indent + 1))?;
+                stmt.recover(f, start, indent + 1, intern)?;
+            }
             writeln!(f)?;
         }
         write!(f, "{}{}}}", start, "    ".repeat(indent))
@@ -75,7 +115,7 @@ impl Expr {
         intern: &Intern,
     ) -> std::fmt::Result {
         match self {
-            Expr::Block(block) => block.recover(f, start, indent, intern),
+            Expr::Block(block) => block.recover(f, start, indent, None, intern),
             Expr::Break(expr) => {
                 write!(f, "break")?;
                 if let Some(expr) = expr {
@@ -91,22 +131,22 @@ impl Expr {
                 write!(f, " in ")?;
                 expr.recover(f, start, indent, intern)?;
                 write!(f, " ")?;
-                block.recover(f, start, indent, intern)
+                block.recover(f, start, indent, None, intern)
             }
             Expr::If(expr, then, otherwise) => {
                 write!(f, "if ")?;
                 expr.recover(f, start, indent, intern)?;
                 write!(f, " ")?;
-                then.recover(f, start, indent, intern)?;
+                then.recover(f, start, indent, None, intern)?;
                 if let Some(otherwise) = otherwise {
-                    write!(f, " else")?;
+                    write!(f, " else ")?;
                     otherwise.recover(f, start, indent, intern)?;
                 }
                 Ok(())
             }
             Expr::Loop(block) => {
                 write!(f, "loop ")?;
-                block.recover(f, start, indent, intern)
+                block.recover(f, start, indent, None, intern)
             }
             Expr::Return(expr) => {
                 write!(f, "return ")?;
@@ -116,7 +156,7 @@ impl Expr {
                 write!(f, "while ")?;
                 expr.recover(f, start, indent, intern)?;
                 write!(f, " ")?;
-                block.recover(f, start, indent, intern)
+                block.recover(f, start, indent, None, intern)
             }
             Expr::Binary(lhs, op, rhs) => {
                 lhs.recover(f, start, indent, intern)?;

@@ -5,6 +5,11 @@ pub enum Fault {
 
 impl Fault {
     pub fn recover(self) -> String {
-        String::new()
+        let mut msg = "Demiurge: ".to_string();
+        match self {
+            Fault::InvalidOperation => msg.push_str("invalid operation"),
+            Fault::ValueUnreachable => msg.push_str("value unreachable"),
+        }
+        msg
     }
 }

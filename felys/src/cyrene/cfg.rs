@@ -31,16 +31,18 @@ impl Block {
     fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
         let mut iter = self.0.iter().peekable();
         let mut result = Ok(Dst::void());
+        let mut i = 1;
         while let Some(stmt) = iter.next() {
             let ret = stmt.ir(ctx, stk, meta)?;
             if ret.var().is_ok() {
                 if iter.peek().is_none() {
                     result = Ok(ret);
                 } else {
-                    result = Err(Fault::BlockEarlyReturn(stmt.clone()));
+                    result = Err(Fault::BlockEarlyReturn(self.clone(), i));
                 };
                 break;
             }
+            i += 1;
         }
         result
     }
@@ -129,7 +131,7 @@ impl Expr {
                 let then = ctx.label();
                 let otherwise = ctx.label();
                 let join = ctx.label();
-                let mut ret = Err(Fault::UndeterminedValue);
+                let mut ret = None;
 
                 ctx.add(then);
                 ctx.add(otherwise);
@@ -143,25 +145,31 @@ impl Expr {
                 ctx.cursor = then;
                 if let Ok(var) = block.ir(ctx, stk, meta)?.var() {
                     let id = ctx.id();
-                    ret = Ok(id);
+                    ret = Some(id);
                     ctx.define(ctx.cursor, id, var);
                 }
                 ctx.jump(join);
 
                 ctx.cursor = otherwise;
-                let mut returned = false;
-                if let Some(alt) = alter
-                    && let Ok(var) = alt.ir(ctx, stk, meta)?.var()
-                {
-                    ctx.define(ctx.cursor, ret.clone()?, var);
-                    returned = true;
+                if let Some(alt) = alter {
+                    let tmp = alt.ir(ctx, stk, meta)?.var();
+                    if let Ok(var) = tmp
+                        && let Some(id) = ret
+                    {
+                        ctx.define(ctx.cursor, id, var);
+                    } else if tmp.is_err() && ret.is_some() || tmp.is_ok() && ret.is_none() {
+                        return Err(Fault::InconsistentIfElse(block.clone(), alter.clone()));
+                    }
+                } else if ret.is_some() {
+                    return Err(Fault::InconsistentIfElse(block.clone(), alter.clone()));
                 }
+
                 ctx.jump(join);
                 ctx.seal(join)?;
 
                 ctx.cursor = join;
-                if returned {
-                    Ok(ctx.lookup(ctx.cursor, ret.unwrap())?.into())
+                if let Some(id) = ret {
+                    Ok(ctx.lookup(ctx.cursor, id)?.into())
                 } else {
                     Ok(Dst::void())
                 }
