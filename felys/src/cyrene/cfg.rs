@@ -37,7 +37,7 @@ impl Block {
                 if iter.peek().is_none() {
                     result = Ok(ret);
                 } else {
-                    result = Err(Fault::BlockEarlyReturn);
+                    result = Err(Fault::BlockEarlyReturn(stmt.clone()));
                 };
                 break;
             }
@@ -101,7 +101,7 @@ impl Expr {
             Expr::Block(block) => block.ir(ctx, stk, meta),
             Expr::Break(expr) => {
                 let result = expr.as_ref().map(|x| x.ir(ctx, stk, meta));
-                let (_, end, wb) = stk.last_mut().ok_or(Fault::BreakOutsideLoop)?;
+                let (_, end, wb) = stk.last_mut().ok_or(Fault::OutsideLoop(self.clone()))?;
                 match (result, wb) {
                     (None, None) | (None, Some(None)) => {}
                     (Some(x), Some(wb)) if wb.is_none() => {
@@ -120,7 +120,7 @@ impl Expr {
                 ctx.unreachable()
             }
             Expr::Continue => {
-                let (start, _, _) = stk.last().ok_or(Fault::ContinueOutsideLoop)?;
+                let (start, _, _) = stk.last().ok_or(Fault::OutsideLoop(self.clone()))?;
                 ctx.jump(*start);
                 ctx.unreachable()
             }
