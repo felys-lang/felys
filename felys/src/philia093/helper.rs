@@ -1,5 +1,6 @@
 use crate::cyrene::Cyrene;
 use crate::philia093::PhiLia093;
+use std::fmt::{Display, Formatter};
 
 impl PhiLia093 {
     pub fn parse(mut self) -> Result<Cyrene, String> {
@@ -7,7 +8,7 @@ impl PhiLia093 {
         if let Some((cursor, msg)) = self.__snapshot {
             let data = self.__stream.data;
 
-            let row = data[..cursor].chars().filter(|c| *c == '\n').count() + 1;
+            let row = data[..cursor].chars().filter(|c| *c == '\n').count();
             let mut col = 0;
             let mut start = cursor;
             for ch in data[..cursor].chars().rev() {
@@ -26,7 +27,13 @@ impl PhiLia093 {
             }
 
             let snippet = data[start..end].to_string();
-            Err(format!("{snippet}:{col}:{row}:{msg}"))
+            let error = Fault {
+                snippet,
+                row,
+                col,
+                msg,
+            };
+            Err(error.to_string())
         } else {
             let cyrene = Cyrene {
                 root: root.unwrap(),
@@ -44,5 +51,24 @@ impl PhiLia093 {
         } else {
             Some(id)
         }
+    }
+}
+
+struct Fault {
+    snippet: String,
+    row: usize,
+    col: usize,
+    msg: &'static str,
+}
+
+impl Display for Fault {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let row = self.row + 1;
+        let col = self.col + 1;
+        let padding = " ".repeat(row.to_string().len());
+        writeln!(f, "PhiLia093: {} at {}:{}", self.msg, row, col)?;
+        writeln!(f, " {} |", padding)?;
+        writeln!(f, " {} | {}", row, self.snippet)?;
+        writeln!(f, " {} | {}^", padding, " ".repeat(self.col))
     }
 }
