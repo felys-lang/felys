@@ -1,5 +1,4 @@
 use crate::elysia::Object;
-use crate::fault::Fault;
 use crate::philia093::PhiLia093;
 use std::time::Instant;
 
@@ -7,7 +6,6 @@ mod ast;
 mod cyrene;
 mod demiurge;
 mod elysia;
-mod fault;
 mod philia093;
 
 const CODE: [&str; 6] = [
@@ -194,7 +192,7 @@ fn main(args) {
 "#,
 ];
 
-fn main() -> Result<(), Fault> {
+fn main() -> Result<(), String> {
     let philia093 = PhiLia093::from(CODE[5].to_string());
 
     let start = Instant::now();

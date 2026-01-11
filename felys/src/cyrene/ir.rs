@@ -1,9 +1,8 @@
 use crate::ast::{BinOp, Lit, UnaOp};
-use crate::fault::Fault;
+use crate::cyrene::fault::Fault;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::ops::Range;
-use std::panic::Location;
 use std::rc::Rc;
 
 pub struct Context {
@@ -250,9 +249,8 @@ pub enum Label {
 pub struct Dst(Option<Var>);
 
 impl Dst {
-    #[track_caller]
     pub fn var(&self) -> Result<Var, Fault> {
-        self.0.ok_or(Fault::UnacceptableVoid(Location::caller()))
+        self.0.ok_or(Fault::UnacceptableVoid)
     }
 
     pub fn void() -> Self {

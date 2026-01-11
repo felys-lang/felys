@@ -1,8 +1,8 @@
 use crate::ast::{Impl, Item, Root};
+use crate::cyrene::fault::Fault;
 use crate::cyrene::meta::{Group, Meta, Namespace};
 use crate::cyrene::Function;
 use crate::demiurge::Demiurge;
-use crate::fault::Fault;
 use crate::philia093::Intern;
 use std::collections::HashMap;
 
@@ -12,7 +12,7 @@ pub struct Cyrene {
 }
 
 impl Cyrene {
-    pub fn cfg(self) -> Result<Demiurge, Fault> {
+    pub fn cfg(self) -> Result<Demiurge, String> {
         let mut meta = Meta {
             ns: Namespace::new(),
             constructors: Namespace::new(),
@@ -21,23 +21,26 @@ impl Cyrene {
         };
 
         for item in self.root.0.iter() {
-            item.allocate(&mut meta)?;
+            item.allocate(&mut meta)
+                .map_err(|e| e.recover(&meta.intern))?;
         }
 
         for item in self.root.0.iter() {
-            item.attach(&mut meta)?;
+            item.attach(&mut meta)
+                .map_err(|e| e.recover(&meta.intern))?;
         }
 
         let mut fns = HashMap::new();
-        let mut main = Err(Fault::here());
+        let mut main = Err(Fault::MainNotFound);
         for item in self.root.0.iter() {
-            item.cfg(&mut meta, &mut fns, &mut main)?;
+            item.cfg(&mut meta, &mut fns, &mut main)
+                .map_err(|e| e.recover(&meta.intern))?;
         }
 
         Ok(Demiurge {
             groups: meta.groups,
             fns,
-            main: main?,
+            main: main.map_err(|e| e.recover(&meta.intern))?,
             intern: meta.intern,
         })
     }
@@ -81,12 +84,7 @@ impl Item {
                 let src = meta.ns.get([*id].iter())?;
                 fns.insert(src, function);
             }
-            Item::Main(args, block) => {
-                if main.is_ok() {
-                    return Err(Fault::here());
-                }
-                *main = block.build(vec![*args], meta);
-            }
+            Item::Main(args, block) => *main = block.build(vec![*args], meta),
             Item::Impl(id, impls) => {
                 for implementation in impls.iter() {
                     implementation.cfg(*id, meta, fns)?;

@@ -1,13 +1,13 @@
 use crate::cyrene::Function;
+use crate::demiurge::fault::Fault;
 use crate::demiurge::Demiurge;
-use crate::fault::Fault;
 
 impl Demiurge {
-    pub fn optimize(mut self, depth: usize) -> Result<Self, Fault> {
+    pub fn optimize(mut self, depth: usize) -> Result<Self, String> {
         for function in self.fns.values_mut() {
-            function.optimize(depth)?;
+            function.optimize(depth).map_err(|e| e.recover())?;
         }
-        self.main.optimize(depth)?;
+        self.main.optimize(depth).map_err(|e| e.recover())?;
         Ok(self)
     }
 }

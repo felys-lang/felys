@@ -1,8 +1,8 @@
 use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Stmt};
+use crate::cyrene::fault::Fault;
 use crate::cyrene::ir::{Const, Context, Dst, Id, Instruction, Label, Var};
 use crate::cyrene::meta::Meta;
 use crate::cyrene::Function;
-use crate::fault::Fault;
 
 type Stack = Vec<(Label, Label, Option<Option<Id>>)>;
 
@@ -37,7 +37,7 @@ impl Block {
                 if iter.peek().is_none() {
                     result = Ok(ret);
                 } else {
-                    result = Err(Fault::BlockEarlyEnd);
+                    result = Err(Fault::BlockEarlyReturn);
                 };
                 break;
             }
@@ -100,9 +100,9 @@ impl Expr {
         match self {
             Expr::Block(block) => block.ir(ctx, stk, meta),
             Expr::Break(expr) => {
-                let expr = expr.as_ref().map(|x| x.ir(ctx, stk, meta));
-                let (_, end, wb) = stk.last_mut().ok_or(Fault::OutsideLoop)?;
-                match (expr, wb) {
+                let result = expr.as_ref().map(|x| x.ir(ctx, stk, meta));
+                let (_, end, wb) = stk.last_mut().ok_or(Fault::BreakOutsideLoop)?;
+                match (result, wb) {
                     (None, None) | (None, Some(None)) => {}
                     (Some(x), Some(wb)) if wb.is_none() => {
                         let id = ctx.id();
@@ -112,13 +112,15 @@ impl Expr {
                     (Some(x), Some(Some(id))) => {
                         ctx.define(ctx.cursor, *id, x?.var()?);
                     }
-                    _ => return Err(Fault::UndeterminedValue),
+                    _ => {
+                        return Err(Fault::UndeterminedValue);
+                    }
                 }
                 ctx.jump(*end);
                 ctx.unreachable()
             }
             Expr::Continue => {
-                let (start, _, _) = stk.last().ok_or(Fault::OutsideLoop)?;
+                let (start, _, _) = stk.last().ok_or(Fault::ContinueOutsideLoop)?;
                 ctx.jump(*start);
                 ctx.unreachable()
             }
@@ -330,18 +332,18 @@ impl Lit {
                 let value = meta
                     .intern
                     .get(x)
-                    .ok_or(Fault::InvalidConstant)?
+                    .unwrap()
                     .parse()
-                    .map_err(|_| Fault::InvalidConstant)?;
+                    .map_err(|_| Fault::Internal)?;
                 Const::Int(value)
             }
             Lit::Float(x) => {
                 let value = meta
                     .intern
                     .get(x)
-                    .ok_or(Fault::InvalidConstant)?
+                    .unwrap()
                     .parse::<f64>()
-                    .map_err(|_| Fault::InvalidConstant)?
+                    .map_err(|_| Fault::Internal)?
                     .to_bits();
                 Const::Float(value)
             }
@@ -362,7 +364,7 @@ impl Lit {
                             let c = u32::from_str_radix(hex, 16)
                                 .ok()
                                 .and_then(char::from_u32)
-                                .ok_or(Fault::InvalidConstant)?;
+                                .ok_or(Fault::Internal)?;
                             value.push(c)
                         }
                         Chunk::Escape(x) => {
@@ -374,7 +376,7 @@ impl Lit {
                                 "t" => '\t',
                                 "r" => '\r',
                                 "\\" => '\\',
-                                _ => return Err(Fault::InvalidConstant),
+                                _ => return Err(Fault::Internal),
                             };
                             value.push(c)
                         }

@@ -1,17 +1,21 @@
 use crate::cyrene::Const;
 use crate::demiurge::{Bytecode, Reg};
+use crate::elysia::fault::Fault;
 use crate::elysia::runtime::object::{Object, Pointer};
 use crate::elysia::{Callable, Elysia};
-use crate::fault::Fault;
 
 impl Elysia {
-    pub fn exec(&self, args: Object) -> Result<Object, Fault> {
-        let mut runtime = self.init(args)?;
+    pub fn exec(&self, args: Object) -> Result<Object, String> {
+        let mut runtime = self.init(args).map_err(|e| e.recover())?;
         loop {
             let (idx, frame) = runtime.active();
-            let bytecode = self.loc(idx)?.loc(frame.pc)?;
+            let bytecode = self
+                .loc(idx)
+                .map_err(|e| e.recover())?
+                .loc(frame.pc)
+                .map_err(|e| e.recover())?;
             frame.pc += 1;
-            if let Some(exit) = bytecode.exec(self, &mut runtime)? {
+            if let Some(exit) = bytecode.exec(self, &mut runtime).map_err(|e| e.recover())? {
                 break Ok(exit);
             }
         }
@@ -28,7 +32,7 @@ impl Elysia {
 
     fn loc(&self, idx: Option<usize>) -> Result<&Callable, Fault> {
         match idx {
-            Some(x) => self.text.get(x).ok_or(Fault::here()),
+            Some(x) => self.text.get(x).ok_or(Fault::Internal),
             None => Ok(&self.main),
         }
     }
@@ -66,7 +70,7 @@ impl Runtime {
         if self.stack.pop().is_none() {
             return Ok(Some(obj));
         };
-        let dst = self.rets.pop().ok_or(Fault::here())?;
+        let dst = self.rets.pop().ok_or(Fault::Internal)?;
         self.active().1.store(dst, obj)?;
         Ok(None)
     }
@@ -79,23 +83,23 @@ struct Frame {
 
 impl Frame {
     fn load(&self, reg: usize) -> Result<Object, Fault> {
-        self.registers.get(reg).cloned().ok_or(Fault::here())
+        self.registers.get(reg).cloned().ok_or(Fault::Internal)
     }
 
     fn store(&mut self, reg: usize, obj: Object) -> Result<(), Fault> {
-        *self.registers.get_mut(reg).ok_or(Fault::here())? = obj;
+        *self.registers.get_mut(reg).ok_or(Fault::Internal)? = obj;
         Ok(())
     }
 }
 
 impl Callable {
     fn loc(&self, idx: usize) -> Result<&Bytecode, Fault> {
-        self.bytecodes.get(idx).ok_or(Fault::here())
+        self.bytecodes.get(idx).ok_or(Fault::Internal)
     }
 
     fn frame(&self, mut args: Vec<Object>) -> Result<Frame, Fault> {
         if args.len() != self.args {
-            return Err(Fault::here());
+            return Err(Fault::Internal);
         }
         args.resize(self.registers, Object::Void);
         let frame = Frame {
@@ -115,11 +119,11 @@ impl Bytecode {
                 let idx = elysia
                     .router
                     .get(gid)
-                    .ok_or(Fault::here())?
+                    .ok_or(Fault::Internal)?
                     .indices
                     .get(id)
-                    .ok_or(Fault::here())?;
-                let obj = group.get(*idx).cloned().ok_or(Fault::here())?;
+                    .ok_or(Fault::Internal)?;
+                let obj = group.get(*idx).cloned().ok_or(Fault::Internal)?;
                 frame.store(*dst, obj)?;
             }
             Bytecode::Group(dst, idx) => {
@@ -134,7 +138,7 @@ impl Bytecode {
             }
             Bytecode::Load(dst, idx) => {
                 let (_, frame) = rt.active();
-                let obj = elysia.data.get(*idx).ok_or(Fault::here())?.into();
+                let obj = elysia.data.get(*idx).ok_or(Fault::Internal)?.into();
                 frame.store(*dst, obj)?;
             }
             Bytecode::Binary(dst, lhs, op, rhs) => {
@@ -155,7 +159,7 @@ impl Bytecode {
                 let (ty, idx) = frame.load(*src)?.pointer()?;
                 match ty {
                     Pointer::Function => {
-                        let callable = elysia.text.get(idx).ok_or(Fault::here())?;
+                        let callable = elysia.text.get(idx).ok_or(Fault::Internal)?;
                         let mut objs = Vec::with_capacity(callable.registers);
                         for arg in args {
                             let obj = frame.load(*arg)?;
@@ -164,9 +168,9 @@ impl Bytecode {
                         rt.call(*dst, idx, callable, objs)?
                     }
                     Pointer::Group => {
-                        let group = elysia.router.get(idx).ok_or(Fault::here())?;
+                        let group = elysia.router.get(idx).ok_or(Fault::Internal)?;
                         if group.indices.len() != args.len() {
-                            return Err(Fault::here());
+                            return Err(Fault::Internal);
                         }
                         let mut objs = Vec::with_capacity(args.len());
                         for arg in args {
@@ -204,9 +208,9 @@ impl Bytecode {
                 } else {
                     list.len()
                         .checked_sub(int.unsigned_abs())
-                        .ok_or(Fault::here())?
+                        .ok_or(Fault::Internal)?
                 };
-                let obj = list.get(idx).cloned().ok_or(Fault::here())?;
+                let obj = list.get(idx).cloned().ok_or(Fault::Internal)?;
                 frame.store(*dst, obj)?;
             }
             Bytecode::Method(dst, src, id, args) => {
@@ -216,11 +220,11 @@ impl Bytecode {
                 let idx = elysia
                     .router
                     .get(gid)
-                    .ok_or(Fault::here())?
+                    .ok_or(Fault::Internal)?
                     .methods
                     .get(id)
-                    .ok_or(Fault::here())?;
-                let callable = elysia.text.get(*idx).ok_or(Fault::here())?;
+                    .ok_or(Fault::Internal)?;
+                let callable = elysia.text.get(*idx).ok_or(Fault::Internal)?;
                 let mut objs = Vec::with_capacity(callable.registers);
                 objs.push(obj);
                 for arg in args {

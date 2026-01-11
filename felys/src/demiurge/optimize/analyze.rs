@@ -1,6 +1,6 @@
 use crate::cyrene::{Const, Fragment, Function, Instruction, Label, Terminator, Var};
-use crate::fault::Fault;
 use std::collections::{HashMap, HashSet, VecDeque};
+use crate::demiurge::fault::Fault;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Lattice {

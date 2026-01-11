@@ -1,9 +1,8 @@
 use crate::cyrene::Cyrene;
-use crate::fault::Fault;
 use crate::philia093::PhiLia093;
 
 impl PhiLia093 {
-    pub fn parse(mut self) -> Result<Cyrene, Fault> {
+    pub fn parse(mut self) -> Result<Cyrene, String> {
         let root = self.root();
         if let Some((cursor, msg)) = self.__snapshot {
             let data = self.__stream.data;
@@ -27,8 +26,7 @@ impl PhiLia093 {
             }
 
             let snippet = data[start..end].to_string();
-            let error = Fault::PhiLia093(row, col, snippet, msg);
-            Err(error)
+            Err(format!("{snippet}:{col}:{row}:{msg}"))
         } else {
             let cyrene = Cyrene {
                 root: root.unwrap(),
