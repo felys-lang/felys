@@ -6,12 +6,12 @@ pub enum Fault {
     MainNotFound,
     BlockEarlyReturn(Stmt),
     OutsideLoop(Expr),
+    PathNotExist(Expr),
+    DuplicatePath,
     UndeterminedValue,
-    NotImplemented,
     Internal,
     UnacceptableVoid,
     ValueNotDefined,
-    InvalidPath,
 }
 
 impl Fault {
@@ -26,16 +26,20 @@ impl Fault {
                 stmt.recover(&mut msg, START, 0, intern).unwrap();
             }
             Fault::OutsideLoop(expr) => {
-                msg.push_str("the node below is not inside a loop\n");
+                msg.push_str("this flow controller below must stay inside a loop\n");
                 msg.push_str(START);
                 expr.recover(&mut msg, START, 0, intern).unwrap();
             }
-            Fault::UndeterminedValue => {}
-            Fault::NotImplemented => {}
-            Fault::Internal => {}
-            Fault::UnacceptableVoid => {}
-            Fault::ValueNotDefined => {}
-            Fault::InvalidPath => {}
+            Fault::PathNotExist(expr) => {
+                msg.push_str("this path does not lead to anywhere\n");
+                msg.push_str(START);
+                expr.recover(&mut msg, START, 0, intern).unwrap();
+            }
+            Fault::DuplicatePath => msg.push_str("duplicate path"),
+            Fault::UndeterminedValue => msg.push_str("undetermined value"),
+            Fault::Internal => msg.push_str("internal error"),
+            Fault::UnacceptableVoid => msg.push_str("unacceptable void"),
+            Fault::ValueNotDefined => msg.push_str("value not defined"),
         }
         msg.push('\n');
         msg

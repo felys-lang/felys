@@ -1,4 +1,3 @@
-use crate::cyrene::fault::Fault;
 use crate::philia093::Intern;
 use std::collections::HashMap;
 
@@ -46,7 +45,7 @@ impl Namespace {
         }
     }
 
-    pub fn add<'a>(&mut self, path: impl Iterator<Item = &'a usize>) -> Result<usize, Fault> {
+    pub fn add<'a>(&mut self, path: impl Iterator<Item = &'a usize>) -> Option<usize> {
         let mut map = &mut self.tree;
         let mut iter = path.peekable();
 
@@ -54,33 +53,33 @@ impl Namespace {
             if iter.peek().is_none() {
                 let id = self.ids;
                 if map.insert(*ident, Node::Id(id)).is_some() {
-                    return Err(Fault::InvalidPath);
+                    return None;
                 }
                 self.ids += 1;
-                return Ok(id);
+                return Some(id);
             } else {
                 let node = Node::Node(HashMap::new());
                 map = match map.entry(*ident).or_insert(node) {
                     Node::Node(next) => next,
-                    Node::Id(_) => return Err(Fault::InvalidPath),
+                    Node::Id(_) => return None,
                 };
             }
         }
-        Err(Fault::InvalidPath)
+        None
     }
 
-    pub fn get<'a>(&self, path: impl Iterator<Item = &'a usize>) -> Result<usize, Fault> {
+    pub fn get<'a>(&self, path: impl Iterator<Item = &'a usize>) -> Option<usize> {
         let mut map = &self.tree;
         let mut iter = path.peekable();
 
         while let Some(ident) = iter.next() {
-            let node = map.get(ident).ok_or(Fault::InvalidPath)?;
+            let node = map.get(ident)?;
             match (node, iter.peek().is_none()) {
                 (Node::Node(next), false) => map = next,
-                (Node::Id(x), true) => return Ok(*x),
-                _ => return Err(Fault::InvalidPath),
+                (Node::Id(x), true) => return Some(*x),
+                _ => return None,
             }
         }
-        Err(Fault::InvalidPath)
+        None
     }
 }

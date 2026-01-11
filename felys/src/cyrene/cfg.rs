@@ -124,7 +124,7 @@ impl Expr {
                 ctx.jump(*start);
                 ctx.unreachable()
             }
-            Expr::For(_, _, _) => Err(Fault::NotImplemented),
+            Expr::For(_, _, _) => Err(Fault::Internal),
             Expr::If(expr, block, alter) => {
                 let then = ctx.label();
                 let otherwise = ctx.label();
@@ -308,11 +308,12 @@ impl Expr {
                     }
                 }
                 let var = ctx.var();
-                if let Ok(id) = meta.constructors.get(path.iter()) {
+                if let Some(id) = meta.constructors.get(path.iter()) {
                     ctx.push(Instruction::Group(var, id));
-                } else {
-                    let id = meta.ns.get(path.iter())?;
+                } else if let Some(id) = meta.ns.get(path.iter()) {
                     ctx.push(Instruction::Function(var, id));
+                } else {
+                    return Err(Fault::PathNotExist(self.clone()));
                 }
                 Ok(var.into())
             }

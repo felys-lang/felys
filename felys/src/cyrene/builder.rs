@@ -50,7 +50,10 @@ impl Item {
     fn allocate(&self, meta: &mut Meta) -> Result<(), Fault> {
         if let Item::Group(id, fields) = self {
             let group = Group::new(fields.iter());
-            let gid = meta.constructors.add([*id].iter())?;
+            let gid = meta
+                .constructors
+                .add([*id].iter())
+                .ok_or(Fault::DuplicatePath)?;
             meta.groups.insert(gid, group);
         }
         Ok(())
@@ -64,7 +67,7 @@ impl Item {
                 }
             }
             Item::Fn(id, _, _) => {
-                meta.ns.add([*id].iter())?;
+                meta.ns.add([*id].iter()).ok_or(Fault::DuplicatePath)?;
             }
             _ => {}
         }
@@ -81,7 +84,7 @@ impl Item {
             Item::Fn(id, args, block) => {
                 let args = args.as_ref().map(|x| x.vec()).unwrap_or_default();
                 let function = block.build(args, meta)?;
-                let src = meta.ns.get([*id].iter())?;
+                let src = meta.ns.get([*id].iter()).unwrap();
                 fns.insert(src, function);
             }
             Item::Main(args, block) => *main = block.build(vec![*args], meta),
@@ -100,11 +103,11 @@ impl Impl {
     fn attach(&self, id: usize, meta: &mut Meta) -> Result<(), Fault> {
         match self {
             Impl::Associated(sid, _, _) => {
-                meta.ns.add([id, *sid].iter())?;
+                meta.ns.add([id, *sid].iter()).ok_or(Fault::DuplicatePath)?;
             }
             Impl::Method(sid, _, _) => {
-                let gid = meta.constructors.get([id].iter())?;
-                let src = meta.ns.add([id, *sid].iter())?;
+                let gid = meta.constructors.get([id].iter()).unwrap();
+                let src = meta.ns.add([id, *sid].iter()).ok_or(Fault::DuplicatePath)?;
                 let group = meta.groups.get_mut(&gid).unwrap();
                 group.methods.insert(*sid, src);
             }
@@ -122,14 +125,14 @@ impl Impl {
             Impl::Associated(sid, args, block) => {
                 let args = args.as_ref().map(|x| x.vec()).unwrap_or_default();
                 let function = block.build(args, meta)?;
-                let src = meta.ns.get([id, *sid].iter())?;
+                let src = meta.ns.get([id, *sid].iter()).unwrap();
                 fns.insert(src, function);
             }
             Impl::Method(sid, args, block) => {
                 let s = meta.intern.id("self");
                 let args = [s].iter().chain(args).cloned().collect();
                 let function = block.build(args, meta)?;
-                let src = meta.ns.get([id, *sid].iter())?;
+                let src = meta.ns.get([id, *sid].iter()).unwrap();
                 fns.insert(src, function);
             }
         }
