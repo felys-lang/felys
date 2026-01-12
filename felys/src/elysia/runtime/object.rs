@@ -43,7 +43,7 @@ impl Object {
         if let Object::Pointer(ty, idx) = self {
             Ok((ty.clone(), *idx))
         } else {
-            Err(Fault::DataType(self.clone(), "pointer"))
+            Err(Fault::DataType(self.clone(), "ptr"))
         }
     }
 
@@ -109,7 +109,7 @@ impl Object {
     fn or(self, rhs: Object) -> Result<Object, Fault> {
         let value = match self {
             Object::Bool(x) => x || rhs.bool()?,
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation("or", self, rhs)),
         };
         Ok(Object::Bool(value))
     }
@@ -117,7 +117,7 @@ impl Object {
     fn and(self, rhs: Object) -> Result<Object, Fault> {
         let value = match self {
             Object::Bool(x) => x && rhs.bool()?,
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation("and", self, rhs)),
         };
         Ok(Object::Bool(value))
     }
@@ -126,7 +126,7 @@ impl Object {
         let value = match self {
             Object::Int(x) => x > rhs.int()?,
             Object::Float(x) => x > rhs.float()?,
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation(">", self, rhs)),
         };
         Ok(Object::Bool(value))
     }
@@ -135,7 +135,7 @@ impl Object {
         let value = match self {
             Object::Int(x) => x >= rhs.int()?,
             Object::Float(x) => x >= rhs.float()?,
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation(">=", self, rhs)),
         };
         Ok(Object::Bool(value))
     }
@@ -144,7 +144,7 @@ impl Object {
         let value = match self {
             Object::Int(x) => x < rhs.int()?,
             Object::Float(x) => x < rhs.float()?,
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation("<", self, rhs)),
         };
         Ok(Object::Bool(value))
     }
@@ -153,7 +153,7 @@ impl Object {
         let value = match self {
             Object::Int(x) => x <= rhs.int()?,
             Object::Float(x) => x <= rhs.float()?,
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation(">=", self, rhs)),
         };
         Ok(Object::Bool(value))
     }
@@ -164,7 +164,7 @@ impl Object {
             Object::Float(x) => x == rhs.float()?,
             Object::Bool(x) => x == rhs.bool()?,
             Object::Str(x) => x.as_ref() == rhs.str()?,
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation("==", self, rhs)),
         };
         Ok(Object::Bool(value))
     }
@@ -175,44 +175,56 @@ impl Object {
             Object::Float(x) => x != rhs.float()?,
             Object::Bool(x) => x != rhs.bool()?,
             Object::Str(x) => x.as_ref() != rhs.str()?,
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation("!=", self, rhs)),
         };
         Ok(Object::Bool(value))
     }
 
     fn add(self, rhs: Object) -> Result<Object, Fault> {
         let value = match self {
-            Object::Int(x) => x.checked_add(rhs.int()?).ok_or(Fault::Internal)?.into(),
+            Object::Int(x) => x
+                .checked_add(rhs.int()?)
+                .ok_or(Fault::BinaryOperation("+", self, rhs))?
+                .into(),
             Object::Float(x) => (x + rhs.float()?).into(),
             Object::Str(x) => format!("{}{}", x, rhs.str()?).into(),
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation("+", self, rhs)),
         };
         Ok(value)
     }
 
     fn sub(self, rhs: Object) -> Result<Object, Fault> {
         let value = match self {
-            Object::Int(x) => Object::from(x.checked_sub(rhs.int()?).ok_or(Fault::Internal)?),
+            Object::Int(x) => Object::from(
+                x.checked_sub(rhs.int()?)
+                    .ok_or(Fault::BinaryOperation("-", self, rhs))?,
+            ),
             Object::Float(x) => (x - rhs.float()?).into(),
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation("-", self, rhs)),
         };
         Ok(value)
     }
 
     fn mul(self, rhs: Object) -> Result<Object, Fault> {
         let value = match self {
-            Object::Int(x) => x.checked_mul(rhs.int()?).ok_or(Fault::Internal)?.into(),
+            Object::Int(x) => x
+                .checked_mul(rhs.int()?)
+                .ok_or(Fault::BinaryOperation("*", self, rhs))?
+                .into(),
             Object::Float(x) => (x * rhs.float()?).into(),
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation("*", self, rhs)),
         };
         Ok(value)
     }
 
     fn div(self, rhs: Object) -> Result<Object, Fault> {
         let value = match self {
-            Object::Int(x) => x.checked_div(rhs.int()?).ok_or(Fault::Internal)?.into(),
+            Object::Int(x) => x
+                .checked_div(rhs.int()?)
+                .ok_or(Fault::BinaryOperation("/", self, rhs))?
+                .into(),
             Object::Float(x) => (x / rhs.float()?).into(),
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation("/", self, rhs)),
         };
         Ok(value)
     }
@@ -221,19 +233,19 @@ impl Object {
         let value = match self {
             Object::Int(x) => (x % rhs.int()?).into(),
             Object::Float(x) => (x % rhs.float()?).into(),
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::BinaryOperation("%", self, rhs)),
         };
         Ok(value)
     }
 
     fn dot(self, _: Object) -> Result<Object, Fault> {
-        Err(Fault::Internal)
+        Ok(self)
     }
 
     fn not(self) -> Result<Object, Fault> {
         let value = match self {
             Object::Bool(x) => (!x).into(),
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::UnaryOperation("not", self)),
         };
         Ok(value)
     }
@@ -242,7 +254,7 @@ impl Object {
         if matches!(self, Object::Int(_) | Object::Float(_)) {
             Ok(self.clone())
         } else {
-            Err(Fault::Internal)
+            Err(Fault::UnaryOperation("+", self))
         }
     }
 
@@ -250,7 +262,7 @@ impl Object {
         let value = match self {
             Object::Int(x) => (-x).into(),
             Object::Float(x) => (-x).into(),
-            _ => return Err(Fault::Internal),
+            _ => return Err(Fault::UnaryOperation("-", self)),
         };
         Ok(value)
     }

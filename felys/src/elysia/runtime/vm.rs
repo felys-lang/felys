@@ -36,7 +36,7 @@ impl Elysia {
 
     fn loc(&self, idx: Option<usize>) -> Result<&Callable, Fault> {
         match idx {
-            Some(x) => self.text.get(x).ok_or(Fault::Internal),
+            Some(x) => self.text.get(x).ok_or(Fault::CallableNotExist(x)),
             None => Ok(&self.main),
         }
     }
@@ -74,7 +74,7 @@ impl Runtime {
         if self.stack.pop().is_none() {
             return Ok(Some(obj));
         };
-        let dst = self.rets.pop().ok_or(Fault::Internal)?;
+        let dst = self.rets.pop().unwrap();
         self.active().1.store(dst, obj)?;
         Ok(None)
     }
@@ -88,23 +88,29 @@ struct Frame {
 impl Frame {
     fn load(&self, reg: usize) -> Result<Object, Fault> {
         if reg == 0 {
-            return Err(Fault::Internal);
+            return Err(Fault::RegisterNotExist(reg));
         }
-        self.registers.get(reg - 1).cloned().ok_or(Fault::Internal)
+        self.registers
+            .get(reg - 1)
+            .cloned()
+            .ok_or(Fault::RegisterNotExist(reg))
     }
 
     fn store(&mut self, reg: usize, obj: Object) -> Result<(), Fault> {
         if reg == 0 {
             return Ok(());
         }
-        *self.registers.get_mut(reg - 1).ok_or(Fault::Internal)? = obj;
+        *self
+            .registers
+            .get_mut(reg - 1)
+            .ok_or(Fault::RegisterNotExist(reg))? = obj;
         Ok(())
     }
 }
 
 impl Callable {
     fn loc(&self, idx: usize) -> Result<&Bytecode, Fault> {
-        self.bytecodes.get(idx).ok_or(Fault::Internal)
+        self.bytecodes.get(idx).ok_or(Fault::BytecodeNotExist(idx))
     }
 
     fn loader(&self) -> Vec<Object> {
@@ -113,7 +119,7 @@ impl Callable {
 
     fn frame(&self, mut args: Vec<Object>) -> Result<Frame, Fault> {
         if args.len() != self.args {
-            return Err(Fault::Internal);
+            return Err(Fault::NumArgsNotMatch(self.args, args));
         }
         args.resize(self.registers, Object::Void);
         let frame = Frame {

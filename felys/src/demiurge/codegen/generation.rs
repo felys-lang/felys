@@ -40,17 +40,28 @@ impl Demiurge {
             functions: Default::default(),
         };
         let main = self.main.codegen(&mut ctx);
-        let text = self
+        let mut functions = self
             .fns
-            .into_values()
-            .map(|mut x| x.codegen(&mut ctx))
-            .collect();
-        let router = ctx
-            .groups
-            .pool
             .into_iter()
-            .map(|x| self.groups.remove(&x).unwrap())
-            .collect();
+            .map(|(label, mut x)| (label, x.codegen(&mut ctx)))
+            .collect::<HashMap<_, _>>();
+
+        let mut router = Vec::new();
+        for id in ctx.groups.pool {
+            let mut group = self.groups.remove(&id).unwrap();
+            group
+                .methods
+                .iter_mut()
+                .for_each(|(_, x)| *x = ctx.functions.idx(*x));
+            router.push(group);
+        }
+
+        let mut text = Vec::new();
+        for id in ctx.functions.pool {
+            let function = functions.remove(&id).unwrap();
+            text.push(function)
+        }
+
         Elysia {
             main,
             text,
