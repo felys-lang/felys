@@ -14,7 +14,9 @@ pub enum Fault {
     InvalidInt(Lit),
     InvalidStrChunk(Chunk),
     NoReturnValue(Rc<Expr>),
-    UndeterminedValue,
+    BreakExprNotAllowed(Expr),
+    InconsistentBreakBehavior(Option<Rc<Expr>>),
+    InfiniteLoop(Expr),
 }
 
 impl Fault {
@@ -53,9 +55,7 @@ impl Fault {
             }
             Fault::InconsistentIfElse(block, alter) => {
                 if let Some(alter) = alter {
-                    msg.push_str(
-                        "one of `if` and `else` has return value while the other one doesn't\n",
-                    );
+                    msg.push_str("one of `if` and `else` returns while the other one doesn't\n");
                     msg.push_str(ERROR);
                     block.recover(&mut msg, ERROR, 0, None, intern).unwrap();
                     msg.push('\n');
@@ -89,9 +89,29 @@ impl Fault {
                 msg.push_str(ERROR);
                 expr.recover(&mut msg, ERROR, 0, intern).unwrap();
             }
-            Fault::UndeterminedValue => msg.push_str("undetermined value"),
+            Fault::BreakExprNotAllowed(expr) => {
+                msg.push_str("`break` with expression is not allowed here\n");
+                msg.push_str(ERROR);
+                expr.recover(&mut msg, ERROR, 0, intern).unwrap();
+            }
+            Fault::InconsistentBreakBehavior(expr) => {
+                if expr.is_some() {
+                    msg.push_str("this `break` has an expression, while the others don't\n");
+                } else {
+                    msg.push_str("this `break` doesn't have an expression, while the others do\n");
+                }
+                msg.push_str(ERROR);
+                Expr::Break(expr)
+                    .recover(&mut msg, ERROR, 0, intern)
+                    .unwrap();
+            }
+            Fault::InfiniteLoop(expr) => {
+                msg.push_str("this is an infinite loop\n");
+                msg.push_str(ERROR);
+                expr.recover(&mut msg, ERROR, 0, intern).unwrap();
+            }
         }
-        msg.push_str("\nNote: ast recovery only reflect the structure but raw code\n");
+        msg.push_str("\nNote: ast recovery does not reflect the raw code\n");
         msg
     }
 }

@@ -4,7 +4,7 @@ use crate::cyrene::ir::{Const, Context, Id, Instruction, Label, Var};
 use crate::cyrene::meta::Meta;
 use crate::cyrene::Function;
 
-type Stack = Vec<(Label, Label, Option<Option<Id>>)>;
+type Stack = Vec<(Label, Label, Option<(Option<Id>, bool)>)>;
 
 impl Block {
     pub fn build(&self, args: Vec<usize>, meta: &Meta) -> Result<Function, Fault> {
@@ -106,29 +106,38 @@ impl Expr {
         match self {
             Expr::Block(block) => block.ir(ctx, stk, meta),
             Expr::Break(expr) => {
-                let result = expr.as_ref().map(|x| x.ir(ctx, stk, meta));
-                let (_, end, wb) = stk.last_mut().ok_or(Fault::OutsideLoop(self.clone()))?;
-                match (result, wb) {
-                    (None, None) | (None, Some(None)) => {}
-                    (Some(x), Some(wb)) if wb.is_none() => {
+                let (_, end, wb) = stk
+                    .last()
+                    .cloned()
+                    .ok_or(Fault::OutsideLoop(self.clone()))?;
+                match (expr, wb) {
+                    (Some(x), Some((Some(id), _))) => {
+                        let var = x
+                            .ir(ctx, stk, meta)?
+                            .ok_or(Fault::NoReturnValue(x.clone()))?;
+                        ctx.define(ctx.cursor, id, var);
+                    }
+                    (Some(x), Some((None, false))) => {
+                        let var = x
+                            .ir(ctx, stk, meta)?
+                            .ok_or(Fault::NoReturnValue(x.clone()))?;
                         let id = ctx.id();
-                        *wb = Some(id);
-                        ctx.define(
-                            ctx.cursor,
-                            id,
-                            x?.ok_or(Fault::NoReturnValue(self.clone().into()))?,
-                        );
+                        *stk.last_mut().unwrap().2.as_mut().unwrap() = (Some(id), true);
+                        ctx.define(ctx.cursor, id, var);
                     }
-                    (Some(x), Some(Some(id))) => {
-                        ctx.define(
-                            ctx.cursor,
-                            *id,
-                            x?.ok_or(Fault::NoReturnValue(self.clone().into()))?,
-                        );
+                    (Some(_), None) => return Err(Fault::BreakExprNotAllowed(self.clone())),
+                    (Some(x), Some((None, true))) => {
+                        return Err(Fault::InconsistentBreakBehavior(Some(x.clone())));
                     }
-                    _ => return Err(Fault::UndeterminedValue),
-                }
-                ctx.jump(*end);
+                    (None, Some((Some(_), _))) => {
+                        return Err(Fault::InconsistentBreakBehavior(None));
+                    }
+                    (None, Some((None, false))) => {
+                        *stk.last_mut().unwrap().2.as_mut().unwrap() = (None, true);
+                    }
+                    (None, Some((None, true))) | (None, None) => {}
+                };
+                ctx.jump(end);
                 ctx.unreachable()
             }
             Expr::Continue => {
@@ -196,9 +205,13 @@ impl Expr {
                 ctx.jump(body);
 
                 ctx.cursor = body;
-                stk.push((body, end, Some(None)));
+                stk.push((body, end, Some((None, false))));
                 block.ir(ctx, stk, meta)?;
-                let wb = stk.pop().unwrap().2.unwrap();
+                let (wb, seen) = stk.pop().unwrap().2.unwrap();
+                if !seen {
+                    return Err(Fault::InfiniteLoop(self.clone()));
+                }
+
                 ctx.jump(body);
                 ctx.seal(body)?;
                 ctx.seal(end)?;
