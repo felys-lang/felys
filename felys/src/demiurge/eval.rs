@@ -35,7 +35,7 @@ impl Const {
         if let Const::Bool(x) = self {
             Ok(*x)
         } else {
-            Err(Fault::InvalidOperation)
+            Err(Fault::ConstantType(self.clone(), "bool"))
         }
     }
 
@@ -43,7 +43,7 @@ impl Const {
         if let Const::Int(x) = self {
             Ok(*x)
         } else {
-            Err(Fault::InvalidOperation)
+            Err(Fault::ConstantType(self.clone(), "int"))
         }
     }
 
@@ -51,7 +51,7 @@ impl Const {
         if let Const::Float(x) = self {
             Ok(f64::from_bits(*x))
         } else {
-            Err(Fault::InvalidOperation)
+            Err(Fault::ConstantType(self.clone(), "float"))
         }
     }
 
@@ -59,14 +59,20 @@ impl Const {
         if let Const::Str(x) = self {
             Ok(x)
         } else {
-            Err(Fault::InvalidOperation)
+            Err(Fault::ConstantType(self.clone(), "str"))
         }
     }
 
     fn or(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
             Const::Bool(x) => *x || rhs.bool()?,
-            _ => return Err(Fault::InvalidOperation),
+            _ => {
+                return Err(Fault::BinaryOperation(
+                    "or",
+                    self.clone(),
+                    rhs.clone(),
+                ));
+            }
         };
         Ok(Const::Bool(value))
     }
@@ -74,7 +80,13 @@ impl Const {
     fn and(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
             Const::Bool(x) => *x && rhs.bool()?,
-            _ => return Err(Fault::InvalidOperation),
+            _ => {
+                return Err(Fault::BinaryOperation(
+                    "and",
+                    self.clone(),
+                    rhs.clone(),
+                ));
+            }
         };
         Ok(Const::Bool(value))
     }
@@ -83,7 +95,13 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x) > rhs.int()?,
             Const::Float(x) => f64::from_bits(*x) > rhs.float()?,
-            _ => return Err(Fault::InvalidOperation),
+            _ => {
+                return Err(Fault::BinaryOperation(
+                    ">",
+                    self.clone(),
+                    rhs.clone(),
+                ));
+            }
         };
         Ok(Const::Bool(value))
     }
@@ -92,7 +110,13 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x) >= rhs.int()?,
             Const::Float(x) => f64::from_bits(*x) >= rhs.float()?,
-            _ => return Err(Fault::InvalidOperation),
+            _ => {
+                return Err(Fault::BinaryOperation(
+                    ">=",
+                    self.clone(),
+                    rhs.clone(),
+                ));
+            }
         };
         Ok(Const::Bool(value))
     }
@@ -101,7 +125,13 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x) < rhs.int()?,
             Const::Float(x) => f64::from_bits(*x) < rhs.float()?,
-            _ => return Err(Fault::InvalidOperation),
+            _ => {
+                return Err(Fault::BinaryOperation(
+                    "<",
+                    self.clone(),
+                    rhs.clone(),
+                ));
+            }
         };
         Ok(Const::Bool(value))
     }
@@ -110,7 +140,13 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x) <= rhs.int()?,
             Const::Float(x) => f64::from_bits(*x) <= rhs.float()?,
-            _ => return Err(Fault::InvalidOperation),
+            _ => {
+                return Err(Fault::BinaryOperation(
+                    "<=",
+                    self.clone(),
+                    rhs.clone(),
+                ));
+            }
         };
         Ok(Const::Bool(value))
     }
@@ -139,23 +175,38 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x)
                 .checked_add(rhs.int()?)
-                .ok_or(Fault::InvalidOperation)?
+                .ok_or(Fault::BinaryOperation(
+                    "+",
+                    self.clone(),
+                    rhs.clone(),
+                ))?
                 .into(),
             Const::Float(x) => f64::from_bits(*x).add(rhs.float()?).into(),
             Const::Str(x) => format!("{}{}", x, rhs.str()?).into(),
-            _ => return Err(Fault::InvalidOperation),
+            _ => {
+                return Err(Fault::BinaryOperation(
+                    "+",
+                    self.clone(),
+                    rhs.clone(),
+                ));
+            }
         };
         Ok(value)
     }
 
     fn sub(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
-            Const::Int(x) => Const::from(
-                (*x).checked_sub(rhs.int()?)
-                    .ok_or(Fault::InvalidOperation)?,
-            ),
+            Const::Int(x) => Const::from((*x).checked_sub(rhs.int()?).ok_or(
+                Fault::BinaryOperation("-", self.clone(), rhs.clone()),
+            )?),
             Const::Float(x) => f64::from_bits(*x).sub(rhs.float()?).into(),
-            _ => return Err(Fault::InvalidOperation),
+            _ => {
+                return Err(Fault::BinaryOperation(
+                    "-",
+                    self.clone(),
+                    rhs.clone(),
+                ));
+            }
         };
         Ok(value)
     }
@@ -164,10 +215,20 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x)
                 .checked_mul(rhs.int()?)
-                .ok_or(Fault::InvalidOperation)?
+                .ok_or(Fault::BinaryOperation(
+                    "*",
+                    self.clone(),
+                    rhs.clone(),
+                ))?
                 .into(),
             Const::Float(x) => f64::from_bits(*x).mul(rhs.float()?).into(),
-            _ => return Err(Fault::InvalidOperation),
+            _ => {
+                return Err(Fault::BinaryOperation(
+                    "*",
+                    self.clone(),
+                    rhs.clone(),
+                ));
+            }
         };
         Ok(value)
     }
@@ -176,10 +237,20 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x)
                 .checked_div(rhs.int()?)
-                .ok_or(Fault::InvalidOperation)?
+                .ok_or(Fault::BinaryOperation(
+                    "/",
+                    self.clone(),
+                    rhs.clone(),
+                ))?
                 .into(),
             Const::Float(x) => f64::from_bits(*x).div(rhs.float()?).into(),
-            _ => return Err(Fault::InvalidOperation),
+            _ => {
+                return Err(Fault::BinaryOperation(
+                    "/",
+                    self.clone(),
+                    rhs.clone(),
+                ));
+            }
         };
         Ok(value)
     }
@@ -188,19 +259,25 @@ impl Const {
         let value = match self {
             Const::Int(x) => (*x).rem(rhs.int()?).into(),
             Const::Float(x) => f64::from_bits(*x).rem(rhs.float()?).into(),
-            _ => return Err(Fault::InvalidOperation),
+            _ => {
+                return Err(Fault::BinaryOperation(
+                    "%",
+                    self.clone(),
+                    rhs.clone(),
+                ));
+            }
         };
         Ok(value)
     }
 
     fn dot(&self, _: &Const) -> Result<Const, Fault> {
-        Err(Fault::InvalidOperation)
+        Ok(self.clone())
     }
 
     fn not(&self) -> Result<Const, Fault> {
         let value = match self {
             Const::Bool(x) => (!x).into(),
-            _ => return Err(Fault::InvalidOperation),
+            _ => return Err(Fault::UnaryOperation("not", self.clone())),
         };
         Ok(value)
     }
@@ -209,7 +286,7 @@ impl Const {
         if matches!(self, Const::Int(_) | Const::Float(_)) {
             Ok(self.clone())
         } else {
-            Err(Fault::InvalidOperation)
+            Err(Fault::UnaryOperation("+", self.clone()))
         }
     }
 
@@ -217,7 +294,7 @@ impl Const {
         let value = match self {
             Const::Int(x) => (-*x).into(),
             Const::Float(x) => (-f64::from_bits(*x)).into(),
-            _ => return Err(Fault::InvalidOperation),
+            _ => return Err(Fault::UnaryOperation("-", self.clone())),
         };
         Ok(value)
     }

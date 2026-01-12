@@ -1,6 +1,6 @@
 use crate::cyrene::{Const, Fragment, Function, Instruction, Label, Terminator, Var};
-use std::collections::{HashMap, HashSet, VecDeque};
 use crate::demiurge::fault::Fault;
+use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Lattice {
@@ -205,9 +205,13 @@ impl Terminator {
             Terminator::Branch(cond, yes, no) => {
                 let val = meta.get(*cond);
                 match val {
-                    Lattice::Const(Const::Bool(true)) => meta.flow.push_back((label, *yes)),
-                    Lattice::Const(Const::Bool(false)) => meta.flow.push_back((label, *no)),
-                    Lattice::Const(_) => return Err(Fault::InvalidOperation),
+                    Lattice::Const(c) => {
+                        if c.bool()? {
+                            meta.flow.push_back((label, *yes))
+                        } else {
+                            meta.flow.push_back((label, *no))
+                        }
+                    }
                     Lattice::Bottom => {
                         meta.flow.push_back((label, *yes));
                         meta.flow.push_back((label, *no));
