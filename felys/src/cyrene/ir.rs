@@ -117,11 +117,11 @@ impl Context {
         self.f.add(label);
     }
 
-    pub fn unreachable(&mut self) -> Result<Dst, Fault> {
+    pub fn unreachable(&mut self) -> Result<Option<Var>, Fault> {
         let dead = self.f.label();
         self.add(dead);
         self.cursor = dead;
-        Ok(Dst::void())
+        Ok(None)
     }
 
     pub fn push(&mut self, instruction: Instruction) {
@@ -244,22 +244,4 @@ pub enum Label {
     Entry,
     Id(usize),
     Exit,
-}
-
-pub struct Dst(Option<Var>);
-
-impl Dst {
-    pub fn var(&self) -> Result<Var, Fault> {
-        self.0.ok_or(Fault::UnacceptableVoid)
-    }
-
-    pub fn void() -> Self {
-        Self(None)
-    }
-}
-
-impl From<Var> for Dst {
-    fn from(value: Var) -> Self {
-        Self(Some(value))
-    }
 }

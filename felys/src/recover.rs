@@ -259,7 +259,7 @@ impl Path {
 }
 
 impl Lit {
-    fn recover<W: Write>(&self, f: &mut W, intern: &Intern) -> std::fmt::Result {
+    pub fn recover<W: Write>(&self, f: &mut W, intern: &Intern) -> std::fmt::Result {
         match self {
             Lit::Int(x) | Lit::Float(x) => write!(f, "{}", intern.get(x).unwrap()),
             Lit::Bool(x) => match x {
@@ -268,14 +268,20 @@ impl Lit {
             },
             Lit::Str(chunks) => {
                 for chunks in chunks {
-                    match chunks {
-                        Chunk::Slice(x) => write!(f, "{}", intern.get(x).unwrap())?,
-                        Chunk::Unicode(x) => write!(f, "\\u{{{}}}", intern.get(x).unwrap())?,
-                        Chunk::Escape(x) => write!(f, "\\{}", intern.get(x).unwrap())?,
-                    }
+                    chunks.recover(f, intern)?;
                 }
                 Ok(())
             }
+        }
+    }
+}
+
+impl Chunk {
+    pub fn recover<W: Write>(&self, f: &mut W, intern: &Intern) -> std::fmt::Result {
+        match self {
+            Chunk::Slice(x) => write!(f, "{}", intern.get(x).unwrap()),
+            Chunk::Unicode(x) => write!(f, "\\u{{{}}}", intern.get(x).unwrap()),
+            Chunk::Escape(x) => write!(f, "\\{}", intern.get(x).unwrap()),
         }
     }
 }

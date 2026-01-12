@@ -1,6 +1,6 @@
 use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Path, Stmt};
 use crate::cyrene::fault::Fault;
-use crate::cyrene::ir::{Const, Context, Dst, Id, Instruction, Label, Var};
+use crate::cyrene::ir::{Const, Context, Id, Instruction, Label, Var};
 use crate::cyrene::meta::Meta;
 use crate::cyrene::Function;
 
@@ -16,7 +16,7 @@ impl Block {
             ctx.define(ctx.cursor, Id::Interned(id), var);
         }
 
-        if let Ok(var) = self.ir(&mut ctx, &mut stk, meta)?.var() {
+        if let Some(var) = self.ir(&mut ctx, &mut stk, meta)? {
             ctx.define(ctx.cursor, Id::Ret, var);
         }
         ctx.jump(Label::Exit);
@@ -30,13 +30,13 @@ impl Block {
         Ok(ctx.export())
     }
 
-    fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
+    fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Option<Var>, Fault> {
         let mut iter = self.0.iter().peekable();
-        let mut result = Ok(Dst::void());
+        let mut result = Ok(None);
         let mut i = 1;
         while let Some(stmt) = iter.next() {
             let ret = stmt.ir(ctx, stk, meta)?;
-            if ret.var().is_ok() {
+            if ret.is_some() {
                 if iter.peek().is_none() {
                     result = Ok(ret);
                 } else {
@@ -51,11 +51,11 @@ impl Block {
 }
 
 impl Stmt {
-    fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
+    fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Option<Var>, Fault> {
         match self {
-            Stmt::Empty => Ok(Dst::void()),
+            Stmt::Empty => Ok(None),
             Stmt::Expr(expr) => expr.ir(ctx, stk, meta),
-            Stmt::Semi(expr) => expr.ir(ctx, stk, meta).and(Ok(Dst::void())),
+            Stmt::Semi(expr) => expr.ir(ctx, stk, meta).and(Ok(None)),
             Stmt::Assign(pat, op, expr) => {
                 let op = match op {
                     AssOp::AddEq => Some(BinOp::Add),
@@ -65,9 +65,11 @@ impl Stmt {
                     AssOp::ModEq => Some(BinOp::Mod),
                     AssOp::Eq => None,
                 };
-                let var = expr.ir(ctx, stk, meta)?.var()?;
+                let var = expr
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(expr.clone().into()))?;
                 pat.ir(ctx, &op, var)?;
-                Ok(Dst::void())
+                Ok(None)
             }
         }
     }
@@ -100,7 +102,7 @@ impl Pat {
 }
 
 impl Expr {
-    fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Dst, Fault> {
+    fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Option<Var>, Fault> {
         match self {
             Expr::Block(block) => block.ir(ctx, stk, meta),
             Expr::Break(expr) => {
@@ -111,14 +113,20 @@ impl Expr {
                     (Some(x), Some(wb)) if wb.is_none() => {
                         let id = ctx.id();
                         *wb = Some(id);
-                        ctx.define(ctx.cursor, id, x?.var()?);
+                        ctx.define(
+                            ctx.cursor,
+                            id,
+                            x?.ok_or(Fault::NoReturnValue(self.clone().into()))?,
+                        );
                     }
                     (Some(x), Some(Some(id))) => {
-                        ctx.define(ctx.cursor, *id, x?.var()?);
+                        ctx.define(
+                            ctx.cursor,
+                            *id,
+                            x?.ok_or(Fault::NoReturnValue(self.clone().into()))?,
+                        );
                     }
-                    _ => {
-                        return Err(Fault::UndeterminedValue);
-                    }
+                    _ => return Err(Fault::UndeterminedValue),
                 }
                 ctx.jump(*end);
                 ctx.unreachable()
@@ -128,7 +136,7 @@ impl Expr {
                 ctx.jump(*start);
                 ctx.unreachable()
             }
-            Expr::For(_, _, _) => Err(Fault::Internal),
+            Expr::For(_, _, _) => Ok(None),
             Expr::If(expr, block, alter) => {
                 let then = ctx.label();
                 let otherwise = ctx.label();
@@ -139,13 +147,15 @@ impl Expr {
                 ctx.add(otherwise);
                 ctx.add(join);
 
-                let cond = expr.ir(ctx, stk, meta)?.var()?;
+                let cond = expr
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(expr.clone()))?;
                 ctx.branch(cond, then, otherwise);
                 ctx.seal(then)?;
                 ctx.seal(otherwise)?;
 
                 ctx.cursor = then;
-                if let Ok(var) = block.ir(ctx, stk, meta)?.var() {
+                if let Some(var) = block.ir(ctx, stk, meta)? {
                     let id = ctx.id();
                     ret = Some(id);
                     ctx.define(ctx.cursor, id, var);
@@ -154,12 +164,12 @@ impl Expr {
 
                 ctx.cursor = otherwise;
                 if let Some(alt) = alter {
-                    let tmp = alt.ir(ctx, stk, meta)?.var();
-                    if let Ok(var) = tmp
+                    let tmp = alt.ir(ctx, stk, meta)?;
+                    if let Some(var) = tmp
                         && let Some(id) = ret
                     {
                         ctx.define(ctx.cursor, id, var);
-                    } else if tmp.is_err() && ret.is_some() || tmp.is_ok() && ret.is_none() {
+                    } else if tmp.is_none() && ret.is_some() || tmp.is_some() && ret.is_none() {
                         return Err(Fault::InconsistentIfElse(block.clone(), alter.clone()));
                     }
                 } else if ret.is_some() {
@@ -173,7 +183,7 @@ impl Expr {
                 if let Some(id) = ret {
                     Ok(ctx.lookup(ctx.cursor, id).unwrap().into())
                 } else {
-                    Ok(Dst::void())
+                    Ok(None)
                 }
             }
             Expr::Loop(block) => {
@@ -198,11 +208,13 @@ impl Expr {
                     let var = ctx.lookup(ctx.cursor, id).unwrap();
                     Ok(var.into())
                 } else {
-                    Ok(Dst::void())
+                    Ok(None)
                 }
             }
             Expr::Return(expr) => {
-                let var = expr.ir(ctx, stk, meta)?.var()?;
+                let var = expr
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(expr.clone()))?;
                 ctx.define(ctx.cursor, Id::Ret, var);
                 ctx.jump(Label::Exit);
                 ctx.unreachable()
@@ -219,7 +231,9 @@ impl Expr {
                 ctx.jump(header);
 
                 ctx.cursor = header;
-                let cond = expr.ir(ctx, stk, meta)?.var()?;
+                let cond = expr
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(expr.clone()))?;
                 ctx.branch(cond, body, end);
                 ctx.seal(body)?;
 
@@ -232,21 +246,29 @@ impl Expr {
                 ctx.seal(end)?;
 
                 ctx.cursor = end;
-                Ok(Dst::void())
+                Ok(None)
             }
             Expr::Binary(lhs, op, rhs) => {
-                let l = lhs.ir(ctx, stk, meta)?.var()?;
-                let r = rhs.ir(ctx, stk, meta)?.var()?;
+                let l = lhs
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(lhs.clone()))?;
+                let r = rhs
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(rhs.clone()))?;
                 let var = ctx.var();
                 ctx.push(Instruction::Binary(var, l, op.clone(), r));
                 Ok(var.into())
             }
             Expr::Call(expr, args) => {
-                let callable = expr.ir(ctx, stk, meta)?.var()?;
+                let callable = expr
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(expr.clone()))?;
                 let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let param = arg.ir(ctx, stk, meta)?.var()?;
+                        let param = arg
+                            .ir(ctx, stk, meta)?
+                            .ok_or(Fault::NoReturnValue(arg.clone().into()))?;
                         params.push(param);
                     }
                 }
@@ -255,17 +277,23 @@ impl Expr {
                 Ok(var.into())
             }
             Expr::Field(expr, id) => {
-                let src = expr.ir(ctx, stk, meta)?.var()?;
+                let src = expr
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(expr.clone()))?;
                 let var = ctx.var();
                 ctx.push(Instruction::Field(var, src, *id));
                 Ok(var.into())
             }
             Expr::Method(expr, id, args) => {
-                let src = expr.ir(ctx, stk, meta)?.var()?;
+                let src = expr
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(expr.clone()))?;
                 let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let param = arg.ir(ctx, stk, meta)?.var()?;
+                        let param = arg
+                            .ir(ctx, stk, meta)?
+                            .ok_or(Fault::NoReturnValue(arg.clone().into()))?;
                         params.push(param);
                     }
                 }
@@ -274,8 +302,12 @@ impl Expr {
                 Ok(var.into())
             }
             Expr::Index(expr, index) => {
-                let src = expr.ir(ctx, stk, meta)?.var()?;
-                let idx = index.ir(ctx, stk, meta)?.var()?;
+                let src = expr
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(expr.clone()))?;
+                let idx = index
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(index.clone()))?;
                 let var = ctx.var();
                 ctx.push(Instruction::Index(var, src, idx));
                 Ok(var.into())
@@ -283,7 +315,9 @@ impl Expr {
             Expr::Tuple(args) => {
                 let mut params = Vec::new();
                 for arg in args.iter() {
-                    let param = arg.ir(ctx, stk, meta)?.var()?;
+                    let param = arg
+                        .ir(ctx, stk, meta)?
+                        .ok_or(Fault::NoReturnValue(arg.clone().into()))?;
                     params.push(param);
                 }
                 let var = ctx.var();
@@ -294,7 +328,9 @@ impl Expr {
                 let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let param = arg.ir(ctx, stk, meta)?.var()?;
+                        let param = arg
+                            .ir(ctx, stk, meta)?
+                            .ok_or(Fault::NoReturnValue(arg.clone().into()))?;
                         params.push(param);
                     }
                 }
@@ -305,7 +341,9 @@ impl Expr {
             Expr::Lit(lit) => lit.ir(ctx, meta),
             Expr::Paren(expr) => expr.ir(ctx, stk, meta),
             Expr::Unary(op, inner) => {
-                let i = inner.ir(ctx, stk, meta)?.var()?;
+                let i = inner
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(inner.clone()))?;
                 let var = ctx.var();
                 ctx.push(Instruction::Unary(var, op.clone(), i));
                 Ok(var.into())
@@ -316,7 +354,7 @@ impl Expr {
 }
 
 impl Path {
-    fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Dst, Fault> {
+    fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Option<Var>, Fault> {
         if self.0.len() == 1 {
             let id = Id::Interned(self.0.buffer()[0]);
             if let Some(var) = ctx.lookup(ctx.cursor, id) {
@@ -336,7 +374,7 @@ impl Path {
 }
 
 impl Lit {
-    fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Dst, Fault> {
+    fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Option<Var>, Fault> {
         let var = ctx.var();
         if let Some(c) = ctx.cache.get(self) {
             ctx.push(Instruction::Load(var, c.clone()));
@@ -349,7 +387,7 @@ impl Lit {
                     .get(x)
                     .unwrap()
                     .parse()
-                    .map_err(|_| Fault::Internal)?;
+                    .map_err(|_| Fault::InvalidInt(self.clone()))?;
                 Const::Int(value)
             }
             Lit::Float(x) => {
@@ -358,7 +396,7 @@ impl Lit {
                     .get(x)
                     .unwrap()
                     .parse::<f64>()
-                    .map_err(|_| Fault::Internal)?
+                    .unwrap()
                     .to_bits();
                 Const::Float(value)
             }
@@ -379,7 +417,7 @@ impl Lit {
                             let c = u32::from_str_radix(hex, 16)
                                 .ok()
                                 .and_then(char::from_u32)
-                                .ok_or(Fault::Internal)?;
+                                .ok_or(Fault::InvalidStrChunk(chunk.clone()))?;
                             value.push(c)
                         }
                         Chunk::Escape(x) => {
@@ -391,7 +429,7 @@ impl Lit {
                                 "t" => '\t',
                                 "r" => '\r',
                                 "\\" => '\\',
-                                _ => return Err(Fault::Internal),
+                                _ => return Err(Fault::InvalidStrChunk(chunk.clone())),
                             };
                             value.push(c)
                         }

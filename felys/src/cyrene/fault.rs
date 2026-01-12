@@ -1,4 +1,4 @@
-use crate::ast::{Block, BufVec, Expr, Path, Root};
+use crate::ast::{Block, BufVec, Chunk, Expr, Lit, Path, Root};
 use crate::philia093::Intern;
 use std::rc::Rc;
 
@@ -11,9 +11,10 @@ pub enum Fault {
     DuplicatePath(BufVec<usize, 1>),
     InconsistentIfElse(Block, Option<Rc<Expr>>),
     FunctionNoReturn(Block),
+    InvalidInt(Lit),
+    InvalidStrChunk(Chunk),
+    NoReturnValue(Rc<Expr>),
     UndeterminedValue,
-    Internal,
-    UnacceptableVoid,
 }
 
 impl Fault {
@@ -73,11 +74,24 @@ impl Fault {
                 msg.push_str(ERROR);
                 block.recover(&mut msg, ERROR, 0, None, intern).unwrap();
             }
+            Fault::InvalidInt(lit) => {
+                msg.push_str("this integer cannot be stored as `isize`\n");
+                msg.push_str(ERROR);
+                lit.recover(&mut msg, intern).unwrap();
+            }
+            Fault::InvalidStrChunk(chunk) => {
+                msg.push_str("this escaped character is invalid\n");
+                msg.push_str(ERROR);
+                chunk.recover(&mut msg, intern).unwrap();
+            }
+            Fault::NoReturnValue(expr) => {
+                msg.push_str("this expression does not have a return value\n");
+                msg.push_str(ERROR);
+                expr.recover(&mut msg, ERROR, 0, intern).unwrap();
+            }
             Fault::UndeterminedValue => msg.push_str("undetermined value"),
-            Fault::Internal => msg.push_str("internal error"),
-            Fault::UnacceptableVoid => msg.push_str("unacceptable void"),
         }
-        msg.push_str("\nNote: ast recovery only reflect the structure but raw code");
+        msg.push_str("\nNote: ast recovery only reflect the structure but raw code\n");
         msg
     }
 }
