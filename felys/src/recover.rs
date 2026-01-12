@@ -1,4 +1,6 @@
 use crate::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Item, Lit, Pat, Path, Root, Stmt, UnaOp};
+use crate::cyrene::Group;
+use crate::elysia::{Object, Pointer};
 use crate::philia093::Intern;
 use std::fmt::{Display, Formatter, Write};
 
@@ -282,6 +284,69 @@ impl Chunk {
             Chunk::Slice(x) => write!(f, "{}", intern.get(x).unwrap()),
             Chunk::Unicode(x) => write!(f, "\\u{{{}}}", intern.get(x).unwrap()),
             Chunk::Escape(x) => write!(f, "\\{}", intern.get(x).unwrap()),
+        }
+    }
+}
+
+impl Object {
+    pub fn recover<W: Write>(
+        &self,
+        f: &mut W,
+        indent: usize,
+        groups: &[Group],
+    ) -> std::fmt::Result {
+        const INDENT: &str = "    ";
+        match self {
+            Object::Pointer(ptr, idx) => match ptr {
+                Pointer::Function => write!(f, "<{idx}>"),
+                Pointer::Group => write!(f, "<{idx}>"),
+            },
+            Object::List(objs) => {
+                write!(f, "[")?;
+                let mut iter = objs.iter();
+                if let Some(first) = iter.next() {
+                    first.recover(f, indent, groups)?
+                }
+                for obj in iter {
+                    write!(f, ", ")?;
+                    obj.recover(f, indent, groups)?
+                }
+                write!(f, "]")
+            }
+            Object::Tuple(objs) => {
+                write!(f, "(")?;
+                let mut iter = objs.iter();
+                if let Some(first) = iter.next() {
+                    first.recover(f, indent, groups)?
+                }
+                for obj in iter {
+                    write!(f, ", ")?;
+                    obj.recover(f, indent, groups)?
+                }
+                write!(f, ")")
+            }
+            Object::Group(id, objs) => {
+                let group = groups.get(*id).unwrap();
+                let indent = indent + 1;
+                writeln!(f, "{id}: {{")?;
+                let mut iter = objs.iter().enumerate();
+                if let Some((i, first)) = iter.next() {
+                    write!(f, "{}{}: ", INDENT.repeat(indent), group.fields[i])?;
+                    first.recover(f, indent, groups)?;
+                    writeln!(f, ",")?;
+                }
+                for (i, obj) in iter {
+                    write!(f, "{}{}: ", INDENT.repeat(indent), group.fields[i])?;
+                    obj.recover(f, indent, groups)?;
+                    writeln!(f, ",")?;
+                }
+                write!(f, "}}")
+            }
+            Object::Str(x) => write!(f, "\"{}\"", x),
+            Object::Int(x) => write!(f, "{}", x),
+            Object::Float(x) => write!(f, "{}", x),
+            Object::Bool(x) => write!(f, "{}", x),
+            Object::Void => write!(f, "<void>"),
         }
     }
 }

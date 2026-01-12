@@ -1,10 +1,11 @@
 use crate::ast::{BinOp, UnaOp};
-use std::rc::Rc;
+use crate::demiurge::Idx;
 use crate::elysia::fault::Fault;
+use std::rc::Rc;
 
 #[derive(Clone, Debug)]
 pub enum Object {
-    Pointer(Pointer, usize),
+    Pointer(Pointer, Idx),
     List(Rc<[Object]>),
     Tuple(Rc<[Object]>),
     Group(usize, Rc<[Object]>),
@@ -26,7 +27,7 @@ impl Object {
         if let Object::List(x) = self {
             Ok(x.clone())
         } else {
-            Err(Fault::Internal)
+            Err(Fault::DataType(self.clone(), "list"))
         }
     }
 
@@ -34,7 +35,7 @@ impl Object {
         if let Object::Group(x, elements) = self {
             Ok((*x, elements.clone()))
         } else {
-            Err(Fault::Internal)
+            Err(Fault::DataType(self.clone(), "group"))
         }
     }
 
@@ -42,7 +43,7 @@ impl Object {
         if let Object::Pointer(ty, idx) = self {
             Ok((ty.clone(), *idx))
         } else {
-            Err(Fault::Internal)
+            Err(Fault::DataType(self.clone(), "pointer"))
         }
     }
 
@@ -50,7 +51,7 @@ impl Object {
         if let Object::Bool(x) = self {
             Ok(*x)
         } else {
-            Err(Fault::Internal)
+            Err(Fault::DataType(self.clone(), "bool"))
         }
     }
 
@@ -58,7 +59,7 @@ impl Object {
         if let Object::Int(x) = self {
             Ok(*x)
         } else {
-            Err(Fault::Internal)
+            Err(Fault::DataType(self.clone(), "int"))
         }
     }
 
@@ -66,7 +67,7 @@ impl Object {
         if let Object::Float(x) = self {
             Ok(*x)
         } else {
-            Err(Fault::Internal)
+            Err(Fault::DataType(self.clone(), "float"))
         }
     }
 
@@ -74,7 +75,7 @@ impl Object {
         if let Object::Str(x) = self {
             Ok(x)
         } else {
-            Err(Fault::Internal)
+            Err(Fault::DataType(self.clone(), "str"))
         }
     }
 

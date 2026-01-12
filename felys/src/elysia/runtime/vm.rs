@@ -5,21 +5,24 @@ use crate::elysia::runtime::object::{Object, Pointer};
 use crate::elysia::{Callable, Elysia};
 
 impl Elysia {
-    pub fn exec(&self, args: Object) -> Result<Object, String> {
-        let mut runtime = self.init(args).map_err(|e| e.recover())?;
-        loop {
+    pub fn exec(&self, args: Object) -> Result<String, String> {
+        let mut runtime = self.init(args).map_err(|e| e.recover(&self.router))?;
+        let exit = loop {
             let (idx, frame) = runtime.active();
             let bytecode = self
                 .loc(idx)
-                .map_err(|e| e.recover())?
+                .map_err(|e| e.recover(&self.router))?
                 .loc(frame.pc)
-                .map_err(|e| e.recover())?;
+                .map_err(|e| e.recover(&self.router))?;
             frame.pc += 1;
             let result = bytecode.exec(self, &mut runtime);
-            if let Some(exit) = result.map_err(|e| e.recover())? {
-                break Ok(exit);
+            if let Some(exit) = result.map_err(|e| e.recover(&self.router))? {
+                break exit;
             }
-        }
+        };
+        let mut buf = String::new();
+        exit.recover(&mut buf, 0, &self.router).unwrap();
+        Ok(buf)
     }
 
     fn init(&self, args: Object) -> Result<Runtime, Fault> {

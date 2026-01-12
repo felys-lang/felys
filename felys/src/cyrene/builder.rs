@@ -49,7 +49,7 @@ impl Cyrene {
 impl Item {
     fn allocate(&self, meta: &mut Meta) -> Result<(), Fault> {
         if let Item::Group(id, fields) = self {
-            let group = Group::new(fields.iter());
+            let group = Group::new(fields.iter().copied().collect());
             let gid = meta
                 .constructors
                 .add([*id].iter())

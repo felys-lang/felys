@@ -2,7 +2,6 @@ use crate::ast::{Block, BufVec, Chunk, Expr, Lit, Path, Root};
 use crate::philia093::Intern;
 use std::rc::Rc;
 
-#[derive(Debug, Clone)]
 pub enum Fault {
     MainNotFound(Root),
     BlockEarlyReturn(Block, usize),

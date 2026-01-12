@@ -11,17 +11,19 @@ pub struct Meta {
 #[derive(Debug)]
 pub struct Group {
     pub indices: HashMap<usize, usize>,
+    pub fields: Box<[usize]>,
     pub methods: HashMap<usize, usize>,
 }
 
 impl Group {
-    pub fn new<'a>(fields: impl Iterator<Item = &'a usize>) -> Self {
+    pub fn new(fields: Vec<usize>) -> Self {
         let mut indices = HashMap::new();
-        for (i, field) in fields.enumerate() {
+        for (i, field) in fields.iter().enumerate() {
             indices.insert(*field, i);
         }
         Self {
             indices,
+            fields: fields.into_boxed_slice(),
             methods: HashMap::new(),
         }
     }
