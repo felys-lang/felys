@@ -5,11 +5,10 @@ pub enum Fault {
     DataType(Object, &'static str),
     BinaryOperation(&'static str, Object, Object),
     UnaryOperation(&'static str, Object),
-    CallableNotExist(usize),
-    BytecodeNotExist(usize),
-    RegisterNotExist(usize),
+    NotExist(&'static str, usize),
     NumArgsNotMatch(usize, Vec<Object>),
-    Internal,
+    IndexOutOfBounds(Object, isize),
+    NotEnoughToUnpack(Object, usize),
 }
 
 impl Fault {
@@ -39,32 +38,38 @@ impl Fault {
                 src.recover(&mut msg, 0, groups).unwrap();
                 msg.push('`');
             }
-            Fault::CallableNotExist(idx) => {
-                let s = format!("callable at index `{}` does not exist", idx);
-                msg.push_str(&s);
-            }
-            Fault::BytecodeNotExist(idx) => {
-                let s = format!("bytecode at index `{}` does not exist", idx);
-                msg.push_str(&s);
-            }
-            Fault::RegisterNotExist(idx) => {
-                let s = format!("register at index `{}` does not exist", idx);
+            Fault::NotExist(sth, idx) => {
+                let s = format!("{} at location <{}> does not exist", sth, idx);
                 msg.push_str(&s);
             }
             Fault::NumArgsNotMatch(expected, args) => {
-                let s = format!("expected `{}` arguments, but got (", expected);
+                let s = format!("expected {} arguments, got {}: [", expected, args.len());
                 msg.push_str(&s);
                 let mut iter = args.iter();
                 if let Some(first) = iter.next() {
+                    msg.push('`');
                     first.recover(&mut msg, 0, groups).unwrap();
+                    msg.push('`');
                 }
                 for arg in iter {
-                    msg.push_str(", ");
+                    msg.push_str(", `");
                     arg.recover(&mut msg, 0, groups).unwrap();
+                    msg.push('`');
                 }
-                msg.push(')');
+                msg.push(']');
             }
-            Fault::Internal => msg.push_str("internal error"),
+            Fault::IndexOutOfBounds(obj, index) => {
+                let s = format!("index {} is out of boundaries for `", index);
+                msg.push_str(&s);
+                obj.recover(&mut msg, 0, groups).unwrap();
+                msg.push('`');
+            }
+            Fault::NotEnoughToUnpack(obj, index) => {
+                let s = format!("cannot unpack element at index {} for `", index);
+                msg.push_str(&s);
+                obj.recover(&mut msg, 0, groups).unwrap();
+                msg.push('`');
+            }
         }
         msg.push('\n');
         msg

@@ -6,23 +6,22 @@ use crate::elysia::{Callable, Elysia};
 
 impl Elysia {
     pub fn exec(&self, args: Object) -> Result<String, String> {
-        let mut runtime = self.init(args).map_err(|e| e.recover(&self.router))?;
-        let exit = loop {
-            let (idx, frame) = runtime.active();
-            let bytecode = self
-                .loc(idx)
-                .map_err(|e| e.recover(&self.router))?
-                .loc(frame.pc)
-                .map_err(|e| e.recover(&self.router))?;
-            frame.pc += 1;
-            let result = bytecode.exec(self, &mut runtime);
-            if let Some(exit) = result.map_err(|e| e.recover(&self.router))? {
-                break exit;
-            }
-        };
+        let exit = self.kernal(args).map_err(|e| e.recover(&self.router))?;
         let mut buf = String::new();
         exit.recover(&mut buf, 0, &self.router).unwrap();
         Ok(buf)
+    }
+
+    fn kernal(&self, args: Object) -> Result<Object, Fault> {
+        let mut runtime = self.init(args)?;
+        loop {
+            let (idx, frame) = runtime.active();
+            let bytecode = self.loc(idx)?.loc(frame.pc)?;
+            frame.pc += 1;
+            if let Some(exit) = bytecode.exec(self, &mut runtime)? {
+                break Ok(exit);
+            }
+        }
     }
 
     fn init(&self, args: Object) -> Result<Runtime, Fault> {
@@ -36,7 +35,7 @@ impl Elysia {
 
     fn loc(&self, idx: Option<usize>) -> Result<&Callable, Fault> {
         match idx {
-            Some(x) => self.text.get(x).ok_or(Fault::CallableNotExist(x)),
+            Some(x) => self.text.get(x).ok_or(Fault::NotExist("callable", x)),
             None => Ok(&self.main),
         }
     }
@@ -88,12 +87,12 @@ struct Frame {
 impl Frame {
     fn load(&self, reg: usize) -> Result<Object, Fault> {
         if reg == 0 {
-            return Err(Fault::RegisterNotExist(reg));
+            return Err(Fault::NotExist("register", reg));
         }
         self.registers
             .get(reg - 1)
             .cloned()
-            .ok_or(Fault::RegisterNotExist(reg))
+            .ok_or(Fault::NotExist("register", reg))
     }
 
     fn store(&mut self, reg: usize, obj: Object) -> Result<(), Fault> {
@@ -103,14 +102,16 @@ impl Frame {
         *self
             .registers
             .get_mut(reg - 1)
-            .ok_or(Fault::RegisterNotExist(reg))? = obj;
+            .ok_or(Fault::NotExist("register", reg))? = obj;
         Ok(())
     }
 }
 
 impl Callable {
     fn loc(&self, idx: usize) -> Result<&Bytecode, Fault> {
-        self.bytecodes.get(idx).ok_or(Fault::BytecodeNotExist(idx))
+        self.bytecodes
+            .get(idx)
+            .ok_or(Fault::NotExist("bytecode", idx))
     }
 
     fn loader(&self) -> Vec<Object> {
@@ -135,21 +136,26 @@ impl Bytecode {
         match self {
             Bytecode::Field(dst, src, id) => {
                 let (_, frame) = rt.active();
-                let (gid, group) = frame.load(*src)?.group()?;
+                let tmp = frame.load(*src)?;
+                let (gid, group) = tmp.group()?;
                 let idx = elysia
                     .router
                     .get(gid)
-                    .ok_or(Fault::Internal)?
+                    .ok_or(Fault::NotExist("group", gid))?
                     .indices
                     .get(id)
-                    .ok_or(Fault::Internal)?;
-                let obj = group.get(*idx).cloned().ok_or(Fault::Internal)?;
+                    .ok_or(Fault::NotExist("indices", *id))?;
+                let obj = group.get(*idx).cloned().unwrap();
                 frame.store(*dst, obj)?;
             }
             Bytecode::Unpack(dst, src, idx) => {
                 let (_, frame) = rt.active();
-                let objs = frame.load(*src)?.tuple()?;
-                let obj = objs.get(*idx).cloned().ok_or(Fault::Internal)?;
+                let tmp = frame.load(*src)?;
+                let objs = tmp.tuple()?;
+                let obj = objs
+                    .get(*idx)
+                    .cloned()
+                    .ok_or(Fault::NotEnoughToUnpack(tmp, *idx))?;
                 frame.store(*dst, obj)?;
             }
             Bytecode::Group(dst, idx) => {
@@ -164,7 +170,11 @@ impl Bytecode {
             }
             Bytecode::Load(dst, idx) => {
                 let (_, frame) = rt.active();
-                let obj = elysia.data.get(*idx).ok_or(Fault::Internal)?.into();
+                let obj = elysia
+                    .data
+                    .get(*idx)
+                    .ok_or(Fault::NotExist("constant", *idx))?
+                    .into();
                 frame.store(*dst, obj)?;
             }
             Bytecode::Binary(dst, lhs, op, rhs) => {
@@ -185,7 +195,7 @@ impl Bytecode {
                 let (ty, idx) = frame.load(*src)?.pointer()?;
                 match ty {
                     Pointer::Function => {
-                        let callable = elysia.text.get(idx).ok_or(Fault::Internal)?;
+                        let callable = elysia.text.get(idx).ok_or(Fault::NotExist("group", idx))?;
                         let mut objs = callable.loader();
                         for arg in args {
                             let obj = frame.load(*arg)?;
@@ -194,14 +204,18 @@ impl Bytecode {
                         rt.call(*dst, idx, callable, objs)?
                     }
                     Pointer::Group => {
-                        let group = elysia.router.get(idx).ok_or(Fault::Internal)?;
-                        if group.indices.len() != args.len() {
-                            return Err(Fault::Internal);
-                        }
+                        let group = elysia
+                            .router
+                            .get(idx)
+                            .ok_or(Fault::NotExist("group", idx))?;
                         let mut objs = Vec::with_capacity(args.len());
                         for arg in args {
                             let obj = frame.load(*arg)?;
                             objs.push(obj);
+                        }
+                        let expected = group.indices.len();
+                        if expected != args.len() {
+                            return Err(Fault::NumArgsNotMatch(expected, objs));
                         }
                         frame.store(*dst, Object::Group(idx, objs.into()))?;
                     }
@@ -227,16 +241,20 @@ impl Bytecode {
             }
             Bytecode::Index(dst, src, index) => {
                 let (_, frame) = rt.active();
-                let list = frame.load(*src)?.list()?;
+                let tmp = frame.load(*src)?;
+                let list = tmp.list()?;
                 let int = frame.load(*index)?.int()?;
                 let idx = if int >= 0 {
                     int as usize
                 } else {
                     list.len()
                         .checked_sub(int.unsigned_abs())
-                        .ok_or(Fault::Internal)?
+                        .ok_or(Fault::IndexOutOfBounds(tmp.clone(), int))?
                 };
-                let obj = list.get(idx).cloned().ok_or(Fault::Internal)?;
+                let obj = list
+                    .get(idx)
+                    .cloned()
+                    .ok_or(Fault::IndexOutOfBounds(tmp, int))?;
                 frame.store(*dst, obj)?;
             }
             Bytecode::Method(dst, src, id, args) => {
@@ -246,11 +264,14 @@ impl Bytecode {
                 let idx = elysia
                     .router
                     .get(gid)
-                    .ok_or(Fault::Internal)?
+                    .ok_or(Fault::NotExist("group", gid))?
                     .methods
                     .get(id)
-                    .ok_or(Fault::Internal)?;
-                let callable = elysia.text.get(*idx).ok_or(Fault::Internal)?;
+                    .ok_or(Fault::NotExist("method", *id))?;
+                let callable = elysia
+                    .text
+                    .get(*idx)
+                    .ok_or(Fault::NotExist("callable", *idx))?;
                 let mut objs = callable.loader();
                 objs.push(obj);
                 for arg in args {
