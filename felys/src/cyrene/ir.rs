@@ -217,6 +217,7 @@ pub struct Fragment {
 #[derive(Debug)]
 pub enum Instruction {
     Field(Var, Var, usize),
+    Unpack(Var, Var, usize),
     Group(Var, usize),
     Function(Var, usize),
     Load(Var, Const),

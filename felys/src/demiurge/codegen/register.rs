@@ -102,10 +102,13 @@ impl Instruction {
             };
         };
         match self {
-            Instruction::Field(dst, src, _) | Instruction::Unary(dst, _, src) => {
+            Instruction::Field(dst, src, _)
+            | Instruction::Unpack(dst, src, _)
+            | Instruction::Unary(dst, _, src) => {
                 ctx.defs.insert(*dst, index);
                 update(src)
             }
+
             Instruction::Binary(dst, lhs, _, rhs) | Instruction::Index(dst, lhs, rhs) => {
                 ctx.defs.insert(*dst, index);
                 update(lhs);

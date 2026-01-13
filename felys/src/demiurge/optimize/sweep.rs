@@ -112,7 +112,9 @@ impl Instruction {
             }
         };
         match self {
-            Instruction::Field(_, var, _) | Instruction::Unary(_, _, var) => add(var),
+            Instruction::Field(_, var, _)
+            | Instruction::Unpack(_, var, _)
+            | Instruction::Unary(_, _, var) => add(var),
             Instruction::List(_, params) | Instruction::Tuple(_, params) => {
                 params.iter().for_each(add);
             }
@@ -124,13 +126,14 @@ impl Instruction {
                 add(var);
                 params.iter().for_each(add);
             }
-            _ => {}
+            Instruction::Group(_, _) | Instruction::Function(_, _) | Instruction::Load(_, _) => {}
         }
     }
 
     fn dst(&self) -> Var {
         match self {
             Instruction::Field(dst, _, _)
+            | Instruction::Unpack(dst, _, _)
             | Instruction::Function(dst, _)
             | Instruction::Load(dst, _)
             | Instruction::Binary(dst, _, _, _)

@@ -82,7 +82,7 @@ impl Pat {
             Pat::Tuple(pats) => {
                 for (i, pat) in pats.iter().enumerate() {
                     let field = ctx.var();
-                    ctx.push(Instruction::Field(field, rhs, i));
+                    ctx.push(Instruction::Unpack(field, rhs, i));
                     pat.ir(ctx, op, field)?
                 }
             }

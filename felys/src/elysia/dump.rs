@@ -45,55 +45,59 @@ impl Bytecode {
                 buf.write_all(&[0x0, *dst as u8, *src as u8])?;
                 buf.write_all(&(*id as u32).to_le_bytes())?;
             }
-            Bytecode::Group(dst, idx) => {
-                buf.write_all(&[0x1, *dst as u8, *idx as u8])?;
+            Bytecode::Unpack(dst, src, idx) => {
+                buf.write_all(&[0x1, *dst as u8, *src as u8])?;
+                buf.write_all(&(*idx as u32).to_le_bytes())?;
             }
-            Bytecode::Function(dst, idx) => {
+            Bytecode::Group(dst, idx) => {
                 buf.write_all(&[0x2, *dst as u8, *idx as u8])?;
             }
-            Bytecode::Load(dst, idx) => {
+            Bytecode::Function(dst, idx) => {
                 buf.write_all(&[0x3, *dst as u8, *idx as u8])?;
             }
+            Bytecode::Load(dst, idx) => {
+                buf.write_all(&[0x4, *dst as u8, *idx as u8])?;
+            }
             Bytecode::Binary(dst, lhs, op, rhs) => {
-                buf.write_all(&[0x4, *dst as u8, *lhs as u8, op.into(), *rhs as u8])?;
+                buf.write_all(&[0x5, *dst as u8, *lhs as u8, op.into(), *rhs as u8])?;
             }
             Bytecode::Unary(dst, op, src) => {
-                buf.write_all(&[0x5, *dst as u8, op.into(), *src as u8])?;
+                buf.write_all(&[0x6, *dst as u8, op.into(), *src as u8])?;
             }
             Bytecode::Call(dst, src, args) => {
-                buf.write_all(&[0x6, *dst as u8, *src as u8, args.len() as u8])?;
+                buf.write_all(&[0x7, *dst as u8, *src as u8, args.len() as u8])?;
                 buf.write_all(&args.iter().map(|&x| x as u8).collect::<Vec<_>>())?;
             }
             Bytecode::List(dst, args) => {
-                buf.write_all(&[0x7, *dst as u8, args.len() as u8])?;
-                buf.write_all(&args.iter().map(|&x| x as u8).collect::<Vec<_>>())?;
-            }
-            Bytecode::Tuple(dst, args) => {
                 buf.write_all(&[0x8, *dst as u8, args.len() as u8])?;
                 buf.write_all(&args.iter().map(|&x| x as u8).collect::<Vec<_>>())?;
             }
+            Bytecode::Tuple(dst, args) => {
+                buf.write_all(&[0x9, *dst as u8, args.len() as u8])?;
+                buf.write_all(&args.iter().map(|&x| x as u8).collect::<Vec<_>>())?;
+            }
             Bytecode::Index(dst, src, index) => {
-                buf.write_all(&[0x9, *dst as u8, *src as u8, *index as u8])?;
+                buf.write_all(&[0xA, *dst as u8, *src as u8, *index as u8])?;
             }
             Bytecode::Method(dst, src, id, args) => {
-                buf.write_all(&[0xA, *dst as u8, *src as u8])?;
+                buf.write_all(&[0xB, *dst as u8, *src as u8])?;
                 buf.write_all(&(*id as u32).to_le_bytes())?;
                 buf.write_all(&args.iter().map(|&x| x as u8).collect::<Vec<_>>())?;
             }
             Bytecode::Branch(cond, yes, no) => {
-                buf.write_all(&[0xB, *cond as u8])?;
+                buf.write_all(&[0xC, *cond as u8])?;
                 buf.write_all(&(*yes as u32).to_le_bytes())?;
                 buf.write_all(&(*no as u32).to_le_bytes())?;
             }
             Bytecode::Jump(target) => {
-                buf.write_all(&[0xC])?;
+                buf.write_all(&[0xD])?;
                 buf.write_all(&(*target as u32).to_le_bytes())?;
             }
             Bytecode::Return(src) => {
-                buf.write_all(&[0xD, *src as u8])?;
+                buf.write_all(&[0xE, *src as u8])?;
             }
             Bytecode::Copy(dst, src) => {
-                buf.write_all(&[0xE, *dst as u8, *src as u8])?;
+                buf.write_all(&[0xF, *dst as u8, *src as u8])?;
             }
         }
         Ok(())

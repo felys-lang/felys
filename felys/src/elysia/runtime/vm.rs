@@ -146,6 +146,12 @@ impl Bytecode {
                 let obj = group.get(*idx).cloned().ok_or(Fault::Internal)?;
                 frame.store(*dst, obj)?;
             }
+            Bytecode::Unpack(dst, src, idx) => {
+                let (_, frame) = rt.active();
+                let objs = frame.load(*src)?.tuple()?;
+                let obj = objs.get(*idx).cloned().ok_or(Fault::Internal)?;
+                frame.store(*dst, obj)?;
+            }
             Bytecode::Group(dst, idx) => {
                 let (_, frame) = rt.active();
                 let obj = Object::Pointer(Pointer::Group, *idx);

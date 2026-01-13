@@ -122,6 +122,9 @@ impl Instruction {
             Instruction::Field(dst, src, idx) => {
                 Bytecode::Field(*alloc.get(dst).unwrap_or(&0), alloc[src], *idx)
             }
+            Instruction::Unpack(dst, src, idx) => {
+                Bytecode::Unpack(*alloc.get(dst).unwrap_or(&0), alloc[src], *idx)
+            }
             Instruction::Group(dst, id) => {
                 Bytecode::Group(*alloc.get(dst).unwrap_or(&0), ctx.groups.idx(*id))
             }

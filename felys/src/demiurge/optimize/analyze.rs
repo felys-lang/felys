@@ -162,6 +162,7 @@ impl Instruction {
                 meta.update(*var, new);
             }
             Instruction::Field(dst, _, _)
+            | Instruction::Unpack(dst, _, _)
             | Instruction::Function(dst, _)
             | Instruction::Call(dst, _, _)
             | Instruction::List(dst, _)
@@ -178,7 +179,9 @@ impl Instruction {
             map.entry(var).or_default().push((label, Id::Ins(i)));
         };
         match self {
-            Instruction::Field(_, x, _) | Instruction::Unary(_, _, x) => update(*x),
+            Instruction::Field(_, x, _)
+            | Instruction::Unpack(_, x, _)
+            | Instruction::Unary(_, _, x) => update(*x),
             Instruction::Binary(_, l, _, r) => {
                 update(*l);
                 update(*r);
@@ -187,14 +190,14 @@ impl Instruction {
                 update(*src);
                 update(*x);
             }
-            Instruction::Call(_, x, params)
-            | Instruction::Method(_, x, _, params)
-            | Instruction::List(x, params)
-            | Instruction::Tuple(x, params) => {
+            Instruction::Call(_, x, params) | Instruction::Method(_, x, _, params) => {
                 update(*x);
                 params.iter().for_each(|x| update(*x));
             }
-            _ => {}
+            Instruction::List(_, params) | Instruction::Tuple(_, params) => {
+                params.iter().for_each(|x| update(*x));
+            }
+            Instruction::Group(_, _) | Instruction::Function(_, _) | Instruction::Load(_, _) => {}
         }
     }
 }

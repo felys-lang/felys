@@ -31,6 +31,14 @@ impl Object {
         }
     }
 
+    pub fn tuple(&self) -> Result<Rc<[Object]>, Fault> {
+        if let Object::Tuple(x) = self {
+            Ok(x.clone())
+        } else {
+            Err(Fault::DataType(self.clone(), "list"))
+        }
+    }
+
     pub fn group(&self) -> Result<(usize, Rc<[Object]>), Fault> {
         if let Object::Group(x, elements) = self {
             Ok((*x, elements.clone()))

@@ -70,6 +70,7 @@ impl Function {
 #[derive(Debug)]
 pub enum Bytecode {
     Field(Reg, Reg, usize),
+    Unpack(Reg, Reg, usize),
     Group(Reg, Idx),
     Function(Reg, Idx),
     Load(Reg, Idx),

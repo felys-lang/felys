@@ -117,14 +117,17 @@ impl Instruction {
                 *lhs = renamer.get(*lhs, &mut changed);
                 *rhs = renamer.get(*rhs, &mut changed);
             }
-            Instruction::Unary(_, _, var) | Instruction::Field(_, var, _) => {
-                *var = renamer.get(*var, &mut changed)
-            }
-            Instruction::Call(_, var, params)
-            | Instruction::Method(_, var, _, params)
-            | Instruction::List(var, params)
-            | Instruction::Tuple(var, params) => {
+            Instruction::Unary(_, _, var)
+            | Instruction::Field(_, var, _)
+            | Instruction::Unpack(_, var, _) => *var = renamer.get(*var, &mut changed),
+            Instruction::Call(_, var, params) | Instruction::Method(_, var, _, params) => {
                 *var = renamer.get(*var, &mut changed);
+                params
+                    .iter_mut()
+                    .for_each(|x| *x = renamer.get(*x, &mut changed));
+            }
+
+            Instruction::List(_, params) | Instruction::Tuple(_, params) => {
                 params
                     .iter_mut()
                     .for_each(|x| *x = renamer.get(*x, &mut changed));
@@ -133,7 +136,7 @@ impl Instruction {
                 *var = renamer.get(*var, &mut changed);
                 *index = renamer.get(*index, &mut changed);
             }
-            _ => {}
+            Instruction::Group(_, _) | Instruction::Function(_, _) | Instruction::Load(_, _) => {}
         }
         changed
     }
