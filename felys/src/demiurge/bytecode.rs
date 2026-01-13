@@ -1,13 +1,11 @@
 use crate::acheron::{BinOp, UnaOp};
 use crate::cyrene::{Fragment, Function, Group, Label, Terminator};
-use crate::philia093::Intern;
 use std::collections::{HashMap, HashSet};
 
 pub struct Demiurge {
     pub groups: HashMap<usize, Group>,
     pub fns: HashMap<usize, Function>,
     pub main: Function,
-    pub intern: Intern,
 }
 
 impl Function {

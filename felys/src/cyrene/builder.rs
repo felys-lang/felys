@@ -41,7 +41,6 @@ impl Cyrene {
             groups: meta.groups,
             fns,
             main: main.ok_or(Fault::MainNotFound(self.root).recover(&meta.intern))?,
-            intern: meta.intern,
         })
     }
 }

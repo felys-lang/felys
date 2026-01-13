@@ -14,15 +14,15 @@ impl Function {
             let Some(target) = fragment.mergeable(empty) else {
                 continue;
             };
-            changed = true;
-            let pred = fragment.predecessors[0];
 
+            let pred = fragment.predecessors[0];
             let predecessor = self.modify(pred).unwrap();
             match predecessor.terminator.as_mut().unwrap() {
                 Terminator::Jump(x) => *x = target,
                 _ => continue,
             }
 
+            changed = true;
             let successor = self.modify(target).unwrap();
             successor.predecessors.iter_mut().for_each(|label| {
                 if label == &empty {
