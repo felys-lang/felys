@@ -85,11 +85,11 @@ impl Item {
         match self {
             Item::Fn(id, args, block) => {
                 let args = args.as_ref().map(|x| x.vec()).unwrap_or_default();
-                let function = block.build(args, meta)?;
+                let function = block.function(args, meta)?;
                 let src = meta.ns.get([*id].iter()).unwrap();
                 fns.insert(src, function);
             }
-            Item::Main(args, block) => *main = Some(block.build(vec![*args], meta)?),
+            Item::Main(args, block) => *main = Some(block.function(vec![*args], meta)?),
             Item::Impl(id, impls) => {
                 for implementation in impls.iter() {
                     implementation.cfg(*id, meta, fns)?;
@@ -131,14 +131,14 @@ impl Impl {
         match self {
             Impl::Associated(sid, args, block) => {
                 let args = args.as_ref().map(|x| x.vec()).unwrap_or_default();
-                let function = block.build(args, meta)?;
+                let function = block.function(args, meta)?;
                 let src = meta.ns.get([id, *sid].iter()).unwrap();
                 fns.insert(src, function);
             }
             Impl::Method(sid, args, block) => {
                 let s = meta.intern.id("self");
                 let args = [s].iter().chain(args).cloned().collect();
-                let function = block.build(args, meta)?;
+                let function = block.function(args, meta)?;
                 let src = meta.ns.get([id, *sid].iter()).unwrap();
                 fns.insert(src, function);
             }
