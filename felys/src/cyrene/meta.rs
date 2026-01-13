@@ -47,7 +47,7 @@ impl Namespace {
         }
     }
 
-    pub fn add<'a>(&mut self, path: impl Iterator<Item = &'a usize>) -> Option<usize> {
+    pub fn add<'a>(&mut self, path: impl Iterator<Item=&'a usize>) -> Option<usize> {
         let mut map = &mut self.tree;
         let mut iter = path.peekable();
 
@@ -70,7 +70,7 @@ impl Namespace {
         None
     }
 
-    pub fn get<'a>(&self, path: impl Iterator<Item = &'a usize>) -> Option<usize> {
+    pub fn get<'a>(&self, path: impl Iterator<Item=&'a usize>) -> Option<usize> {
         let mut map = &self.tree;
         let mut iter = path.peekable();
 
