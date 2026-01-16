@@ -14,7 +14,7 @@ impl Demiurge {
 
 impl Function {
     fn optimize(&mut self, additional: usize) -> Result<(), Fault> {
-        for _ in 0..=additional {
+        for _ in 0..additional {
             let mut changed = false;
             let meta = self.analyze()?;
 

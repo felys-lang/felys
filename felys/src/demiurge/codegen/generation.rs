@@ -46,14 +46,14 @@ impl Demiurge {
             .map(|(label, mut x)| (label, x.codegen(&mut ctx)))
             .collect::<HashMap<_, _>>();
 
-        let mut router = Vec::new();
+        let mut groups = Vec::new();
         for id in ctx.groups.pool {
             let mut group = self.groups.remove(&id).unwrap();
             group
                 .methods
                 .iter_mut()
                 .for_each(|(_, x)| *x = ctx.functions.idx(*x));
-            router.push(group);
+            groups.push(group);
         }
 
         let mut text = Vec::new();
@@ -66,7 +66,7 @@ impl Demiurge {
             main,
             text,
             data: ctx.consts.pool,
-            router,
+            groups,
         }
     }
 }
@@ -181,6 +181,9 @@ impl Terminator {
 
 impl Copy {
     fn codegen(&self, alloc: &HashMap<Var, Reg>) -> Bytecode {
-        Bytecode::Copy(*alloc.get(&self.0).unwrap_or(&0), alloc[&self.1])
+        Bytecode::Copy(
+            *alloc.get(&self.0).unwrap_or(&0),
+            *alloc.get(&self.1).unwrap_or(&0),
+        )
     }
 }

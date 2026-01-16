@@ -6,9 +6,9 @@ use crate::elysia::{Callable, Elysia};
 
 impl Elysia {
     pub fn exec(&self, args: Object) -> Result<String, String> {
-        let exit = self.kernal(args).map_err(|e| e.recover(&self.router))?;
+        let exit = self.kernal(args).map_err(|e| e.recover(&self.groups))?;
         let mut buf = String::new();
-        exit.recover(&mut buf, 0, &self.router).unwrap();
+        exit.recover(&mut buf, 0, &self.groups).unwrap();
         Ok(buf)
     }
 
@@ -139,7 +139,7 @@ impl Bytecode {
                 let tmp = frame.load(*src)?;
                 let (gid, group) = tmp.group()?;
                 let idx = elysia
-                    .router
+                    .groups
                     .get(gid)
                     .ok_or(Fault::NotExist("group", gid))?
                     .indices
@@ -205,7 +205,7 @@ impl Bytecode {
                     }
                     Pointer::Group => {
                         let group = elysia
-                            .router
+                            .groups
                             .get(idx)
                             .ok_or(Fault::NotExist("group", idx))?;
                         let mut objs = Vec::with_capacity(args.len());
@@ -262,7 +262,7 @@ impl Bytecode {
                 let obj = frame.load(*src)?;
                 let (gid, _) = obj.group()?;
                 let idx = elysia
-                    .router
+                    .groups
                     .get(gid)
                     .ok_or(Fault::NotExist("group", gid))?
                     .methods

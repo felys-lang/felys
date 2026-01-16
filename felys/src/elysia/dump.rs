@@ -7,7 +7,7 @@ pub struct Elysia {
     pub main: Callable,
     pub text: Vec<Callable>,
     pub data: Vec<Const>,
-    pub router: Vec<Group>,
+    pub groups: Vec<Group>,
 }
 
 #[derive(Debug)]
