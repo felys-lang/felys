@@ -8,7 +8,7 @@ use std::rc::Rc;
 pub struct Context {
     pub cursor: Label,
     pub cache: HashMap<Lit, Const>,
-    f: Function,
+    pub f: Function,
     ids: usize,
     defs: HashMap<Label, HashMap<Id, Var>>,
     incompleted: HashMap<Label, HashMap<Id, Var>>,
@@ -117,36 +117,41 @@ impl Context {
         self.f.add(label);
     }
 
-    pub fn unreachable(&mut self) -> Result<Option<Var>, Fault> {
-        let dead = self.f.label();
-        self.add(dead);
-        self.cursor = dead;
-        Ok(None)
-    }
-
     pub fn push(&mut self, instruction: Instruction) {
-        self.f
-            .modify(self.cursor)
-            .unwrap()
-            .instructions
-            .push(instruction);
+        let fragment = self.f.modify(self.cursor).unwrap();
+        if fragment.terminator.is_some() {
+            return;
+        }
+        fragment.instructions.push(instruction);
     }
 
     pub fn jump(&mut self, to: Label) {
-        self.f.modify(self.cursor).unwrap().terminator = Some(Terminator::Jump(to));
+        let fragment = self.f.modify(self.cursor).unwrap();
+        if fragment.terminator.is_some() {
+            return;
+        }
+        fragment.terminator = Some(Terminator::Jump(to));
         let cursor = self.cursor;
         self.f.modify(to).unwrap().predecessors.push(cursor);
     }
 
     pub fn branch(&mut self, cond: Var, to: Label, or: Label) {
-        self.f.modify(self.cursor).unwrap().terminator = Some(Terminator::Branch(cond, to, or));
+        let fragment = self.f.modify(self.cursor).unwrap();
+        if fragment.terminator.is_some() {
+            return;
+        }
+        fragment.terminator = Some(Terminator::Branch(cond, to, or));
         let cursor = self.cursor;
         self.f.modify(to).unwrap().predecessors.push(cursor);
         self.f.modify(or).unwrap().predecessors.push(cursor);
     }
 
     pub fn ret(&mut self, var: Var) {
-        self.f.modify(self.cursor).unwrap().terminator = Some(Terminator::Return(var));
+        let fragment = self.f.modify(self.cursor).unwrap();
+        if fragment.terminator.is_some() {
+            return;
+        }
+        fragment.terminator = Some(Terminator::Return(var));
     }
 
     pub fn phi(&mut self, label: Label, dst: Var, src: Vec<(Label, Var)>) {

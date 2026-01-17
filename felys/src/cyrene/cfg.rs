@@ -31,8 +31,8 @@ impl Block {
 
         if let Some(var) = self.ir(&mut ctx, &mut stk, meta)? {
             ctx.define(ctx.cursor, Id::Ret, var);
+            ctx.jump(Label::Exit);
         }
-        ctx.jump(Label::Exit);
         ctx.seal(Label::Exit)?;
 
         ctx.cursor = Label::Exit;
@@ -151,12 +151,12 @@ impl Expr {
                     (None, Some((None, true))) | (None, None) => {}
                 };
                 ctx.jump(end);
-                ctx.unreachable()
+                Ok(None)
             }
             Expr::Continue => {
                 let (start, _, _) = stk.last().ok_or(Fault::OutsideLoop(self.clone()))?;
                 ctx.jump(*start);
-                ctx.unreachable()
+                Ok(None)
             }
             Expr::For(_, _, _) => Ok(None),
             Expr::If(expr, block, alter) => {
@@ -243,7 +243,7 @@ impl Expr {
                     .ok_or(Fault::NoReturnValue(expr.clone()))?;
                 ctx.define(ctx.cursor, Id::Ret, var);
                 ctx.jump(Label::Exit);
-                ctx.unreachable()
+                Ok(None)
             }
             Expr::While(expr, block) => {
                 let header = ctx.label();

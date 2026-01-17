@@ -35,7 +35,7 @@ impl Object {
         if let Object::Tuple(x) = self {
             Ok(x.clone())
         } else {
-            Err(Fault::DataType(self.clone(), "list"))
+            Err(Fault::DataType(self.clone(), "tuple"))
         }
     }
 
@@ -178,13 +178,7 @@ impl Object {
     }
 
     fn ne(self, rhs: Object) -> Result<Object, Fault> {
-        let value = match self {
-            Object::Int(x) => (x) != rhs.int()?,
-            Object::Float(x) => x != rhs.float()?,
-            Object::Bool(x) => x != rhs.bool()?,
-            Object::Str(x) => x.as_ref() != rhs.str()?,
-            _ => return Err(Fault::BinaryOperation("!=", self, rhs)),
-        };
+        let value = self.eq(rhs)?.bool()?;
         Ok(Object::Bool(value))
     }
 

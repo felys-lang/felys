@@ -137,7 +137,9 @@ impl Fragment {
         for (i, instruction) in self.instructions.iter().enumerate() {
             instruction.usage(i, label, map);
         }
-        self.terminator.as_ref().unwrap().usage(label, map);
+        if let Some(terminator) = self.terminator.as_ref() {
+            terminator.usage(label, map);
+        }
     }
 }
 

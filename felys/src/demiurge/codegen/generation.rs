@@ -95,22 +95,25 @@ impl Function {
             let fragment = self.get(label).unwrap();
             let body = fragment.instructions.len();
             let copy = copies.get(&label).map(|x| x.len()).unwrap_or(0);
-            index += copy + body + 1
+            let term = fragment.terminator.is_some() as usize;
+            index += copy + body + term
         }
 
         let mut bytecodes = Vec::with_capacity(index);
         for label in self.order() {
             let fragment = self.get(label).unwrap();
+            let body = fragment.instructions.iter().map(|x| x.codegen(alloc, ctx));
             let copy = copies
                 .remove(&label)
                 .unwrap_or_default()
                 .into_iter()
                 .map(|copy| copy.codegen(alloc));
-            let body = fragment.instructions.iter().map(|x| x.codegen(alloc, ctx));
-            let goto = fragment.terminator.as_ref().unwrap().codegen(alloc, &map);
+            let term = fragment.terminator.as_ref().map(|x| x.codegen(alloc, &map));
             bytecodes.extend(body);
             bytecodes.extend(copy);
-            bytecodes.push(goto);
+            if let Some(term) = term {
+                bytecodes.push(term);
+            }
         }
         bytecodes
     }
@@ -119,12 +122,16 @@ impl Function {
 impl Instruction {
     fn codegen(&self, alloc: &HashMap<Var, Reg>, ctx: &mut Context) -> Bytecode {
         match self {
-            Instruction::Field(dst, src, idx) => {
-                Bytecode::Field(*alloc.get(dst).unwrap_or(&0), alloc[src], *idx)
-            }
-            Instruction::Unpack(dst, src, idx) => {
-                Bytecode::Unpack(*alloc.get(dst).unwrap_or(&0), alloc[src], *idx)
-            }
+            Instruction::Field(dst, src, idx) => Bytecode::Field(
+                *alloc.get(dst).unwrap_or(&0),
+                *alloc.get(src).unwrap_or(&0),
+                *idx,
+            ),
+            Instruction::Unpack(dst, src, idx) => Bytecode::Unpack(
+                *alloc.get(dst).unwrap_or(&0),
+                *alloc.get(src).unwrap_or(&0),
+                *idx,
+            ),
             Instruction::Group(dst, id) => {
                 Bytecode::Group(*alloc.get(dst).unwrap_or(&0), ctx.groups.idx(*id))
             }
@@ -136,34 +143,38 @@ impl Instruction {
             }
             Instruction::Binary(dst, lhs, op, rhs) => Bytecode::Binary(
                 *alloc.get(dst).unwrap_or(&0),
-                alloc[lhs],
+                *alloc.get(lhs).unwrap_or(&0),
                 op.clone(),
-                alloc[rhs],
+                *alloc.get(rhs).unwrap_or(&0),
             ),
-            Instruction::Unary(dst, op, src) => {
-                Bytecode::Unary(*alloc.get(dst).unwrap_or(&0), op.clone(), alloc[src])
-            }
+            Instruction::Unary(dst, op, src) => Bytecode::Unary(
+                *alloc.get(dst).unwrap_or(&0),
+                op.clone(),
+                *alloc.get(src).unwrap_or(&0),
+            ),
             Instruction::Call(dst, src, args) => Bytecode::Call(
                 *alloc.get(dst).unwrap_or(&0),
-                alloc[src],
-                args.iter().map(|x| alloc[x]).collect(),
+                *alloc.get(src).unwrap_or(&0),
+                args.iter().map(|x| *alloc.get(x).unwrap_or(&0)).collect(),
             ),
             Instruction::List(dst, args) => Bytecode::List(
                 *alloc.get(dst).unwrap_or(&0),
-                args.iter().map(|x| alloc[x]).collect(),
+                args.iter().map(|x| *alloc.get(x).unwrap_or(&0)).collect(),
             ),
             Instruction::Tuple(dst, args) => Bytecode::Tuple(
                 *alloc.get(dst).unwrap_or(&0),
-                args.iter().map(|x| alloc[x]).collect(),
+                args.iter().map(|x| *alloc.get(x).unwrap_or(&0)).collect(),
             ),
-            Instruction::Index(dst, src, index) => {
-                Bytecode::Index(*alloc.get(dst).unwrap_or(&0), alloc[src], alloc[index])
-            }
+            Instruction::Index(dst, src, index) => Bytecode::Index(
+                *alloc.get(dst).unwrap_or(&0),
+                *alloc.get(src).unwrap_or(&0),
+                *alloc.get(index).unwrap_or(&0),
+            ),
             Instruction::Method(dst, src, id, args) => Bytecode::Method(
                 *alloc.get(dst).unwrap_or(&0),
-                alloc[src],
+                *alloc.get(src).unwrap_or(&0),
                 *id,
-                args.iter().map(|x| alloc[x]).collect(),
+                args.iter().map(|x| *alloc.get(x).unwrap_or(&0)).collect(),
             ),
         }
     }
@@ -172,9 +183,11 @@ impl Instruction {
 impl Terminator {
     fn codegen(&self, alloc: &HashMap<Var, Reg>, map: &HashMap<Label, usize>) -> Bytecode {
         match self {
-            Terminator::Branch(cond, yes, no) => Bytecode::Branch(alloc[cond], map[yes], map[no]),
+            Terminator::Branch(cond, yes, no) => {
+                Bytecode::Branch(*alloc.get(cond).unwrap_or(&0), map[yes], map[no])
+            }
             Terminator::Jump(to) => Bytecode::Jump(map[to]),
-            Terminator::Return(var) => Bytecode::Return(alloc[var]),
+            Terminator::Return(var) => Bytecode::Return(*alloc.get(var).unwrap_or(&0)),
         }
     }
 }

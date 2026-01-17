@@ -58,7 +58,7 @@ impl Function {
     fn split(&mut self) {
         let mut edges = Vec::new();
         for (label, fragment) in self.safe() {
-            let Terminator::Branch(_, yes, no) = fragment.terminator.as_ref().unwrap() else {
+            let Some(Terminator::Branch(_, yes, no)) = fragment.terminator.as_ref() else {
                 continue;
             };
             for target in [*yes, *no] {
