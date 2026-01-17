@@ -16,6 +16,7 @@ pub enum Fault {
     BreakExprNotAllowed(Expr),
     InconsistentBreakBehavior(Option<Rc<Expr>>),
     InfiniteLoop(Expr),
+    ValueNotDefined(usize),
 }
 
 impl Fault {
@@ -108,6 +109,12 @@ impl Fault {
                 msg.push_str("this is an infinite loop\n");
                 msg.push_str(ERROR);
                 expr.recover(&mut msg, ERROR, 0, intern).unwrap();
+            }
+            Fault::ValueNotDefined(id) => {
+                msg.push_str("this value is not defined\n");
+                msg.push_str(ERROR);
+                let value = intern.get(&id).unwrap();
+                msg.push_str(value);
             }
         }
         msg.push_str("\nNote: ast recovery does not reflect the raw code\n");

@@ -167,7 +167,10 @@ impl Context {
             for (key, var) in phis {
                 let mut operands = Vec::new();
                 for pred in preds.clone() {
-                    let v = self.lookup(pred, key).unwrap();
+                    let v = self.lookup(pred, key).ok_or(match key {
+                        Id::Interned(x) => Fault::ValueNotDefined(x),
+                        _ => panic!(),
+                    })?;
                     operands.push((pred, v));
                 }
                 self.phi(label, var, operands);
