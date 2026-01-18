@@ -1,5 +1,5 @@
 use crate::demiurge::fault::Fault;
-use crate::utils::function::{Fragment, Function};
+use crate::utils::function::{Fragment, Function, Phi};
 use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
 use std::collections::{HashMap, HashSet, VecDeque};
 
@@ -60,7 +60,7 @@ impl Meta {
 }
 
 enum Id {
-    Phi,
+    Phi(usize),
     Ins(usize),
     Term,
 }
@@ -96,6 +96,11 @@ impl Function {
                     }
                     let fragment = self.get(*label).unwrap();
                     match id {
+                        Id::Phi(index) => fragment
+                            .phis
+                            .get(*index)
+                            .unwrap()
+                            .analyze(*label, &mut meta)?,
                         Id::Ins(index) => fragment
                             .instructions
                             .get(*index)
@@ -106,7 +111,6 @@ impl Function {
                             .as_ref()
                             .unwrap()
                             .analyze(*label, &mut meta)?,
-                        Id::Phi => fragment.analyze_phis(*label, &mut meta),
                     }
                 }
             }
@@ -116,21 +120,10 @@ impl Function {
 }
 
 impl Fragment {
-    fn analyze_phis(&self, label: Label, meta: &mut Meta) {
-        for phi in self.phis.iter() {
-            let mut new = Lattice::Top;
-            for (pred, var) in phi.inputs.iter() {
-                if meta.edges.contains(&(*pred, label)) {
-                    let input = meta.get(*var);
-                    new = new.meet(input);
-                }
-            }
-            meta.update(phi.var, new);
-        }
-    }
-
     fn analyze(&self, label: Label, meta: &mut Meta) -> Result<(), Fault> {
-        self.analyze_phis(label, meta);
+        for phi in self.phis.iter() {
+            phi.analyze(label, meta)?;
+        }
         if meta.visited.insert(label) {
             for instruction in self.instructions.iter() {
                 instruction.analyze(meta)?;
@@ -141,16 +134,34 @@ impl Fragment {
     }
 
     fn usage(&self, label: Label, map: &mut HashMap<Var, Vec<(Label, Id)>>) {
-        for phi in self.phis.iter() {
-            for (_, input) in phi.inputs.iter() {
-                map.entry(*input).or_default().push((label, Id::Phi));
-            }
+        for (i, phi) in self.phis.iter().enumerate() {
+            phi.usage(i, label, map);
         }
         for (i, instruction) in self.instructions.iter().enumerate() {
             instruction.usage(i, label, map);
         }
         if let Some(terminator) = self.terminator.as_ref() {
             terminator.usage(label, map);
+        }
+    }
+}
+
+impl Phi {
+    fn analyze(&self, label: Label, meta: &mut Meta) -> Result<(), Fault> {
+        let mut new = Lattice::Top;
+        for (pred, var) in self.inputs.iter() {
+            if meta.edges.contains(&(*pred, label)) {
+                let input = meta.get(*var);
+                new = new.meet(input);
+            }
+        }
+        meta.update(self.var, new);
+        Ok(())
+    }
+
+    fn usage(&self, i: usize, label: Label, map: &mut HashMap<Var, Vec<(Label, Id)>>) {
+        for (_, input) in self.inputs.iter() {
+            map.entry(*input).or_default().push((label, Id::Phi(i)));
         }
     }
 }
@@ -167,8 +178,8 @@ impl Instruction {
                 };
                 meta.update(*var, new);
             }
-            Instruction::Unary(var, op, inner) => {
-                let new = match meta.get(*inner) {
+            Instruction::Unary(var, op, src) => {
+                let new = match meta.get(*src) {
                     Lattice::Top => Lattice::Top,
                     Lattice::Const(c) => Lattice::Const(c.unary(op)?),
                     Lattice::Bottom => Lattice::Bottom,
@@ -189,27 +200,23 @@ impl Instruction {
     }
 
     fn usage(&self, i: usize, label: Label, map: &mut HashMap<Var, Vec<(Label, Id)>>) {
-        let mut update = |var: Var| {
-            map.entry(var).or_default().push((label, Id::Ins(i)));
+        let mut update = |var: &Var| {
+            map.entry(*var).or_default().push((label, Id::Ins(i)));
         };
         match self {
-            Instruction::Field(_, x, _)
-            | Instruction::Unpack(_, x, _)
-            | Instruction::Unary(_, _, x) => update(*x),
-            Instruction::Binary(_, l, _, r) => {
-                update(*l);
-                update(*r);
+            Instruction::Field(_, src, _)
+            | Instruction::Unpack(_, src, _)
+            | Instruction::Unary(_, _, src) => update(src),
+            Instruction::Binary(_, src, _, other) | Instruction::Index(_, src, other) => {
+                update(src);
+                update(other);
             }
-            Instruction::Index(_, src, x) => {
-                update(*src);
-                update(*x);
+            Instruction::Call(_, src, args) | Instruction::Method(_, src, _, args) => {
+                update(src);
+                args.iter().for_each(update);
             }
-            Instruction::Call(_, x, params) | Instruction::Method(_, x, _, params) => {
-                update(*x);
-                params.iter().for_each(|x| update(*x));
-            }
-            Instruction::List(_, params) | Instruction::Tuple(_, params) => {
-                params.iter().for_each(|x| update(*x));
+            Instruction::List(_, args) | Instruction::Tuple(_, args) => {
+                args.iter().for_each(update);
             }
             Instruction::Group(_, _) | Instruction::Function(_, _) | Instruction::Load(_, _) => {}
         }
@@ -237,19 +244,18 @@ impl Terminator {
                 }
             }
             Terminator::Jump(next) => meta.flow.push_back((label, *next)),
-            _ => {}
+            Terminator::Return(_) => {}
         }
         Ok(())
     }
 
     fn usage(&self, label: Label, map: &mut HashMap<Var, Vec<(Label, Id)>>) {
-        let mut update = |var: Var| {
-            map.entry(var).or_default().push((label, Id::Term));
+        let mut update = |var: &Var| {
+            map.entry(*var).or_default().push((label, Id::Term));
         };
         match self {
-            Terminator::Branch(x, _, _) => update(*x),
-            Terminator::Return(x) => update(*x),
-            _ => {}
+            Terminator::Branch(x, _, _) | Terminator::Return(x) => update(x),
+            Terminator::Jump(_) => {}
         }
     }
 }
