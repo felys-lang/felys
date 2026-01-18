@@ -28,8 +28,8 @@ impl Function {
                         continue;
                     };
                     frag.predecessors.retain(|x| *x != delete);
-                    for (_, inputs) in frag.phis.iter_mut() {
-                        inputs.retain(|(x, _)| *x != delete);
+                    for phi in frag.phis.iter_mut() {
+                        phi.inputs.retain(|(x, _)| *x != delete);
                     }
                 }
                 Writeback::Once(from) => {
@@ -39,9 +39,9 @@ impl Function {
                     if let Some(idx) = frag.predecessors.iter().position(|x| *x == delete) {
                         frag.predecessors.remove(idx);
                     }
-                    for (_, inputs) in frag.phis.iter_mut() {
-                        if let Some(idx) = inputs.iter().position(|(x, _)| *x == delete) {
-                            inputs.remove(idx);
+                    for phi in frag.phis.iter_mut() {
+                        if let Some(idx) = phi.inputs.iter().position(|(x, _)| *x == delete) {
+                            phi.inputs.remove(idx);
                         }
                     }
                 }
@@ -74,7 +74,7 @@ impl Function {
             fragment
                 .phis
                 .iter_mut()
-                .for_each(|(_, inputs)| inputs.retain(|(label, _)| !eliminated.contains(label)));
+                .for_each(|phi| phi.inputs.retain(|(label, _)| !eliminated.contains(label)));
         }
         true
     }
@@ -84,9 +84,9 @@ impl Fragment {
     fn rewrite(&mut self, meta: &Meta, wb: &mut Writeback) -> bool {
         let mut changed = false;
         let mut new = Vec::new();
-        self.phis.retain(|(x, _)| {
-            if let Lattice::Const(c) = meta.get(*x) {
-                new.push(Instruction::Load(*x, c.clone()));
+        self.phis.retain(|phi| {
+            if let Lattice::Const(c) = meta.get(phi.var) {
+                new.push(Instruction::Load(phi.var, c.clone()));
                 changed = true;
                 return false;
             }

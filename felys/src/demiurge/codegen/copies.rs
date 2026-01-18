@@ -9,12 +9,12 @@ impl Function {
 
         let mut copies = HashMap::new();
         for (_, fragment) in self.safe() {
-            for (dst, inputs) in fragment.phis.iter() {
-                for (from, src) in inputs {
+            for phi in fragment.phis.iter() {
+                for (from, src) in phi.inputs.iter() {
                     copies
                         .entry(*from)
                         .or_insert_with(Vec::new)
-                        .push(Copy(*dst, *src));
+                        .push(Copy(phi.var, *src));
                 }
             }
         }
@@ -96,8 +96,8 @@ impl Function {
                 .iter_mut()
                 .find(|x| **x == label)
                 .unwrap() = trampoline;
-            for (_, inputs) in fragment.phis.iter_mut() {
-                let (x, _) = inputs.iter_mut().find(|(x, _)| *x == label).unwrap();
+            for phi in fragment.phis.iter_mut() {
+                let (x, _) = phi.inputs.iter_mut().find(|(x, _)| *x == label).unwrap();
                 *x = trampoline;
             }
         }

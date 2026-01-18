@@ -38,8 +38,8 @@ impl Function {
                     }
                 }
                 Id::Phi => {
-                    let (_, inputs) = fragment.phis.iter().find(|(v, _)| *v == var).unwrap();
-                    for (_, input) in inputs {
+                    let phi = fragment.phis.iter().find(|phi| phi.var == var).unwrap();
+                    for (_, input) in phi.inputs.iter() {
                         if ctx.active.insert(*input) {
                             ctx.worklist.push_back(*input);
                         }
@@ -77,8 +77,8 @@ impl Fragment {
             changed = true;
         }
 
-        self.phis.retain(|(var, _)| {
-            let keep = ctx.active.contains(var);
+        self.phis.retain(|phi| {
+            let keep = ctx.active.contains(&phi.var);
             if !keep {
                 changed = true
             }
@@ -88,8 +88,8 @@ impl Fragment {
     }
 
     fn initialize(&self, label: Label, ctx: &mut Context) {
-        for (var, _) in self.phis.iter() {
-            ctx.defs.insert(*var, (label, Id::Phi));
+        for phi in self.phis.iter() {
+            ctx.defs.insert(phi.var, (label, Id::Phi));
         }
 
         for (idx, instruction) in self.instructions.iter().enumerate() {

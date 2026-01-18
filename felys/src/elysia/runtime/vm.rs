@@ -17,6 +17,7 @@ impl Elysia {
         loop {
             let (idx, frame) = runtime.active();
             let bytecode = self.loc(idx)?.loc(frame.pc)?;
+            // println!("{:?}", bytecode);
             frame.pc += 1;
             if let Some(exit) = bytecode.exec(self, &mut runtime)? {
                 break Ok(exit);

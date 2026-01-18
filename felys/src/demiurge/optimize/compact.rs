@@ -29,8 +29,8 @@ impl Function {
                     *label = pred
                 }
             });
-            successor.phis.iter_mut().for_each(|(_, inputs)| {
-                inputs.iter_mut().for_each(|(label, _)| {
+            successor.phis.iter_mut().for_each(|phi| {
+                phi.inputs.iter_mut().for_each(|(label, _)| {
                     if label == &empty {
                         *label = pred
                     }

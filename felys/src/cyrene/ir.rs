@@ -154,8 +154,9 @@ impl Context {
         fragment.terminator = Some(Terminator::Return(var));
     }
 
-    pub fn phi(&mut self, label: Label, dst: Var, src: Vec<(Label, Var)>) {
-        self.f.modify(label).unwrap().phis.push((dst, src));
+    pub fn phi(&mut self, label: Label, dst: Var, inputs: Vec<(Label, Var)>) {
+        let phi = Phi::new(dst, inputs);
+        self.f.modify(label).unwrap().phis.push(phi);
     }
 
     pub fn seal(&mut self, label: Label) -> Result<(), Fault> {
@@ -216,10 +217,22 @@ impl Context {
 
 #[derive(Debug, Default)]
 pub struct Fragment {
-    pub phis: Vec<(Var, Vec<(Label, Var)>)>,
+    pub phis: Vec<Phi>,
     pub predecessors: Vec<Label>,
     pub instructions: Vec<Instruction>,
     pub terminator: Option<Terminator>,
+}
+
+#[derive(Debug, Default)]
+pub struct Phi {
+    pub var: Var,
+    pub inputs: Vec<(Label, Var)>,
+}
+
+impl Phi {
+    fn new(var: Var, inputs: Vec<(Label, Var)>) -> Self {
+        Self { var, inputs }
+    }
 }
 
 #[derive(Debug)]

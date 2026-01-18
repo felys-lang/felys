@@ -59,6 +59,7 @@ impl Meta {
 }
 
 enum Id {
+    Phi,
     Ins(usize),
     Term,
 }
@@ -104,6 +105,7 @@ impl Function {
                             .as_ref()
                             .unwrap()
                             .analyze(*label, &mut meta)?,
+                        Id::Phi => fragment.analyze_phis(*label, &mut meta),
                     }
                 }
             }
@@ -113,17 +115,21 @@ impl Function {
 }
 
 impl Fragment {
-    fn analyze(&self, label: Label, meta: &mut Meta) -> Result<(), Fault> {
-        for (var, inputs) in self.phis.iter() {
+    fn analyze_phis(&self, label: Label, meta: &mut Meta) {
+        for phi in self.phis.iter() {
             let mut new = Lattice::Top;
-            for (pred, var) in inputs {
+            for (pred, var) in phi.inputs.iter() {
                 if meta.edges.contains(&(*pred, label)) {
                     let input = meta.get(*var);
                     new = new.meet(input);
                 }
             }
-            meta.update(*var, new);
+            meta.update(phi.var, new);
         }
+    }
+
+    fn analyze(&self, label: Label, meta: &mut Meta) -> Result<(), Fault> {
+        self.analyze_phis(label, meta);
         if meta.visited.insert(label) {
             for instruction in self.instructions.iter() {
                 instruction.analyze(meta)?;
@@ -134,6 +140,11 @@ impl Fragment {
     }
 
     fn usage(&self, label: Label, map: &mut HashMap<Var, Vec<(Label, Id)>>) {
+        for phi in self.phis.iter() {
+            for (_, input) in phi.inputs.iter() {
+                map.entry(*input).or_default().push((label, Id::Phi));
+            }
+        }
         for (i, instruction) in self.instructions.iter().enumerate() {
             instruction.usage(i, label, map);
         }

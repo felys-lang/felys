@@ -59,12 +59,12 @@ impl Function {
 impl Fragment {
     fn simplify(&mut self, renamer: &mut Renamer, changed: &mut bool) -> bool {
         let mut again = false;
-        self.phis.retain(|(var, input)| {
+        self.phis.retain(|phi| {
             let mut trivial = true;
             let mut candidate = None;
-            for (_, src) in input {
+            for (_, src) in phi.inputs.iter() {
                 let resolved = renamer.get(*src, &mut false);
-                if resolved == *var {
+                if resolved == phi.var {
                     continue;
                 }
                 if let Some(c) = candidate {
@@ -78,7 +78,7 @@ impl Fragment {
             }
 
             if trivial && let Some(replacement) = candidate {
-                renamer.insert(*var, replacement);
+                renamer.insert(phi.var, replacement);
                 *changed = true;
                 again = true;
                 false
@@ -91,8 +91,8 @@ impl Fragment {
 
     fn rename(&mut self, renamer: &Renamer) -> bool {
         let mut changed = false;
-        for (_, inputs) in self.phis.iter_mut() {
-            for (_, var) in inputs {
+        for phi in self.phis.iter_mut() {
+            for (_, var) in phi.inputs.iter_mut() {
                 *var = renamer.get(*var, &mut changed);
             }
         }
