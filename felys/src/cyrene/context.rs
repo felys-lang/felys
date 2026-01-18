@@ -1,4 +1,4 @@
-use crate::acheron::Lit;
+use crate::utils::ast::Lit;
 use crate::cyrene::fault::Fault;
 use crate::utils::function::{Function, Phi};
 use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};

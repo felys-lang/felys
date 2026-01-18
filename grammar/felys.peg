@@ -1,5 +1,5 @@
 {
-    use crate::ast::*;
+    use crate::utils::ast::*;
     #[allow(unused)]
     use std::rc::Rc;
 }
