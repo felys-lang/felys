@@ -1,4 +1,4 @@
-use crate::utils::function::{Fragment, Function};
+use crate::utils::function::{Fragment, Function, Phi};
 use crate::utils::ir::{Instruction, Label, Terminator, Var};
 use std::collections::{HashMap, HashSet, VecDeque};
 
@@ -12,7 +12,7 @@ struct Context {
 
 enum Id {
     Ins(usize),
-    Phi,
+    Phi(usize),
     Arg,
 }
 
@@ -32,21 +32,17 @@ impl Function {
             let fragment = self.get(*label).unwrap();
 
             match id {
-                Id::Ins(idx) => {
-                    if ctx.keep.entry(*label).or_default().insert(*idx) {
-                        let instruction = fragment.instructions.get(*idx).unwrap();
+                Id::Ins(index) => {
+                    if ctx.keep.entry(*label).or_default().insert(*index) {
+                        let instruction = fragment.instructions.get(*index).unwrap();
                         instruction.visit(&mut ctx);
                     }
                 }
-                Id::Phi => {
-                    let phi = fragment.phis.iter().find(|phi| phi.var == var).unwrap();
-                    for (_, input) in phi.inputs.iter() {
-                        if ctx.active.insert(*input) {
-                            ctx.worklist.push_back(*input);
-                        }
-                    }
+                Id::Phi(index) => {
+                    let phi = fragment.phis.get(*index).unwrap();
+                    phi.visit(&mut ctx);
                 }
-                _ => {}
+                Id::Arg => {}
             }
         }
 
@@ -89,19 +85,29 @@ impl Fragment {
     }
 
     fn initialize(&self, label: Label, ctx: &mut Context) {
-        for phi in self.phis.iter() {
-            ctx.defs.insert(phi.var, (label, Id::Phi));
+        for (i, phi) in self.phis.iter().enumerate() {
+            ctx.defs.insert(phi.var, (label, Id::Phi(i)));
         }
 
-        for (idx, instruction) in self.instructions.iter().enumerate() {
-            ctx.defs.insert(instruction.dst(), (label, Id::Ins(idx)));
+        for (i, instruction) in self.instructions.iter().enumerate() {
+            ctx.defs.insert(instruction.dst(), (label, Id::Ins(i)));
 
             if !instruction.functional() {
-                ctx.keep.entry(label).or_default().insert(idx);
+                ctx.keep.entry(label).or_default().insert(i);
                 instruction.visit(ctx);
             }
         }
         self.terminator.as_ref().unwrap().visit(ctx);
+    }
+}
+
+impl Phi {
+    fn visit(&self, ctx: &mut Context) {
+        for (_, input) in self.inputs.iter() {
+            if ctx.active.insert(*input) {
+                ctx.worklist.push_back(*input);
+            }
+        }
     }
 }
 
@@ -113,19 +119,19 @@ impl Instruction {
             }
         };
         match self {
-            Instruction::Field(_, var, _)
-            | Instruction::Unpack(_, var, _)
-            | Instruction::Unary(_, _, var) => add(var),
-            Instruction::List(_, params) | Instruction::Tuple(_, params) => {
-                params.iter().for_each(add);
+            Instruction::Field(_, src, _)
+            | Instruction::Unpack(_, src, _)
+            | Instruction::Unary(_, _, src) => add(src),
+            Instruction::Binary(_, src, _, other) | Instruction::Index(_, src, other) => {
+                add(src);
+                add(other);
             }
-            Instruction::Binary(_, lhs, _, rhs) | Instruction::Index(_, lhs, rhs) => {
-                add(lhs);
-                add(rhs);
+            Instruction::List(_, args) | Instruction::Tuple(_, args) => {
+                args.iter().for_each(add);
             }
-            Instruction::Call(_, var, params) | Instruction::Method(_, var, _, params) => {
-                add(var);
-                params.iter().for_each(add);
+            Instruction::Call(_, src, args) | Instruction::Method(_, src, _, args) => {
+                add(src);
+                args.iter().for_each(add);
             }
             Instruction::Group(_, _) | Instruction::Function(_, _) | Instruction::Load(_, _) => {}
         }
@@ -162,7 +168,7 @@ impl Terminator {
         };
         match self {
             Terminator::Branch(var, _, _) | Terminator::Return(var) => add(var),
-            _ => {}
+            Terminator::Jump(_) => {}
         }
     }
 }
