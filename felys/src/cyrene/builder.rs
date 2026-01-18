@@ -39,7 +39,7 @@ impl Cyrene {
         }
 
         Ok(Demiurge {
-            groups: meta.groups,
+            gps: meta.groups,
             fns,
             main: main.ok_or(Fault::MainNotFound(self.root).recover(&meta.intern))?,
         })

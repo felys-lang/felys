@@ -2,24 +2,24 @@ use crate::demiurge::codegen::copies::Copy;
 use crate::demiurge::{Bytecode, Demiurge, Reg};
 use crate::elysia::{Callable, Elysia};
 use crate::utils::function::Function;
+use crate::utils::group::Group;
 use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
 use std::collections::HashMap;
 use std::hash::Hash;
 
 struct Context {
     consts: Pooling<Const>,
-    groups: Pooling<usize>,
-    functions: Pooling<usize>,
+    groups: Caching<Group, Group>,
+    functions: Caching<Callable, Function>,
 }
 
-#[derive(Default)]
 struct Pooling<T> {
     pool: Vec<T>,
     fast: HashMap<T, usize>,
 }
 
 impl<T: Hash + Eq + Clone> Pooling<T> {
-    fn idx(&mut self, key: T) -> usize {
+    fn index(&mut self, key: T) -> usize {
         if let Some(&id) = self.fast.get(&key) {
             return id;
         }
@@ -30,44 +30,82 @@ impl<T: Hash + Eq + Clone> Pooling<T> {
     }
 }
 
-impl Demiurge {
-    pub fn codegen(mut self) -> Elysia {
-        let mut ctx = Context {
+struct Caching<T, S> {
+    pool: HashMap<usize, T>,
+    indices: HashMap<usize, usize>,
+    source: HashMap<usize, S>,
+}
+
+impl<T, S> Caching<T, S> {
+    fn linearize(mut self) -> Vec<T> {
+        let mut i = 0;
+        let mut all = Vec::new();
+        while let Some(value) = self.pool.remove(&i) {
+            all.push(value);
+            i += 1;
+        }
+        all
+    }
+}
+
+impl Context {
+    fn new(gps: HashMap<usize, Group>, fns: HashMap<usize, Function>) -> Self {
+        Self {
             consts: Pooling {
                 pool: Vec::new(),
                 fast: HashMap::new(),
             },
-            groups: Default::default(),
-            functions: Default::default(),
-        };
-        let main = self.main.codegen(&mut ctx);
-        let mut functions = self
-            .fns
-            .into_iter()
-            .map(|(label, mut x)| (label, x.codegen(&mut ctx)))
-            .collect::<HashMap<_, _>>();
+            groups: Caching {
+                pool: HashMap::new(),
+                indices: HashMap::new(),
+                source: gps,
+            },
+            functions: Caching {
+                pool: HashMap::new(),
+                indices: HashMap::new(),
+                source: fns,
+            },
+        }
+    }
 
-        let mut groups = Vec::new();
-        for id in ctx.groups.pool {
-            let mut group = self.groups.remove(&id).unwrap();
+    fn group(&mut self, key: usize) -> usize {
+        if let Some(index) = self.groups.indices.get(&key) {
+            *index
+        } else {
+            let index = self.groups.indices.len();
+            self.groups.indices.insert(key, index);
+            let mut group = self.groups.source.remove(&key).unwrap();
             group
                 .methods
-                .iter_mut()
-                .for_each(|(_, x)| *x = ctx.functions.idx(*x));
-            groups.push(group);
+                .values_mut()
+                .for_each(|x| *x = self.function(*x));
+            self.groups.pool.insert(index, group);
+            index
         }
+    }
 
-        let mut text = Vec::new();
-        for id in ctx.functions.pool {
-            let function = functions.remove(&id).unwrap();
-            text.push(function)
+    fn function(&mut self, key: usize) -> usize {
+        if let Some(index) = self.functions.indices.get(&key) {
+            *index
+        } else {
+            let index = self.functions.indices.len();
+            self.functions.indices.insert(key, index);
+            let mut function = self.functions.source.remove(&key).unwrap();
+            let callable = function.codegen(self);
+            self.functions.pool.insert(index, callable);
+            index
         }
+    }
+}
 
+impl Demiurge {
+    pub fn codegen(mut self) -> Elysia {
+        let mut ctx = Context::new(self.gps, self.fns);
         Elysia {
-            main,
-            text,
+            main: self.main.codegen(&mut ctx),
+            text: ctx.functions.linearize(),
             data: ctx.consts.pool,
-            groups,
+            groups: ctx.groups.linearize(),
         }
     }
 }
@@ -134,13 +172,13 @@ impl Instruction {
                 *idx,
             ),
             Instruction::Group(dst, id) => {
-                Bytecode::Group(*alloc.get(dst).unwrap_or(&0), ctx.groups.idx(*id))
+                Bytecode::Group(*alloc.get(dst).unwrap_or(&0), ctx.group(*id))
             }
             Instruction::Function(dst, id) => {
-                Bytecode::Function(*alloc.get(dst).unwrap_or(&0), ctx.functions.idx(*id))
+                Bytecode::Function(*alloc.get(dst).unwrap_or(&0), ctx.function(*id))
             }
             Instruction::Load(dst, id) => {
-                Bytecode::Load(*alloc.get(dst).unwrap_or(&0), ctx.consts.idx(id.clone()))
+                Bytecode::Load(*alloc.get(dst).unwrap_or(&0), ctx.consts.index(id.clone()))
             }
             Instruction::Binary(dst, lhs, op, rhs) => Bytecode::Binary(
                 *alloc.get(dst).unwrap_or(&0),

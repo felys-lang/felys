@@ -5,7 +5,7 @@ use crate::utils::ir::{Label, Terminator};
 use std::collections::{HashMap, HashSet};
 
 pub struct Demiurge {
-    pub groups: HashMap<usize, Group>,
+    pub gps: HashMap<usize, Group>,
     pub fns: HashMap<usize, Function>,
     pub main: Function,
 }
