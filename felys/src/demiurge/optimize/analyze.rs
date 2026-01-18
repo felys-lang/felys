@@ -1,6 +1,7 @@
-use crate::cyrene::{Const, Fragment, Function, Instruction, Label, Terminator, Var};
 use crate::demiurge::fault::Fault;
 use std::collections::{HashMap, HashSet, VecDeque};
+use crate::utils::function::{Fragment, Function};
+use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Lattice {

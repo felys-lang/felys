@@ -1,5 +1,6 @@
-use crate::cyrene::{Fragment, Function, Instruction, Label, Terminator};
 use crate::demiurge::optimize::analyze::{Lattice, Meta};
+use crate::utils::function::{Fragment, Function};
+use crate::utils::ir::{Instruction, Label, Terminator};
 use std::collections::HashSet;
 
 enum Writeback {

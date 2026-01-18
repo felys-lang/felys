@@ -1,5 +1,6 @@
-use crate::cyrene::{Fragment, Function, Instruction, Terminator, Var};
 use std::collections::HashMap;
+use crate::utils::function::{Fragment, Function};
+use crate::utils::ir::{Instruction, Terminator, Var};
 
 struct Renamer {
     map: HashMap<Var, Var>,

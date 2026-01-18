@@ -1,9 +1,8 @@
-use crate::acheron::{BinOp, Lit, UnaOp};
+use crate::acheron::Lit;
 use crate::cyrene::fault::Fault;
+use crate::utils::function::{Function, Phi};
+use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
 use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
-use std::ops::Range;
-use std::rc::Rc;
 
 pub struct Context {
     pub cursor: Label,
@@ -15,51 +14,6 @@ pub struct Context {
     sealed: HashSet<Label>,
 }
 
-#[derive(Debug)]
-pub struct Function {
-    pub args: Range<usize>,
-    pub vars: usize,
-    pub labels: usize,
-    pub entry: Fragment,
-    pub fragments: HashMap<usize, Fragment>,
-    pub exit: Fragment,
-}
-
-impl Function {
-    pub fn var(&mut self) -> Var {
-        let var = self.vars;
-        self.vars += 1;
-        var
-    }
-
-    pub fn label(&mut self) -> Label {
-        let label = self.labels;
-        self.labels += 1;
-        Label::Id(label)
-    }
-
-    pub fn add(&mut self, label: Label) -> &mut Fragment {
-        let Label::Id(id) = label else { panic!() };
-        self.fragments.entry(id).or_default()
-    }
-
-    pub fn get(&self, label: Label) -> Option<&Fragment> {
-        match label {
-            Label::Entry => Some(&self.entry),
-            Label::Id(id) => self.fragments.get(&id),
-            Label::Exit => Some(&self.exit),
-        }
-    }
-
-    pub fn modify(&mut self, label: Label) -> Option<&mut Fragment> {
-        match label {
-            Label::Entry => Some(&mut self.entry),
-            Label::Id(id) => self.fragments.get_mut(&id),
-            Label::Exit => Some(&mut self.exit),
-        }
-    }
-}
-
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub enum Id {
     Interned(usize),
@@ -67,18 +21,10 @@ pub enum Id {
     Ret,
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub enum Const {
-    Int(isize),
-    Float(u64),
-    Bool(bool),
-    Str(Rc<str>),
-}
-
 impl Context {
     pub fn new(args: usize) -> Self {
         Self {
-            cursor: Default::default(),
+            cursor: Label::Entry,
             cache: Default::default(),
             f: Function {
                 args: 0..args,
@@ -154,8 +100,8 @@ impl Context {
         fragment.terminator = Some(Terminator::Return(var));
     }
 
-    pub fn phi(&mut self, label: Label, dst: Var, inputs: Vec<(Label, Var)>) {
-        let phi = Phi::new(dst, inputs);
+    pub fn phi(&mut self, label: Label, var: Var, inputs: Vec<(Label, Var)>) {
+        let phi = Phi { var, inputs };
         self.f.modify(label).unwrap().phis.push(phi);
     }
 
@@ -213,57 +159,4 @@ impl Context {
         self.define(label, id, var);
         Some(var)
     }
-}
-
-#[derive(Debug, Default)]
-pub struct Fragment {
-    pub phis: Vec<Phi>,
-    pub predecessors: Vec<Label>,
-    pub instructions: Vec<Instruction>,
-    pub terminator: Option<Terminator>,
-}
-
-#[derive(Debug, Default)]
-pub struct Phi {
-    pub var: Var,
-    pub inputs: Vec<(Label, Var)>,
-}
-
-impl Phi {
-    fn new(var: Var, inputs: Vec<(Label, Var)>) -> Self {
-        Self { var, inputs }
-    }
-}
-
-#[derive(Debug)]
-pub enum Instruction {
-    Field(Var, Var, usize),
-    Unpack(Var, Var, usize),
-    Group(Var, usize),
-    Function(Var, usize),
-    Load(Var, Const),
-    Binary(Var, Var, BinOp, Var),
-    Unary(Var, UnaOp, Var),
-    Call(Var, Var, Vec<Var>),
-    List(Var, Vec<Var>),
-    Tuple(Var, Vec<Var>),
-    Index(Var, Var, Var),
-    Method(Var, Var, usize, Vec<Var>),
-}
-
-#[derive(Debug)]
-pub enum Terminator {
-    Branch(Var, Label, Label),
-    Jump(Label),
-    Return(Var),
-}
-
-pub type Var = usize;
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
-pub enum Label {
-    #[default]
-    Entry,
-    Id(usize),
-    Exit,
 }

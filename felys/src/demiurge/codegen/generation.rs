@@ -1,7 +1,8 @@
-use crate::cyrene::{Const, Function, Instruction, Label, Terminator, Var};
 use crate::demiurge::codegen::copies::Copy;
 use crate::demiurge::{Bytecode, Demiurge, Reg};
 use crate::elysia::{Callable, Elysia};
+use crate::utils::function::Function;
+use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
 use std::collections::HashMap;
 use std::hash::Hash;
 

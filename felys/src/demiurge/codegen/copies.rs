@@ -1,5 +1,6 @@
-use crate::cyrene::{Function, Label, Terminator, Var};
+use crate::utils::ir::{Label, Terminator, Var};
 use std::collections::HashMap;
+use crate::utils::function::Function;
 
 pub struct Copy(pub Var, pub Var);
 

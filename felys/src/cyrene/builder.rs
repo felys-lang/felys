@@ -1,9 +1,9 @@
 use crate::acheron::{BufVec, Impl, Item, Root};
 use crate::cyrene::fault::Fault;
 use crate::cyrene::meta::{Group, Meta, Namespace};
-use crate::cyrene::Function;
 use crate::demiurge::Demiurge;
 use crate::philia093::Intern;
+use crate::utils::function::Function;
 use std::collections::HashMap;
 
 pub struct Cyrene {

@@ -1,6 +1,7 @@
-use crate::cyrene::{Function, Instruction, Label, Terminator, Var};
 use crate::demiurge::codegen::copies::Copy;
 use crate::demiurge::Reg;
+use crate::utils::function::Function;
+use crate::utils::ir::{Instruction, Label, Terminator, Var};
 use std::cmp::{max, Reverse};
 use std::collections::hash_map::Entry;
 use std::collections::{BinaryHeap, HashMap};

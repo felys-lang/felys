@@ -1,5 +1,6 @@
-use crate::cyrene::{Fragment, Function, Label, Terminator};
 use std::collections::VecDeque;
+use crate::utils::function::{Fragment, Function};
+use crate::utils::ir::{Label, Terminator};
 
 impl Function {
     pub fn compact(&mut self) -> bool {

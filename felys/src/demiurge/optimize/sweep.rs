@@ -1,5 +1,6 @@
-use crate::cyrene::{Fragment, Function, Instruction, Label, Terminator, Var};
 use std::collections::{HashMap, HashSet, VecDeque};
+use crate::utils::function::{Fragment, Function};
+use crate::utils::ir::{Instruction, Label, Terminator, Var};
 
 #[derive(Default)]
 struct Context {

@@ -1,8 +1,9 @@
 use crate::acheron::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Path, Stmt};
 use crate::cyrene::fault::Fault;
-use crate::cyrene::ir::{Const, Context, Id, Instruction, Label, Var};
+use crate::cyrene::ir::{Context, Id};
 use crate::cyrene::meta::Meta;
-use crate::cyrene::Function;
+use crate::utils::function::Function;
+use crate::utils::ir::{Const, Instruction, Label, Var};
 
 type Stack = Vec<(Label, Label, Option<(Option<Id>, bool)>)>;
 
