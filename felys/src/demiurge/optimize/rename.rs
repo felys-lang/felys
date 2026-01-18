@@ -1,4 +1,4 @@
-use crate::utils::function::{Fragment, Function};
+use crate::utils::function::{Fragment, Function, Phi};
 use crate::utils::ir::{Instruction, Terminator, Var};
 use std::collections::HashMap;
 
@@ -17,13 +17,10 @@ impl Renamer {
         self.map.insert(from, to);
     }
 
-    fn get(&self, var: Var, changed: &mut bool) -> Var {
+    fn get(&self, var: Var) -> Var {
         let mut current = var;
         while let Some(&next) = self.map.get(&current) {
             current = next;
-        }
-        if current != var {
-            *changed = true;
         }
         current
     }
@@ -32,126 +29,98 @@ impl Renamer {
 impl Function {
     pub fn rename(&mut self) -> bool {
         let mut renamer = Renamer::new();
-        let mut changed = false;
 
         let mut again = true;
         while again {
             again = false;
             for (_, fragment) in self.cautious() {
-                if fragment.simplify(&mut renamer, &mut changed) {
-                    again = true;
-                }
+                fragment.phis.retain(|phi| {
+                    let mut trivial = true;
+                    let mut candidate = None;
+                    for (_, src) in phi.inputs.iter() {
+                        let resolved = renamer.get(*src);
+                        if resolved == phi.var {
+                            continue;
+                        }
+                        if let Some(c) = candidate {
+                            if c != resolved {
+                                trivial = false;
+                                break;
+                            }
+                        } else {
+                            candidate = Some(resolved);
+                        }
+                    }
+
+                    if trivial && let Some(replacement) = candidate {
+                        renamer.insert(phi.var, replacement);
+                        again = true;
+                        false
+                    } else {
+                        true
+                    }
+                });
             }
         }
 
         if renamer.map.is_empty() {
-            return changed;
+            return false;
         }
 
         for (_, fragment) in self.cautious() {
-            if fragment.rename(&renamer) {
-                changed = true;
-            }
+            fragment.rename(&renamer);
         }
-        changed
+        true
     }
 }
 
 impl Fragment {
-    fn simplify(&mut self, renamer: &mut Renamer, changed: &mut bool) -> bool {
-        let mut again = false;
-        self.phis.retain(|phi| {
-            let mut trivial = true;
-            let mut candidate = None;
-            for (_, src) in phi.inputs.iter() {
-                let resolved = renamer.get(*src, &mut false);
-                if resolved == phi.var {
-                    continue;
-                }
-                if let Some(c) = candidate {
-                    if c != resolved {
-                        trivial = false;
-                        break;
-                    }
-                } else {
-                    candidate = Some(resolved);
-                }
-            }
-
-            if trivial && let Some(replacement) = candidate {
-                renamer.insert(phi.var, replacement);
-                *changed = true;
-                again = true;
-                false
-            } else {
-                true
-            }
-        });
-        again
-    }
-
-    fn rename(&mut self, renamer: &Renamer) -> bool {
-        let mut changed = false;
+    fn rename(&mut self, renamer: &Renamer) {
         for phi in self.phis.iter_mut() {
-            for (_, var) in phi.inputs.iter_mut() {
-                *var = renamer.get(*var, &mut changed);
-            }
+            phi.rename(renamer);
         }
-
         for instruction in self.instructions.iter_mut() {
-            if instruction.rename(renamer) {
-                changed = true;
-            }
+            instruction.rename(renamer);
         }
-        if self.terminator.as_mut().unwrap().rename(renamer) {
-            changed = true;
+        self.terminator.as_mut().unwrap().rename(renamer)
+    }
+}
+
+impl Phi {
+    fn rename(&mut self, renamer: &Renamer) {
+        for (_, var) in self.inputs.iter_mut() {
+            *var = renamer.get(*var);
         }
-        changed
     }
 }
 
 impl Instruction {
-    fn rename(&mut self, renamer: &Renamer) -> bool {
-        let mut changed = false;
+    fn rename(&mut self, renamer: &Renamer) {
         match self {
-            Instruction::Binary(_, lhs, _, rhs) => {
-                *lhs = renamer.get(*lhs, &mut changed);
-                *rhs = renamer.get(*rhs, &mut changed);
+            Instruction::Unary(_, _, src)
+            | Instruction::Field(_, src, _)
+            | Instruction::Unpack(_, src, _) => *src = renamer.get(*src),
+            Instruction::Binary(_, src, _, other) | Instruction::Index(_, src, other) => {
+                *src = renamer.get(*src);
+                *other = renamer.get(*other);
             }
-            Instruction::Unary(_, _, var)
-            | Instruction::Field(_, var, _)
-            | Instruction::Unpack(_, var, _) => *var = renamer.get(*var, &mut changed),
-            Instruction::Call(_, var, params) | Instruction::Method(_, var, _, params) => {
-                *var = renamer.get(*var, &mut changed);
-                params
-                    .iter_mut()
-                    .for_each(|x| *x = renamer.get(*x, &mut changed));
+            Instruction::List(_, args) | Instruction::Tuple(_, args) => {
+                args.iter_mut().for_each(|x| *x = renamer.get(*x));
             }
-
-            Instruction::List(_, params) | Instruction::Tuple(_, params) => {
-                params
-                    .iter_mut()
-                    .for_each(|x| *x = renamer.get(*x, &mut changed));
-            }
-            Instruction::Index(_, var, index) => {
-                *var = renamer.get(*var, &mut changed);
-                *index = renamer.get(*index, &mut changed);
+            Instruction::Call(_, src, args) | Instruction::Method(_, src, _, args) => {
+                *src = renamer.get(*src);
+                args.iter_mut().for_each(|x| *x = renamer.get(*x));
             }
             Instruction::Group(_, _) | Instruction::Function(_, _) | Instruction::Load(_, _) => {}
         }
-        changed
     }
 }
 
 impl Terminator {
-    fn rename(&mut self, renamer: &Renamer) -> bool {
-        let mut changed = false;
+    fn rename(&mut self, renamer: &Renamer) {
         match self {
-            Terminator::Branch(var, _, _) | Terminator::Return(var) => {
-                *var = renamer.get(*var, &mut changed)
-            }
-            _ => {}
+            Terminator::Branch(var, _, _) | Terminator::Return(var) => *var = renamer.get(*var),
+            Terminator::Jump(_) => {}
         }
-        changed
     }
 }
