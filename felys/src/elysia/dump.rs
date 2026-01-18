@@ -1,6 +1,6 @@
 use crate::acheron::{BinOp, UnaOp};
-use crate::cyrene::Group;
 use crate::demiurge::Bytecode;
+use crate::utils::group::Group;
 use crate::utils::ir::Const;
 use std::io::Write;
 

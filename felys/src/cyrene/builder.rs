@@ -1,9 +1,10 @@
 use crate::acheron::{BufVec, Impl, Item, Root};
 use crate::cyrene::fault::Fault;
-use crate::cyrene::meta::{Group, Meta, Namespace};
+use crate::cyrene::meta::Meta;
 use crate::demiurge::Demiurge;
 use crate::philia093::Intern;
 use crate::utils::function::Function;
+use crate::utils::group::Group;
 use std::collections::HashMap;
 
 pub struct Cyrene {
@@ -14,10 +15,10 @@ pub struct Cyrene {
 impl Cyrene {
     pub fn cfg(self) -> Result<Demiurge, String> {
         let mut meta = Meta {
-            ns: Namespace::new(),
-            constructors: Namespace::new(),
+            ns: Default::default(),
+            constructors: Default::default(),
             intern: self.intern,
-            groups: HashMap::new(),
+            groups: Default::default(),
         };
 
         for item in self.root.0.iter() {

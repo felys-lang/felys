@@ -1,5 +1,5 @@
-use std::fmt::{Display, Formatter};
 use crate::utils::ir::Const;
+use std::fmt::{Display, Formatter};
 
 pub enum Fault {
     BinaryOperation(&'static str, Const, Const),

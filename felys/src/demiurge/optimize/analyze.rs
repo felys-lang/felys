@@ -1,7 +1,7 @@
 use crate::demiurge::fault::Fault;
-use std::collections::{HashMap, HashSet, VecDeque};
 use crate::utils::function::{Fragment, Function};
 use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Lattice {

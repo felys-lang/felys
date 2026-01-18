@@ -7,8 +7,8 @@ use std::collections::{HashMap, HashSet};
 pub struct Context {
     pub cursor: Label,
     pub cache: HashMap<Lit, Const>,
-    pub f: Function,
     ids: usize,
+    f: Function,
     defs: HashMap<Label, HashMap<Id, Var>>,
     incompleted: HashMap<Label, HashMap<Id, Var>>,
     sealed: HashSet<Label>,
@@ -26,15 +26,8 @@ impl Context {
         Self {
             cursor: Label::Entry,
             cache: Default::default(),
-            f: Function {
-                args: 0..args,
-                vars: 0,
-                labels: 0,
-                entry: Default::default(),
-                fragments: Default::default(),
-                exit: Default::default(),
-            },
             ids: 0,
+            f: Function::new(args),
             defs: Default::default(),
             incompleted: Default::default(),
             sealed: Default::default(),
@@ -57,10 +50,6 @@ impl Context {
 
     pub fn label(&mut self) -> Label {
         self.f.label()
-    }
-
-    pub fn add(&mut self, label: Label) {
-        self.f.add(label);
     }
 
     pub fn push(&mut self, instruction: Instruction) {

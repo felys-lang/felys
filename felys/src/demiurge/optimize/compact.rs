@@ -1,6 +1,6 @@
-use std::collections::VecDeque;
 use crate::utils::function::{Fragment, Function};
 use crate::utils::ir::{Label, Terminator};
+use std::collections::VecDeque;
 
 impl Function {
     pub fn compact(&mut self) -> bool {

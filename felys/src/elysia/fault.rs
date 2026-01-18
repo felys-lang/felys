@@ -1,5 +1,5 @@
-use crate::cyrene::Group;
 use crate::elysia::Object;
+use crate::utils::group::Group;
 
 pub enum Fault {
     DataType(Object, &'static str),

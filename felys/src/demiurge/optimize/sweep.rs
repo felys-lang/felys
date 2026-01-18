@@ -1,6 +1,6 @@
-use std::collections::{HashMap, HashSet, VecDeque};
 use crate::utils::function::{Fragment, Function};
 use crate::utils::ir::{Instruction, Label, Terminator, Var};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Default)]
 struct Context {

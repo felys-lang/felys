@@ -1,4 +1,5 @@
 use crate::philia093::Intern;
+use crate::utils::group::Group;
 use std::collections::HashMap;
 
 pub struct Meta {
@@ -8,27 +9,7 @@ pub struct Meta {
     pub groups: HashMap<usize, Group>,
 }
 
-#[derive(Debug)]
-pub struct Group {
-    pub indices: HashMap<usize, usize>,
-    pub fields: Box<[usize]>,
-    pub methods: HashMap<usize, usize>,
-}
-
-impl Group {
-    pub fn new(fields: Vec<usize>) -> Self {
-        let mut indices = HashMap::new();
-        for (i, field) in fields.iter().enumerate() {
-            indices.insert(*field, i);
-        }
-        Self {
-            indices,
-            fields: fields.into_boxed_slice(),
-            methods: HashMap::new(),
-        }
-    }
-}
-
+#[derive(Default)]
 pub struct Namespace {
     ids: usize,
     tree: HashMap<usize, Node>,
@@ -40,13 +21,6 @@ enum Node {
 }
 
 impl Namespace {
-    pub fn new() -> Self {
-        Self {
-            ids: 0,
-            tree: HashMap::new(),
-        }
-    }
-
     pub fn add<'a>(&mut self, path: impl Iterator<Item=&'a usize>) -> Option<usize> {
         let mut map = &mut self.tree;
         let mut iter = path.peekable();

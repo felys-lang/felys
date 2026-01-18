@@ -6,28 +6,32 @@ use std::ops::Range;
 pub struct Function {
     pub args: Range<usize>,
     pub vars: usize,
-    pub labels: usize,
     pub entry: Fragment,
     pub fragments: HashMap<usize, Fragment>,
     pub exit: Fragment,
 }
 
 impl Function {
+    pub fn new(args: usize) -> Self {
+        Function {
+            args: 0..args,
+            vars: 0,
+            entry: Default::default(),
+            fragments: Default::default(),
+            exit: Default::default(),
+        }
+    }
+
     pub fn var(&mut self) -> Var {
-        let var = self.vars;
+        let id = self.vars;
         self.vars += 1;
-        var
+        id
     }
 
     pub fn label(&mut self) -> Label {
-        let label = self.labels;
-        self.labels += 1;
-        Label::Id(label)
-    }
-
-    pub fn add(&mut self, label: Label) -> &mut Fragment {
-        let Label::Id(id) = label else { panic!() };
-        self.fragments.entry(id).or_default()
+        let id = self.fragments.len();
+        self.fragments.insert(id, Fragment::default());
+        Label::Id(id)
     }
 
     pub fn get(&self, label: Label) -> Option<&Fragment> {
@@ -55,7 +59,7 @@ pub struct Fragment {
     pub terminator: Option<Terminator>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Phi {
     pub var: Var,
     pub inputs: Vec<(Label, Var)>,

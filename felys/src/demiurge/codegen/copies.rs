@@ -1,6 +1,6 @@
+use crate::utils::function::Function;
 use crate::utils::ir::{Label, Terminator, Var};
 use std::collections::HashMap;
-use crate::utils::function::Function;
 
 pub struct Copy(pub Var, pub Var);
 
@@ -73,7 +73,7 @@ impl Function {
         for (label, target) in edges {
             let trampoline = self.label();
 
-            let fragment = self.add(trampoline);
+            let fragment = self.modify(trampoline).unwrap();
             fragment.predecessors.push(label);
             fragment.terminator = Some(Terminator::Jump(target));
 

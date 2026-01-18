@@ -1,6 +1,6 @@
 use crate::acheron::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Path, Stmt};
+use crate::cyrene::context::{Context, Id};
 use crate::cyrene::fault::Fault;
-use crate::cyrene::ir::{Context, Id};
 use crate::cyrene::meta::Meta;
 use crate::utils::function::Function;
 use crate::utils::ir::{Const, Instruction, Label, Var};
@@ -164,11 +164,6 @@ impl Expr {
                 let then = ctx.label();
                 let otherwise = ctx.label();
                 let join = ctx.label();
-                let mut ret = None;
-
-                ctx.add(then);
-                ctx.add(otherwise);
-                ctx.add(join);
 
                 let cond = expr
                     .ir(ctx, stk, meta)?
@@ -178,6 +173,7 @@ impl Expr {
                 ctx.seal(otherwise)?;
 
                 ctx.cursor = then;
+                let mut ret = None;
                 if let Some(var) = block.ir(ctx, stk, meta)? {
                     let id = ctx.id();
                     ret = Some(id);
@@ -213,9 +209,6 @@ impl Expr {
                 let body = ctx.label();
                 let end = ctx.label();
 
-                ctx.add(body);
-                ctx.add(end);
-
                 ctx.jump(body);
 
                 ctx.cursor = body;
@@ -250,10 +243,6 @@ impl Expr {
                 let header = ctx.label();
                 let body = ctx.label();
                 let end = ctx.label();
-
-                ctx.add(header);
-                ctx.add(body);
-                ctx.add(end);
 
                 ctx.jump(header);
 
