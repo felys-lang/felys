@@ -10,11 +10,18 @@
 
 ## What is the Felys Programming Language?
 
-Felys is a programming language written in Rust. The motivation is to create a language where Elysia exists, so regardless of how this project evolves in the future, there must exist a built-in identifier named `__elysia__`. Feel free to try it using the online [playground](https://exec.felys.dev/).
+Felys is an interpreted programming language written in Rust that comes with a compiler and a runtime. Feel free to try it using the online [playground](https://exec.felys.dev/). Please note, however, that it is based on a legacy version of Felys. Once the ongoing reconstruction for the compilation framework is done, the websites will be updated.
+
+## Components
+
+- [PhiLia093](felys/src/philia093): Parser and the [generator](philia093) that bootstraps itself
+- [Cyrene](felys/src/cyrene): Control flow graph builder and transformer to IR
+- [Demiurge](felys/src/demiurge): Dead code elimination, register allocation, and codegen
+- [Elysia](felys/src/elysia): Execution runtime and bytecode loader/dumper
   
 ## License
 
-Distributed under the terms of the [MIT License](LICENSE).
+Distributed under the terms of the [LICENSE](LICENSE).
 
 ## Copyright
 

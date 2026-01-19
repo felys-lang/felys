@@ -1,58 +1,76 @@
 {
-    use crate::ast::*;
+    use crate::utils::ast::*;
     #[allow(unused)]
     use std::rc::Rc;
 }
 
-peg grammar -> { Grammar }:
-    / stmts=(stmt=stmt $)* [#eof] { Grammar(stmts) }
+peg root -> { Root }:
+    / first=[item] $ more=(item=item $)* [EOF] {
+        Root(BufVec::new([first], more))
+    }
+    ;
+
+peg item -> { Item }:
+    / GROUP ident=[IDENT] [LPAR] params=[params] [RPAR] [SEMI] {
+        Item::Group(ident, params)
+    }
+    / IMPL ident=[IDENT] [LBRA] first=[implementation] more=implementation* [RBRA] {
+        Item::Impl(ident, BufVec::new([first], more))
+    }
+    / FN MAIN [LPAR] ident=[IDENT] [RPAR] block=[block] {
+        Item::Main(ident, block)
+    }
+    / FN ident=[IDENT] [LPAR] params=params? [RPAR] block=[block] {
+        Item::Fn(ident, params, block)
+    }
+    ;
+
+peg implementation -> { Impl }:
+    / FN ident=[IDENT] [LPAR] SELF more=(',' ident=IDENT)* ','? [RPAR] block=[block] {
+        Impl::Method(ident, more, block)
+    }
+    / FN ident=[IDENT] [LPAR] params=params? [RPAR] block=[block] {
+        Impl::Associated(ident, params, block)
+    }
     ;
 
 @(memo)
 peg pat -> { Pat }:
     / UNDERSCORE { Pat::Any }
-    / ident=#ident { Pat::Ident(ident) }
-    / lit=lit { Pat::Lit(lit) }
-    / '(' first=pat ',' second=pat more=(',' pat=pat)* ','? ')' {
+    / ident=IDENT { Pat::Ident(ident) }
+    / LPAR first=pat COMMA second=pat more=(COMMA pat=pat)* COMMA? RPAR {
         Pat::Tuple(BufVec::new([first, second], more))
     }
     ;
 
-peg stmt -> { Stmt }:
-    / expr=expr ';' { Stmt::Semi(expr) }
-    / expr=expr { Stmt::Expr(expr) }
-    / ';' { Stmt::Empty }
+peg block -> { Block }:
+    / LBRA stmts=stmt* [RBRA] { Block(stmts) }
     ;
 
-peg block -> { Block }:
-    / '{' stmts=stmt* ['}'] { Block(stmts) }
+peg stmt -> { Stmt }:
+    / assignment=assignment [SEMI]
+    / expr=expr SEMI { Stmt::Semi(expr) }
+    / expr=expr { Stmt::Expr(expr) }
+    / SEMI { Stmt::Empty }
+    ;
+
+peg assignment -> { Stmt }:
+    / pat=pat EQ expr=[expr] { Stmt::Assign(pat, AssOp::Eq, expr) }
+    / pat=pat ADDEQ expr=[expr] { Stmt::Assign(pat, AssOp::AddEq, expr) }
+    / pat=pat SUBEQ expr=[expr] { Stmt::Assign(pat, AssOp::SubEq, expr) }
+    / pat=pat MULEQ expr=[expr] { Stmt::Assign(pat, AssOp::MulEq, expr) }
+    / pat=pat DIVEQ expr=[expr] { Stmt::Assign(pat, AssOp::DivEq, expr) }
+    / pat=pat MODEQ expr=[expr] { Stmt::Assign(pat, AssOp::ModEq, expr) }
     ;
 
 @(memo)
 peg expr -> { Expr }:
-    / assignment=assignment
     / disjunction=disjunction
-    / block=block { Expr::Block(block) }
     / BREAK expr=expr? { Expr::Break(expr.map(Rc::new)) }
     / CONTINUE { Expr::Continue }
     / FOR pat=[pat] [IN] expr=[expr] block=[block] { Expr::For(pat, expr.into(), block) }
-    / IF expr=[expr] block=[block] otherwise=(ELSE expr=[expr])? {
-        Expr::If(expr.into(), block, otherwise.map(Rc::new))
-    }
-    / LOOP block=[block] { Expr::Loop(block) }
-    / RETURN expr=expr? { Expr::Return(expr.map(Rc::new)) }
+    / RETURN expr=[expr] { Expr::Return(expr.into()) }
     / WHILE expr=[expr] block=[block] { Expr::While(expr.into(), block) }
-    / STEP loss=[expr] [BY] lr=[expr] { Expr::Step(loss.into(), lr.into()) }
-    / PRINT expr=[expr] { Expr::Print(expr.into()) }
-    ;
-
-peg assignment -> { Expr }:
-    / pat=pat '=' !'=' expr=[expr] { Expr::Assign(pat, AssOp::Eq, expr.into()) }
-    / pat=pat '+=' expr=[expr] { Expr::Assign(pat, AssOp::AddEq, expr.into()) }
-    / pat=pat '-=' expr=[expr] { Expr::Assign(pat, AssOp::SubEq, expr.into()) }
-    / pat=pat '*=' expr=[expr] { Expr::Assign(pat, AssOp::MulEq, expr.into()) }
-    / pat=pat '/=' expr=[expr] { Expr::Assign(pat, AssOp::DivEq, expr.into()) }
-    / pat=pat '%=' expr=[expr] { Expr::Assign(pat, AssOp::ModEq, expr.into()) }
     ;
 
 peg disjunction -> { Expr }:
@@ -75,74 +93,84 @@ peg inversion -> { Expr }:
     ;
 
 peg equality -> { Expr }:
-    / lhs=equality '==' rhs=[comparison] { Expr::Binary(lhs.into(), BinOp::Eq, rhs.into()) }
-    / lhs=equality '!=' rhs=[comparison] { Expr::Binary(lhs.into(), BinOp::Ne, rhs.into()) }
+    / lhs=equality EQ2 rhs=[comparison] { Expr::Binary(lhs.into(), BinOp::Eq, rhs.into()) }
+    / lhs=equality NEQ rhs=[comparison] { Expr::Binary(lhs.into(), BinOp::Ne, rhs.into()) }
     / comparison=comparison
     ;
 
 peg comparison -> { Expr }:
-    / lhs=comparison '>=' rhs=[term] { Expr::Binary(lhs.into(), BinOp::Ge, rhs.into()) }
-    / lhs=comparison '<=' rhs=[term] { Expr::Binary(lhs.into(), BinOp::Le, rhs.into()) }
-    / lhs=comparison '>' rhs=[term] { Expr::Binary(lhs.into(), BinOp::Gt, rhs.into()) }
-    / lhs=comparison '<' rhs=[term] { Expr::Binary(lhs.into(), BinOp::Lt, rhs.into()) }
+    / lhs=comparison GE rhs=[term] { Expr::Binary(lhs.into(), BinOp::Ge, rhs.into()) }
+    / lhs=comparison LE rhs=[term] { Expr::Binary(lhs.into(), BinOp::Le, rhs.into()) }
+    / lhs=comparison GT rhs=[term] { Expr::Binary(lhs.into(), BinOp::Gt, rhs.into()) }
+    / lhs=comparison LT rhs=[term] { Expr::Binary(lhs.into(), BinOp::Lt, rhs.into()) }
     / term=term
     ;
 
 peg term -> { Expr }:
-    / lhs=term '+' rhs=[factor] { Expr::Binary(lhs.into(), BinOp::Add, rhs.into()) }
-    / lhs=term '-' rhs=[factor] { Expr::Binary(lhs.into(), BinOp::Sub, rhs.into()) }
+    / lhs=term PLUS rhs=[factor] { Expr::Binary(lhs.into(), BinOp::Add, rhs.into()) }
+    / lhs=term DASH rhs=[factor] { Expr::Binary(lhs.into(), BinOp::Sub, rhs.into()) }
     / factor=factor
     ;
 
 peg factor -> { Expr }:
-    / lhs=factor '*' rhs=[dot] { Expr::Binary(lhs.into(), BinOp::Mul, rhs.into()) }
-    / lhs=factor '/' rhs=[dot] { Expr::Binary(lhs.into(), BinOp::Div, rhs.into()) }
-    / lhs=factor '%' rhs=[dot] { Expr::Binary(lhs.into(), BinOp::Mod, rhs.into()) }
+    / lhs=factor ASTERISK rhs=[dot] { Expr::Binary(lhs.into(), BinOp::Mul, rhs.into()) }
+    / lhs=factor SLASH rhs=[dot] { Expr::Binary(lhs.into(), BinOp::Div, rhs.into()) }
+    / lhs=factor PERCENT rhs=[dot] { Expr::Binary(lhs.into(), BinOp::Mod, rhs.into()) }
     / dot=dot
     ;
 
 peg dot -> { Expr }:
-    / lhs=dot '@' rhs=[unary] { Expr::Binary(lhs.into(), BinOp::Dot, rhs.into()) }
+    / lhs=dot AT rhs=[unary] { Expr::Binary(lhs.into(), BinOp::Dot, rhs.into()) }
     / unary=unary
     ;
 
 peg unary -> { Expr }:
-    / '+' unary=[unary] { Expr::Unary(UnaOp::Pos, unary.into()) }
-    / '-' unary=[unary] { Expr::Unary(UnaOp::Neg, unary.into()) }
+    / PLUS unary=[unary] { Expr::Unary(UnaOp::Pos, unary.into()) }
+    / DASH unary=[unary] { Expr::Unary(UnaOp::Neg, unary.into()) }
     / call=call
     ;
 
 peg call -> { Expr }:
-    / call=call '(' args=args? [')'] {
+    / call=call DOT ident=[IDENT] LPAR args=args? [RPAR] {
+        Expr::Method(call.into(), ident, args)
+    }
+    / call=call DOT ident=[IDENT] {
+        Expr::Field(call.into(), ident)
+    }
+    / call=call LPAR args=args? [RPAR] {
         Expr::Call(call.into(), args)
+    }
+    / call=call LSQB index=expr [RSQB] {
+        Expr::Index(call.into(), index.into())
     }
     / primary=primary
     ;
 
 peg args -> { BufVec<Expr, 1> }:
-    / first=expr more=(',' expr=expr)* ','? { BufVec::new([first], more) }
+    / first=expr more=(COMMA expr=expr)* COMMA? { BufVec::new([first], more) }
     ;
 
 peg primary -> { Expr }:
     / lit=lit { Expr::Lit(lit) }
-    / ident=#ident { Expr::Ident(ident) }
-    / RUST ident=[#ident] { Expr::Rust(ident) }
-    / '(' expr=[expr] ')' { Expr::Paren(expr.into()) }
-    / '(' first=[expr] [','] second=[expr] more=(',' expr=expr)* ','? [')'] {
+    / path=path { Expr::Path(path) }
+    / LPAR expr=[expr] RPAR { Expr::Paren(expr.into()) }
+    / LPAR first=[expr] [COMMA] second=[expr] more=(COMMA expr=expr)* COMMA? [RPAR] {
         Expr::Tuple(BufVec::new([first, second], more))
     }
-    / '[' first=row more=row* [']'] { Expr::Matrix(BufVec::new([first], more)) }
-    / '[' args=args? [']'] { Expr::List(args) }
-    / '|' params=params? ['|'] expr=[expr] { Expr::Closure(params, expr.into()) }
-    / '<' rows=[INT] [','] cols=[INT] ['>'] { Expr::Param(rows, cols, x.__stream.cursor) }
+    / LSQB args=args? [RSQB] { Expr::List(args) }
+    / IF expr=[expr] block=[block] otherwise=(ELSE expr=[expr])? {
+        Expr::If(expr.into(), block, otherwise.map(Rc::new))
+    }
+    / LOOP block=[block] { Expr::Loop(block) }
+    / block=block { Expr::Block(block) }
     ;
 
-peg row -> { BufVec<Float, 1> }:
-    / first=FLOAT more=(',' f=FLOAT)* ';' { BufVec::new([first], more) }
+peg params -> { BufVec<usize, 1> }:
+    / first=IDENT more=(COMMA ident=IDENT)* COMMA? { BufVec::new([first], more) }
     ;
 
-peg params -> { BufVec<Ident, 1> }:
-    / first=#ident more=(',' ident=#ident)* ','? { BufVec::new([first], more) }
+peg path -> { Path }:
+    / first=IDENT more=(COLON2 ident=[IDENT])* { Path(BufVec::new([first], more)) }
     ;
 
 peg lit -> { Lit }:
@@ -152,56 +180,85 @@ peg lit -> { Lit }:
     / bool=BOOL { Lit::Bool(bool) }
     ;
 
-lex FLOAT -> { Float }:
-    / float=UFX { Float::Positive(float) }
-    / '-' float=UFX { Float::Negative(float) }
+peg IDENT -> { usize }: T* ident=n2i ;
+
+peg FLOAT -> { usize }: T* float=FXX ;
+peg INT -> { usize }: T* int=USIZE ;
+peg STR -> { Vec<Chunk> }: T* '"' chunks=CHUNK* ['"'] ;
+peg BOOL -> { Bool }:
+    / T* "true" !TAIL { Bool::True }
+    / T* "false" !TAIL { Bool::False }
     ;
 
-lex INT -> { Int }: int=USIZE { Int(int) } ;
+peg FN: T* "fn" !TAIL ;
+peg MAIN: T* 'main' !TAIL ;
+peg GROUP: T* "group" !TAIL ;
+peg IMPL: T* "impl" !TAIL ;
+peg IF: T* "if" !TAIL ;
+peg ELSE: T* "else" !TAIL ;
+peg FOR: T* "for" !TAIL ;
+peg IN: T* "in" !TAIL ;
+peg WHILE: T* "while" !TAIL ;
+peg LOOP: T* "loop" !TAIL ;
+peg RETURN: T* "return" !TAIL ;
+peg BREAK: T* "break" !TAIL ;
+peg CONTINUE: T* "continue" !TAIL ;
+peg SELF: T* 'self' !TAIL ;
 
-lex STR -> { Vec<Chunk> }: '"' chunks=CHUNK* ['"'] ;
+peg OR: T* "or" !TAIL ;
+peg AND: T* "and" !TAIL ;
+peg NOT: T* "not" !TAIL ;
+peg EQ2: T* '==' ;
+peg NEQ: T* '!=' ;
+peg GE: T* '>=' ;
+peg LE: T* '<=' ;
+peg GT: T* '>' ;
+peg LT: T* '<' ;
+peg PLUS: T* '+' ;
+peg DASH: T* '-' ;
+peg ASTERISK: T* '*' ;
+peg SLASH: T* '/' ;
+peg PERCENT: T* '%' ;
+peg DOT: T* '.' ;
+peg AT: T* '@' ;
 
-lex CHUNK -> { Chunk }:
+peg EQ: T* '=' !'=' ;
+peg ADDEQ: T* '+=' ;
+peg SUBEQ: T* '-=' ;
+peg MULEQ: T* '*=' ;
+peg DIVEQ: T* '/=' ;
+peg MODEQ: T* '%=' ;
+
+peg LPAR: T* '(' ;
+peg RPAR: T* ')' ;
+peg LBRA: T* '{' ;
+peg RBRA: T* '}' ;
+peg LSQB: T* '[' ;
+peg RSQB: T* ']' ;
+peg COMMA: T* ',' ;
+peg SEMI: T* ';' ;
+peg COLON2: T* '::' ;
+peg UNDERSCORE: T* '_' ;
+
+peg EOF: T* # ;
+
+peg CHUNK -> { Chunk }:
     / slice=SLICE { Chunk::Slice(slice) }
     / '\\u{' hex=[HEX] ['}'] { Chunk::Unicode(hex) }
     / '\\' escape=[ESCAPE] { Chunk::Escape(escape) }
     ;
 
-lex BOOL -> { Bool }:
-    / "true" !TAIL { Bool::True }
-    / "false" !TAIL { Bool::False }
-    ;
-
-lex UNDERSCORE: "_" !TAIL ;
-lex BREAK: "break" !TAIL ;
-lex CONTINUE: "continue" !TAIL ;
-lex FOR: "for" !TAIL ;
-lex IN: "in" !TAIL ;
-lex IF: "if" !TAIL ;
-lex LOOP: "loop" !TAIL ;
-lex RETURN: "return" !TAIL ;
-lex WHILE: "while" !TAIL ;
-lex ELSE: "else" !TAIL ;
-lex OR: "or" !TAIL ;
-lex AND: "and" !TAIL ;
-lex NOT: "not" !TAIL ;
-lex STEP: "step" !TAIL ;
-lex BY: "by" !TAIL ;
-lex PRINT: "print" !TAIL ;
-lex RUST: "rust" !TAIL ;
-
-@(memo)
-rex IDENT: [a-zA-Z_] TAIL* ;
-
+rex NAME: [a-zA-Z_] TAIL* ;
+@(fast)
 rex TAIL: [a-zA-Z0-9_] ;
+
 rex USIZE: '0' | [1-9][0-9]* ;
-rex UFX: [1-9][0-9]* '.' [0-9]+ | '0.' [0-9]+;
+rex FXX: [1-9][0-9]* '.' [0-9]+ | '0.' [0-9]+;
 rex SLICE: [^"\\]+ ;
-rex HEX: [0-9a-f]* ;
-rex ESCAPE: ['ntr\\] ;
+rex HEX: [0-9a-fA-F]+ ;
+rex ESCAPE: ['"ntr\\] ;
 
-@(ws)
+@(fast)
+rex T: WS | COMMENT ;
 rex WS: [\u{20}\n\t\r]+ ;
-
-@(ws)
 rex COMMENT: '//' [^\n]* ;
