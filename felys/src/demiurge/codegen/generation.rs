@@ -9,8 +9,8 @@ use std::hash::Hash;
 
 struct Context {
     consts: Pooling<Const>,
-    groups: Caching<Group, Group>,
-    functions: Caching<Callable, Function>,
+    groups: Worker<Group, Group>,
+    functions: Worker<Callable, Function>,
 }
 
 struct Pooling<T> {
@@ -30,13 +30,13 @@ impl<T: Hash + Eq + Clone> Pooling<T> {
     }
 }
 
-struct Caching<T, S> {
+struct Worker<T, S> {
     pool: HashMap<usize, T>,
     indices: HashMap<usize, usize>,
     source: HashMap<usize, S>,
 }
 
-impl<T, S> Caching<T, S> {
+impl<T, S> Worker<T, S> {
     fn linearize(mut self) -> Vec<T> {
         let mut i = 0;
         let mut all = Vec::new();
@@ -55,12 +55,12 @@ impl Context {
                 pool: Vec::new(),
                 fast: HashMap::new(),
             },
-            groups: Caching {
+            groups: Worker {
                 pool: HashMap::new(),
                 indices: HashMap::new(),
                 source: gps,
             },
-            functions: Caching {
+            functions: Worker {
                 pool: HashMap::new(),
                 indices: HashMap::new(),
                 source: fns,

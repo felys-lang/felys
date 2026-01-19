@@ -10,11 +10,11 @@
 
 ## What is the Felys Programming Language?
 
-Felys is a programming language written in Rust. The motivation is to create a language where Elysia exists, so regardless of how this project evolves in the future, there must exist a built-in identifier named `__elysia__`. Feel free to try it using the online [playground](https://exec.felys.dev/).
+Felys is an interpreted programming language written in Rust that comes with a compiler and a runtime. Feel free to try it using the online [playground](https://exec.felys.dev/). Please note, however, that the playground version is a lot behind this repository due to a complete reconstruction to fit the compilation framework. It will be updated once development is complete.
   
 ## License
 
-Distributed under the terms of the [MIT License](LICENSE).
+Distributed under the terms of the [LICENSE](LICENSE).
 
 ## Copyright
 
