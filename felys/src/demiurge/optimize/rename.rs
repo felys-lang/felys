@@ -111,7 +111,7 @@ impl Instruction {
                 *src = renamer.get(*src);
                 args.iter_mut().for_each(|x| *x = renamer.get(*x));
             }
-            Instruction::Group(_, _) | Instruction::Function(_, _) | Instruction::Load(_, _) => {}
+            Instruction::Pointer(_, _, _) | Instruction::Load(_, _) => {}
         }
     }
 }

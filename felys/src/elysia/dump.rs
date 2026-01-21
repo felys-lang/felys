@@ -1,5 +1,5 @@
-use crate::utils::ast::{BinOp, UnaOp};
 use crate::demiurge::Bytecode;
+use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::group::Group;
 use crate::utils::ir::Const;
 use std::io::Write;

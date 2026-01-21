@@ -1,5 +1,5 @@
-use crate::utils::ast::Lit;
 use crate::cyrene::fault::Fault;
+use crate::utils::ast::Lit;
 use crate::utils::function::{Function, Phi};
 use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
 use std::collections::{HashMap, HashSet};

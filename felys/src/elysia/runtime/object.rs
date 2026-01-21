@@ -1,6 +1,7 @@
-use crate::utils::ast::{BinOp, UnaOp};
 use crate::demiurge::Idx;
 use crate::elysia::fault::Fault;
+use crate::utils::ast::{BinOp, UnaOp};
+use crate::utils::ir::Pointer;
 use std::rc::Rc;
 
 #[derive(Clone, Debug)]
@@ -14,12 +15,6 @@ pub enum Object {
     Float(f64),
     Bool(bool),
     Void,
-}
-
-#[derive(Clone, Debug)]
-pub enum Pointer {
-    Function,
-    Group,
 }
 
 impl Object {

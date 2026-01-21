@@ -1,10 +1,11 @@
+use crate::elysia::Object;
+use crate::philia093::Intern;
 use crate::utils::ast::{
     AssOp, BinOp, Block, Bool, Chunk, Expr, Item, Lit, Pat, Path, Root, Stmt, UnaOp,
 };
-use crate::elysia::{Object, Pointer};
-use crate::philia093::Intern;
-use std::fmt::{Display, Formatter, Write};
 use crate::utils::group::Group;
+use crate::utils::ir::Pointer;
+use std::fmt::{Display, Formatter, Write};
 
 impl Root {
     pub fn recover<W: Write>(

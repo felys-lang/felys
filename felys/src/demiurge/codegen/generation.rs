@@ -3,7 +3,7 @@ use crate::demiurge::{Bytecode, Demiurge, Reg};
 use crate::elysia::{Callable, Elysia};
 use crate::utils::function::Function;
 use crate::utils::group::Group;
-use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
+use crate::utils::ir::{Const, Instruction, Label, Pointer, Terminator, Var};
 use std::collections::HashMap;
 use std::hash::Hash;
 
@@ -171,12 +171,12 @@ impl Instruction {
                 *alloc.get(src).unwrap_or(&0),
                 *idx,
             ),
-            Instruction::Group(dst, id) => {
-                Bytecode::Group(*alloc.get(dst).unwrap_or(&0), ctx.group(*id))
-            }
-            Instruction::Function(dst, id) => {
-                Bytecode::Function(*alloc.get(dst).unwrap_or(&0), ctx.function(*id))
-            }
+            Instruction::Pointer(dst, ptr, id) => match ptr {
+                Pointer::Function => {
+                    Bytecode::Function(*alloc.get(dst).unwrap_or(&0), ctx.function(*id))
+                }
+                Pointer::Group => Bytecode::Group(*alloc.get(dst).unwrap_or(&0), ctx.group(*id)),
+            },
             Instruction::Load(dst, id) => {
                 Bytecode::Load(*alloc.get(dst).unwrap_or(&0), ctx.consts.index(id.clone()))
             }

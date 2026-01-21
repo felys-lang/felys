@@ -133,7 +133,7 @@ impl Instruction {
                 add(src);
                 args.iter().for_each(add);
             }
-            Instruction::Group(_, _) | Instruction::Function(_, _) | Instruction::Load(_, _) => {}
+            Instruction::Pointer(_, _, _) | Instruction::Load(_, _) => {}
         }
     }
 
@@ -141,7 +141,6 @@ impl Instruction {
         match self {
             Instruction::Field(dst, _, _)
             | Instruction::Unpack(dst, _, _)
-            | Instruction::Function(dst, _)
             | Instruction::Load(dst, _)
             | Instruction::Binary(dst, _, _, _)
             | Instruction::Unary(dst, _, _)
@@ -150,7 +149,7 @@ impl Instruction {
             | Instruction::Tuple(dst, _)
             | Instruction::Index(dst, _, _)
             | Instruction::Method(dst, _, _, _)
-            | Instruction::Group(dst, _) => *dst,
+            | Instruction::Pointer(dst, _, _) => *dst,
         }
     }
 

@@ -152,9 +152,7 @@ impl Instruction {
                     ctx.using(arg, index);
                 }
             }
-            Instruction::Group(dst, _)
-            | Instruction::Function(dst, _)
-            | Instruction::Load(dst, _) => {
+            Instruction::Pointer(dst, _, _) | Instruction::Load(dst, _) => {
                 ctx.define(dst, index);
             }
         }

@@ -188,13 +188,12 @@ impl Instruction {
             }
             Instruction::Field(dst, _, _)
             | Instruction::Unpack(dst, _, _)
-            | Instruction::Function(dst, _)
             | Instruction::Call(dst, _, _)
             | Instruction::List(dst, _)
             | Instruction::Tuple(dst, _)
             | Instruction::Index(dst, _, _)
             | Instruction::Method(dst, _, _, _)
-            | Instruction::Group(dst, _) => meta.update(*dst, Lattice::Bottom),
+            | Instruction::Pointer(dst, _, _) => meta.update(*dst, Lattice::Bottom),
         }
         Ok(())
     }
@@ -218,7 +217,7 @@ impl Instruction {
             Instruction::List(_, args) | Instruction::Tuple(_, args) => {
                 args.iter().for_each(update);
             }
-            Instruction::Group(_, _) | Instruction::Function(_, _) | Instruction::Load(_, _) => {}
+            Instruction::Pointer(_, _, _) | Instruction::Load(_, _) => {}
         }
     }
 }

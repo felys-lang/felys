@@ -1,9 +1,9 @@
-use crate::utils::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Path, Stmt};
 use crate::cyrene::context::{Context, Id};
 use crate::cyrene::fault::Fault;
 use crate::cyrene::meta::Meta;
+use crate::utils::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Path, Stmt};
 use crate::utils::function::Function;
-use crate::utils::ir::{Const, Instruction, Label, Var};
+use crate::utils::ir::{Const, Instruction, Label, Pointer, Var};
 
 type Stack = Vec<(Label, Label, Option<(Option<Id>, bool)>)>;
 
@@ -379,9 +379,9 @@ impl Path {
         }
         let var = ctx.var();
         if let Some(id) = meta.constructors.get(self.0.iter()) {
-            ctx.push(Instruction::Group(var, id));
+            ctx.push(Instruction::Pointer(var, Pointer::Group, id));
         } else if let Some(id) = meta.ns.get(self.0.iter()) {
-            ctx.push(Instruction::Function(var, id));
+            ctx.push(Instruction::Pointer(var, Pointer::Function, id));
         } else {
             return Err(Fault::PathNotExist(self.clone()));
         }

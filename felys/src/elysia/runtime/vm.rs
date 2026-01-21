@@ -1,8 +1,8 @@
 use crate::demiurge::{Bytecode, Reg};
 use crate::elysia::fault::Fault;
-use crate::elysia::runtime::object::{Object, Pointer};
+use crate::elysia::runtime::object::Object;
 use crate::elysia::{Callable, Elysia};
-use crate::utils::ir::Const;
+use crate::utils::ir::{Const, Pointer};
 
 impl Elysia {
     pub fn exec(&self, args: Object) -> Result<String, String> {

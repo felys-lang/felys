@@ -5,8 +5,7 @@ use std::rc::Rc;
 pub enum Instruction {
     Field(Var, Var, usize),
     Unpack(Var, Var, usize),
-    Group(Var, usize),
-    Function(Var, usize),
+    Pointer(Var, Pointer, usize),
     Load(Var, Const),
     Binary(Var, Var, BinOp, Var),
     Unary(Var, UnaOp, Var),
@@ -15,6 +14,12 @@ pub enum Instruction {
     Tuple(Var, Vec<Var>),
     Index(Var, Var, Var),
     Method(Var, Var, usize, Vec<Var>),
+}
+
+#[derive(Clone, Debug)]
+pub enum Pointer {
+    Function,
+    Group,
 }
 
 #[derive(Debug)]
