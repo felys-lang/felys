@@ -172,10 +172,14 @@ impl Instruction {
                 *idx,
             ),
             Instruction::Pointer(dst, ptr, id) => match ptr {
-                Pointer::Function => {
-                    Bytecode::Function(*alloc.get(dst).unwrap_or(&0), ctx.function(*id))
+                Pointer::Function => Bytecode::Pointer(
+                    *alloc.get(dst).unwrap_or(&0),
+                    ptr.clone(),
+                    ctx.function(*id),
+                ),
+                Pointer::Group => {
+                    Bytecode::Pointer(*alloc.get(dst).unwrap_or(&0), ptr.clone(), ctx.group(*id))
                 }
-                Pointer::Group => Bytecode::Group(*alloc.get(dst).unwrap_or(&0), ctx.group(*id)),
             },
             Instruction::Load(dst, id) => {
                 Bytecode::Load(*alloc.get(dst).unwrap_or(&0), ctx.consts.index(id.clone()))

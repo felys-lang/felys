@@ -14,12 +14,7 @@ pub struct Cyrene {
 
 impl Cyrene {
     pub fn cfg(self) -> Result<Demiurge, String> {
-        let mut meta = Meta {
-            ns: Default::default(),
-            constructors: Default::default(),
-            intern: self.intern,
-            groups: Default::default(),
-        };
+        let mut meta = Meta::new(self.intern);
 
         for item in self.root.0.iter() {
             item.allocate(&mut meta)
@@ -67,7 +62,7 @@ impl Item {
                 }
             }
             Item::Fn(id, _, _) => {
-                meta.ns
+                meta.functions
                     .add([*id].iter())
                     .ok_or(Fault::DuplicatePath(BufVec::new([*id], vec![])))?;
             }
@@ -86,7 +81,7 @@ impl Item {
             Item::Fn(id, args, block) => {
                 let args = args.as_ref().map(|x| x.vec()).unwrap_or_default();
                 let function = block.function(args, meta)?;
-                let src = meta.ns.get([*id].iter()).unwrap();
+                let src = meta.functions.get([*id].iter()).unwrap();
                 fns.insert(src, function);
             }
             Item::Main(args, block) => *main = Some(block.function(vec![*args], meta)?),
@@ -105,14 +100,14 @@ impl Impl {
     fn attach(&self, id: usize, meta: &mut Meta) -> Result<(), Fault> {
         match self {
             Impl::Associated(sid, _, _) => {
-                meta.ns
+                meta.functions
                     .add([id, *sid].iter())
                     .ok_or(Fault::DuplicatePath(BufVec::new([id], vec![*sid])))?;
             }
             Impl::Method(sid, _, _) => {
                 let gid = meta.constructors.get([id].iter()).unwrap();
                 let src = meta
-                    .ns
+                    .functions
                     .add([id, *sid].iter())
                     .ok_or(Fault::DuplicatePath(BufVec::new([id], vec![*sid])))?;
                 let group = meta.groups.get_mut(&gid).unwrap();
@@ -132,14 +127,14 @@ impl Impl {
             Impl::Associated(sid, args, block) => {
                 let args = args.as_ref().map(|x| x.vec()).unwrap_or_default();
                 let function = block.function(args, meta)?;
-                let src = meta.ns.get([id, *sid].iter()).unwrap();
+                let src = meta.functions.get([id, *sid].iter()).unwrap();
                 fns.insert(src, function);
             }
             Impl::Method(sid, args, block) => {
                 let s = meta.intern.id("self");
                 let args = [s].iter().chain(args).cloned().collect();
                 let function = block.function(args, meta)?;
-                let src = meta.ns.get([id, *sid].iter()).unwrap();
+                let src = meta.functions.get([id, *sid].iter()).unwrap();
                 fns.insert(src, function);
             }
         }

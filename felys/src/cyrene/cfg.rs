@@ -380,7 +380,7 @@ impl Path {
         let var = ctx.var();
         if let Some(id) = meta.constructors.get(self.0.iter()) {
             ctx.push(Instruction::Pointer(var, Pointer::Group, id));
-        } else if let Some(id) = meta.ns.get(self.0.iter()) {
+        } else if let Some(id) = meta.functions.get(self.0.iter()) {
             ctx.push(Instruction::Pointer(var, Pointer::Function, id));
         } else {
             return Err(Fault::PathNotExist(self.clone()));

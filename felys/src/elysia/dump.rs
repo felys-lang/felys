@@ -1,7 +1,7 @@
 use crate::demiurge::Bytecode;
 use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::group::Group;
-use crate::utils::ir::Const;
+use crate::utils::ir::{Const, Pointer};
 use std::io::Write;
 
 pub struct Elysia {
@@ -50,11 +50,8 @@ impl Bytecode {
                 buf.write_all(&[0x1, *dst as u8, *src as u8])?;
                 buf.write_all(&(*idx as u32).to_le_bytes())?;
             }
-            Bytecode::Group(dst, idx) => {
-                buf.write_all(&[0x2, *dst as u8, *idx as u8])?;
-            }
-            Bytecode::Function(dst, idx) => {
-                buf.write_all(&[0x3, *dst as u8, *idx as u8])?;
+            Bytecode::Pointer(dst, ptr, idx) => {
+                buf.write_all(&[0x2, *dst as u8, ptr.into(), *idx as u8])?;
             }
             Bytecode::Load(dst, idx) => {
                 buf.write_all(&[0x4, *dst as u8, *idx as u8])?;
@@ -132,6 +129,15 @@ impl From<&UnaOp> for u8 {
             UnaOp::Not => 0x0,
             UnaOp::Pos => 0x1,
             UnaOp::Neg => 0x2,
+        }
+    }
+}
+
+impl From<&Pointer> for u8 {
+    fn from(value: &Pointer) -> Self {
+        match value {
+            Pointer::Function => 0x0,
+            Pointer::Group => 0x1,
         }
     }
 }

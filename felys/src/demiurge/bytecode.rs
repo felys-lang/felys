@@ -1,7 +1,7 @@
 use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::function::{Fragment, Function};
 use crate::utils::group::Group;
-use crate::utils::ir::{Label, Terminator};
+use crate::utils::ir::{Label, Pointer, Terminator};
 use std::collections::{HashMap, HashSet};
 
 pub struct Demiurge {
@@ -71,8 +71,7 @@ impl Function {
 pub enum Bytecode {
     Field(Reg, Reg, usize),
     Unpack(Reg, Reg, usize),
-    Group(Reg, Idx),
-    Function(Reg, Idx),
+    Pointer(Reg, Pointer, Idx),
     Load(Reg, Idx),
     Binary(Reg, Reg, BinOp, Reg),
     Unary(Reg, UnaOp, Reg),

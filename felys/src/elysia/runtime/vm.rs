@@ -158,16 +158,18 @@ impl Bytecode {
                     .ok_or(Fault::NotEnoughToUnpack(tmp, *idx))?;
                 frame.store(*dst, obj)?;
             }
-            Bytecode::Group(dst, idx) => {
-                let (_, frame) = rt.active();
-                let obj = Object::Pointer(Pointer::Group, *idx);
-                frame.store(*dst, obj)?;
-            }
-            Bytecode::Function(dst, idx) => {
-                let (_, frame) = rt.active();
-                let obj = Object::Pointer(Pointer::Function, *idx);
-                frame.store(*dst, obj)?;
-            }
+            Bytecode::Pointer(dst, ptr, idx) => match ptr {
+                Pointer::Function => {
+                    let (_, frame) = rt.active();
+                    let obj = Object::Pointer(Pointer::Function, *idx);
+                    frame.store(*dst, obj)?;
+                }
+                Pointer::Group => {
+                    let (_, frame) = rt.active();
+                    let obj = Object::Pointer(Pointer::Group, *idx);
+                    frame.store(*dst, obj)?;
+                }
+            },
             Bytecode::Load(dst, idx) => {
                 let (_, frame) = rt.active();
                 let obj = elysia
