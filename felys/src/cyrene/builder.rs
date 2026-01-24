@@ -46,8 +46,8 @@ impl Item {
         if let Item::Group(id, fields) = self {
             let group = Group::new(fields.iter().copied().collect());
             let gid = meta
-                .constructors
-                .add([*id].iter())
+                .namespace
+                .allocate(&[], *id)
                 .ok_or(Fault::DuplicatePath(BufVec::new([*id], vec![])))?;
             meta.groups.insert(gid, group);
         }
@@ -62,8 +62,8 @@ impl Item {
                 }
             }
             Item::Fn(id, _, _) => {
-                meta.functions
-                    .add([*id].iter())
+                meta.namespace
+                    .attach(&[], *id)
                     .ok_or(Fault::DuplicatePath(BufVec::new([*id], vec![])))?;
             }
             _ => {}
@@ -81,7 +81,7 @@ impl Item {
             Item::Fn(id, args, block) => {
                 let args = args.as_ref().map(|x| x.vec()).unwrap_or_default();
                 let function = block.function(args, meta)?;
-                let src = meta.functions.get([*id].iter()).unwrap();
+                let (_, src) = meta.namespace.get([*id].iter()).unwrap();
                 fns.insert(src, function);
             }
             Item::Main(args, block) => *main = Some(block.function(vec![*args], meta)?),
@@ -100,15 +100,15 @@ impl Impl {
     fn attach(&self, id: usize, meta: &mut Meta) -> Result<(), Fault> {
         match self {
             Impl::Associated(sid, _, _) => {
-                meta.functions
-                    .add([id, *sid].iter())
+                meta.namespace
+                    .attach(&[id], *sid)
                     .ok_or(Fault::DuplicatePath(BufVec::new([id], vec![*sid])))?;
             }
             Impl::Method(sid, _, _) => {
-                let gid = meta.constructors.get([id].iter()).unwrap();
+                let (_, gid) = meta.namespace.get([id].iter()).unwrap();
                 let src = meta
-                    .functions
-                    .add([id, *sid].iter())
+                    .namespace
+                    .attach(&[id], *sid)
                     .ok_or(Fault::DuplicatePath(BufVec::new([id], vec![*sid])))?;
                 let group = meta.groups.get_mut(&gid).unwrap();
                 group.methods.insert(*sid, src);
@@ -127,14 +127,14 @@ impl Impl {
             Impl::Associated(sid, args, block) => {
                 let args = args.as_ref().map(|x| x.vec()).unwrap_or_default();
                 let function = block.function(args, meta)?;
-                let src = meta.functions.get([id, *sid].iter()).unwrap();
+                let (_, src) = meta.namespace.get([id, *sid].iter()).unwrap();
                 fns.insert(src, function);
             }
             Impl::Method(sid, args, block) => {
                 let s = meta.intern.id("self");
                 let args = [s].iter().chain(args).cloned().collect();
                 let function = block.function(args, meta)?;
-                let src = meta.functions.get([id, *sid].iter()).unwrap();
+                let (_, src) = meta.namespace.get([id, *sid].iter()).unwrap();
                 fns.insert(src, function);
             }
         }

@@ -1,10 +1,10 @@
 use crate::philia093::Intern;
 use crate::utils::group::Group;
+use crate::utils::ir::Pointer;
 use std::collections::HashMap;
 
 pub struct Meta {
-    pub functions: Namespace,
-    pub constructors: Namespace,
+    pub namespace: Namespace,
     pub intern: Intern,
     pub groups: HashMap<usize, Group>,
 }
@@ -12,8 +12,7 @@ pub struct Meta {
 impl Meta {
     pub fn new(intern: Intern) -> Self {
         Self {
-            functions: Default::default(),
-            constructors: Default::default(),
+            namespace: Default::default(),
             intern,
             groups: Default::default(),
         }
@@ -27,46 +26,89 @@ pub struct Namespace {
 }
 
 enum Node {
-    Id(usize),
-    Node(HashMap<usize, Node>),
+    Group(usize, HashMap<usize, usize>),
+    Function(usize),
+    Rust(usize),
+    Redirect(HashMap<usize, Node>),
 }
 
 impl Namespace {
-    pub fn add<'a>(&mut self, path: impl Iterator<Item = &'a usize>) -> Option<usize> {
-        let mut map = &mut self.tree;
-        let mut iter = path.peekable();
+    pub fn allocate(&mut self, path: &[usize], name: usize) -> Option<usize> {
+        let id = self.id();
+        let mut cursor = &mut self.tree;
 
-        while let Some(ident) = iter.next() {
-            if iter.peek().is_none() {
-                let id = self.ids;
-                if map.insert(*ident, Node::Id(id)).is_some() {
-                    return None;
-                }
-                self.ids += 1;
-                return Some(id);
-            } else {
-                let node = Node::Node(HashMap::new());
-                map = match map.entry(*ident).or_insert(node) {
-                    Node::Node(next) => next,
-                    Node::Id(_) => return None,
-                };
-            }
+        for space in path {
+            let node = cursor
+                .entry(*space)
+                .or_insert(Node::Redirect(HashMap::new()));
+            let Node::Redirect(next) = node else {
+                return None;
+            };
+            cursor = next;
         }
-        None
+        if cursor
+            .insert(name, Node::Group(id, HashMap::new()))
+            .is_some()
+        {
+            return None;
+        };
+        Some(id)
     }
 
-    pub fn get<'a>(&self, path: impl Iterator<Item = &'a usize>) -> Option<usize> {
-        let mut map = &self.tree;
-        let mut iter = path.peekable();
+    pub fn attach(&mut self, path: &[usize], name: usize) -> Option<usize> {
+        let id = self.id();
+        let mut cursor = &mut self.tree;
 
-        while let Some(ident) = iter.next() {
-            let node = map.get(ident)?;
-            match (node, iter.peek().is_none()) {
-                (Node::Node(next), false) => map = next,
-                (Node::Id(x), true) => return Some(*x),
-                _ => return None,
-            }
+        for space in path {
+            let node = cursor
+                .entry(*space)
+                .or_insert(Node::Redirect(HashMap::new()));
+            match node {
+                Node::Group(_, group) => {
+                    return if group.insert(name, id).is_none() {
+                        Some(id)
+                    } else {
+                        None
+                    };
+                }
+                Node::Function(_) | Node::Rust(_) => return None,
+                Node::Redirect(next) => cursor = next,
+            };
         }
-        None
+        if cursor.insert(name, Node::Function(id)).is_none() {
+            Some(id)
+        } else {
+            None
+        }
+    }
+
+    pub fn get<'a>(&self, mut path: impl Iterator<Item = &'a usize>) -> Option<(Pointer, usize)> {
+        let mut cursor = &self.tree;
+        let mut tmp = None;
+
+        while let Some(space) = path.next() {
+            if tmp.is_some() {
+                return None;
+            }
+            match cursor.get(space)? {
+                Node::Group(x, methods) => {
+                    if let Some(next) = path.next() {
+                        tmp = Some((Pointer::Function, *methods.get(next)?));
+                    } else {
+                        tmp = Some((Pointer::Group, *x));
+                    }
+                }
+                Node::Function(x) => tmp = Some((Pointer::Function, *x)),
+                Node::Rust(x) => tmp = Some((Pointer::Function, *x)),
+                Node::Redirect(next) => cursor = next,
+            };
+        }
+        tmp
+    }
+
+    fn id(&mut self) -> usize {
+        let id = self.ids;
+        self.ids += 1;
+        id
     }
 }
