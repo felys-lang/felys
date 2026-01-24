@@ -158,7 +158,7 @@ impl Bytecode {
                     .ok_or(Fault::NotEnoughToUnpack(tmp, *idx))?;
                 frame.store(*dst, obj)?;
             }
-            Bytecode::Pointer(dst, ptr, idx) => match ptr {
+            Bytecode::Pointer(dst, pt, idx) => match pt {
                 Pointer::Function => {
                     let (_, frame) = rt.active();
                     let obj = Object::Pointer(Pointer::Function, *idx);
@@ -167,6 +167,11 @@ impl Bytecode {
                 Pointer::Group => {
                     let (_, frame) = rt.active();
                     let obj = Object::Pointer(Pointer::Group, *idx);
+                    frame.store(*dst, obj)?;
+                }
+                Pointer::Rust => {
+                    let (_, frame) = rt.active();
+                    let obj = Object::Pointer(Pointer::Rust, *idx);
                     frame.store(*dst, obj)?;
                 }
             },
@@ -197,7 +202,10 @@ impl Bytecode {
                 let (ty, idx) = frame.load(*src)?.pointer()?;
                 match ty {
                     Pointer::Function => {
-                        let callable = elysia.text.get(idx).ok_or(Fault::NotExist("group", idx))?;
+                        let callable = elysia
+                            .text
+                            .get(idx)
+                            .ok_or(Fault::NotExist("function", idx))?;
                         let mut objs = callable.loader();
                         for arg in args {
                             let obj = frame.load(*arg)?;
@@ -220,6 +228,15 @@ impl Bytecode {
                             return Err(Fault::NumArgsNotMatch(expected, objs));
                         }
                         frame.store(*dst, Object::Group(idx, objs.into()))?;
+                    }
+                    Pointer::Rust => {
+                        let f = elysia.rust.get(idx).ok_or(Fault::NotExist("rust", idx))?;
+                        let mut objs = Vec::with_capacity(args.len());
+                        for arg in args {
+                            let obj = frame.load(*arg)?;
+                            objs.push(obj);
+                        }
+                        frame.store(*dst, f(objs, elysia))?;
                     }
                 };
             }

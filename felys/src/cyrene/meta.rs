@@ -1,25 +1,30 @@
 use crate::philia093::Intern;
+use crate::utils::function::Function;
 use crate::utils::group::Group;
 use crate::utils::ir::Pointer;
+use crate::utils::stdlib::utils::stdlib;
 use std::collections::HashMap;
 
 pub struct Meta {
     pub namespace: Namespace,
     pub intern: Intern,
     pub groups: HashMap<usize, Group>,
+    pub functions: HashMap<usize, Function>,
+    pub main: Option<Function>,
 }
 
 impl Meta {
-    pub fn new(intern: Intern) -> Self {
+    pub fn new(mut intern: Intern) -> Self {
         Self {
-            namespace: Default::default(),
+            namespace: Namespace::init(&mut intern),
             intern,
             groups: Default::default(),
+            functions: Default::default(),
+            main: None,
         }
     }
 }
 
-#[derive(Default)]
 pub struct Namespace {
     ids: usize,
     tree: HashMap<usize, Node>,
@@ -33,6 +38,23 @@ enum Node {
 }
 
 impl Namespace {
+    fn init(intern: &mut Intern) -> Self {
+        let mut base = HashMap::new();
+        for (i, (sub, inner, _)) in stdlib().enumerate() {
+            if let Node::Redirect(x) = base
+                .entry(intern.id(sub))
+                .or_insert(Node::Redirect(HashMap::new()))
+            {
+                x.insert(intern.id(inner), Node::Rust(i));
+            }
+        }
+
+        Self {
+            ids: 0,
+            tree: HashMap::from([(intern.id("std"), Node::Redirect(base))]),
+        }
+    }
+
     pub fn allocate(&mut self, path: &[usize], name: usize) -> Option<usize> {
         let id = self.id();
         let mut cursor = &mut self.tree;
@@ -99,7 +121,7 @@ impl Namespace {
                     }
                 }
                 Node::Function(x) => tmp = Some((Pointer::Function, *x)),
-                Node::Rust(x) => tmp = Some((Pointer::Function, *x)),
+                Node::Rust(x) => tmp = Some((Pointer::Rust, *x)),
                 Node::Redirect(next) => cursor = next,
             };
         }

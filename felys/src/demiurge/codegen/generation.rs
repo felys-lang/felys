@@ -4,6 +4,7 @@ use crate::elysia::{Callable, Elysia};
 use crate::utils::function::Function;
 use crate::utils::group::Group;
 use crate::utils::ir::{Const, Instruction, Label, Pointer, Terminator, Var};
+use crate::utils::stdlib::utils::stdlib;
 use std::collections::HashMap;
 use std::hash::Hash;
 
@@ -104,6 +105,7 @@ impl Demiurge {
         Elysia {
             main: self.main.codegen(&mut ctx),
             text: ctx.functions.linearize(),
+            rust: stdlib().map(|(_, _, x)| x).collect(),
             data: ctx.consts.pool,
             groups: ctx.groups.linearize(),
         }
@@ -171,15 +173,16 @@ impl Instruction {
                 *alloc.get(src).unwrap_or(&0),
                 *idx,
             ),
-            Instruction::Pointer(dst, ptr, id) => match ptr {
+            Instruction::Pointer(dst, pt, ptr) => match pt {
                 Pointer::Function => Bytecode::Pointer(
                     *alloc.get(dst).unwrap_or(&0),
-                    ptr.clone(),
-                    ctx.function(*id),
+                    pt.clone(),
+                    ctx.function(*ptr),
                 ),
                 Pointer::Group => {
-                    Bytecode::Pointer(*alloc.get(dst).unwrap_or(&0), ptr.clone(), ctx.group(*id))
+                    Bytecode::Pointer(*alloc.get(dst).unwrap_or(&0), pt.clone(), ctx.group(*ptr))
                 }
+                Pointer::Rust => Bytecode::Pointer(*alloc.get(dst).unwrap_or(&0), pt.clone(), *ptr),
             },
             Instruction::Load(dst, id) => {
                 Bytecode::Load(*alloc.get(dst).unwrap_or(&0), ctx.consts.index(id.clone()))

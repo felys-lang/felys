@@ -300,9 +300,10 @@ impl Object {
     ) -> std::fmt::Result {
         const INDENT: &str = "    ";
         match self {
-            Object::Pointer(ptr, idx) => match ptr {
-                Pointer::Function => write!(f, "<{idx}>"),
-                Pointer::Group => write!(f, "<{idx}>"),
+            Object::Pointer(pt, ptr) => match pt {
+                Pointer::Function => write!(f, "<{ptr}>"),
+                Pointer::Group => write!(f, "<{ptr}>"),
+                Pointer::Rust => write!(f, "<{ptr}>"),
             },
             Object::List(objs) => {
                 write!(f, "[")?;

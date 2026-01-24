@@ -89,7 +89,7 @@ impl Context {
         fragment.terminator = Some(Terminator::Return(var));
     }
 
-    pub fn phi(&mut self, label: Label, var: Var, inputs: Vec<(Label, Var)>) {
+    fn phi(&mut self, label: Label, var: Var, inputs: Vec<(Label, Var)>) {
         let phi = Phi { var, inputs };
         self.f.modify(label).unwrap().phis.push(phi);
     }

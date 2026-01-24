@@ -20,6 +20,7 @@ pub enum Instruction {
 pub enum Pointer {
     Function,
     Group,
+    Rust,
 }
 
 #[derive(Debug)]

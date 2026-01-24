@@ -3,9 +3,7 @@ use crate::cyrene::meta::Meta;
 use crate::demiurge::Demiurge;
 use crate::philia093::Intern;
 use crate::utils::ast::{BufVec, Impl, Item, Root};
-use crate::utils::function::Function;
 use crate::utils::group::Group;
-use std::collections::HashMap;
 
 pub struct Cyrene {
     pub root: Root,
@@ -26,17 +24,16 @@ impl Cyrene {
                 .map_err(|e| e.recover(&meta.intern))?;
         }
 
-        let mut fns = HashMap::new();
-        let mut main = None;
         for item in self.root.0.iter() {
-            item.cfg(&mut meta, &mut fns, &mut main)
-                .map_err(|e| e.recover(&meta.intern))?;
+            item.cfg(&mut meta).map_err(|e| e.recover(&meta.intern))?;
         }
 
         Ok(Demiurge {
             gps: meta.groups,
-            fns,
-            main: main.ok_or(Fault::MainNotFound(self.root).recover(&meta.intern))?,
+            fns: meta.functions,
+            main: meta
+                .main
+                .ok_or(Fault::MainNotFound(self.root).recover(&meta.intern))?,
         })
     }
 }
@@ -44,12 +41,12 @@ impl Cyrene {
 impl Item {
     fn allocate(&self, meta: &mut Meta) -> Result<(), Fault> {
         if let Item::Group(id, fields) = self {
-            let group = Group::new(fields.iter().copied().collect());
-            let gid = meta
+            let gp = meta
                 .namespace
                 .allocate(&[], *id)
                 .ok_or(Fault::DuplicatePath(BufVec::new([*id], vec![])))?;
-            meta.groups.insert(gid, group);
+            let group = Group::new(fields.iter().copied().collect());
+            meta.groups.insert(gp, group);
         }
         Ok(())
     }
@@ -71,23 +68,18 @@ impl Item {
         Ok(())
     }
 
-    fn cfg(
-        &self,
-        meta: &mut Meta,
-        fns: &mut HashMap<usize, Function>,
-        main: &mut Option<Function>,
-    ) -> Result<(), Fault> {
+    fn cfg(&self, meta: &mut Meta) -> Result<(), Fault> {
         match self {
             Item::Fn(id, args, block) => {
                 let args = args.as_ref().map(|x| x.vec()).unwrap_or_default();
                 let function = block.function(args, meta)?;
-                let (_, src) = meta.namespace.get([*id].iter()).unwrap();
-                fns.insert(src, function);
+                let (_, ptr) = meta.namespace.get([*id].iter()).unwrap();
+                meta.functions.insert(ptr, function);
             }
-            Item::Main(args, block) => *main = Some(block.function(vec![*args], meta)?),
+            Item::Main(args, block) => meta.main = Some(block.function(vec![*args], meta)?),
             Item::Impl(id, impls) => {
                 for implementation in impls.iter() {
-                    implementation.cfg(*id, meta, fns)?;
+                    implementation.cfg(*id, meta)?;
                 }
             }
             _ => {}
@@ -99,43 +91,41 @@ impl Item {
 impl Impl {
     fn attach(&self, id: usize, meta: &mut Meta) -> Result<(), Fault> {
         match self {
-            Impl::Associated(sid, _, _) => {
+            Impl::Associated(secondary, _, _) => {
                 meta.namespace
-                    .attach(&[id], *sid)
-                    .ok_or(Fault::DuplicatePath(BufVec::new([id], vec![*sid])))?;
+                    .attach(&[id], *secondary)
+                    .ok_or(Fault::DuplicatePath(BufVec::new([id], vec![*secondary])))?;
             }
-            Impl::Method(sid, _, _) => {
-                let (_, gid) = meta.namespace.get([id].iter()).unwrap();
-                let src = meta
+            Impl::Method(secondary, _, _) => {
+                let ptr = meta
                     .namespace
-                    .attach(&[id], *sid)
-                    .ok_or(Fault::DuplicatePath(BufVec::new([id], vec![*sid])))?;
-                let group = meta.groups.get_mut(&gid).unwrap();
-                group.methods.insert(*sid, src);
+                    .attach(&[id], *secondary)
+                    .ok_or(Fault::DuplicatePath(BufVec::new([id], vec![*secondary])))?;
+                let (_, gp) = meta.namespace.get([id].iter()).unwrap();
+                let group = meta.groups.get_mut(&gp).unwrap();
+                group.methods.insert(*secondary, ptr);
             }
         }
         Ok(())
     }
 
-    fn cfg(
-        &self,
-        id: usize,
-        meta: &mut Meta,
-        fns: &mut HashMap<usize, Function>,
-    ) -> Result<(), Fault> {
+    fn cfg(&self, id: usize, meta: &mut Meta) -> Result<(), Fault> {
         match self {
-            Impl::Associated(sid, args, block) => {
+            Impl::Associated(secondary, args, block) => {
                 let args = args.as_ref().map(|x| x.vec()).unwrap_or_default();
                 let function = block.function(args, meta)?;
-                let (_, src) = meta.namespace.get([id, *sid].iter()).unwrap();
-                fns.insert(src, function);
+                let (_, ptr) = meta.namespace.get([id, *secondary].iter()).unwrap();
+                meta.functions.insert(ptr, function);
             }
-            Impl::Method(sid, args, block) => {
-                let s = meta.intern.id("self");
-                let args = [s].iter().chain(args).cloned().collect();
+            Impl::Method(secondary, args, block) => {
+                let args = [meta.intern.id("self")]
+                    .iter()
+                    .chain(args)
+                    .cloned()
+                    .collect();
                 let function = block.function(args, meta)?;
-                let (_, src) = meta.namespace.get([id, *sid].iter()).unwrap();
-                fns.insert(src, function);
+                let (_, ptr) = meta.namespace.get([id, *secondary].iter()).unwrap();
+                meta.functions.insert(ptr, function);
             }
         }
         Ok(())

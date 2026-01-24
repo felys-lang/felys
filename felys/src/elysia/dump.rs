@@ -2,11 +2,13 @@ use crate::demiurge::Bytecode;
 use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::group::Group;
 use crate::utils::ir::{Const, Pointer};
+use crate::utils::stdlib::utils::Signature;
 use std::io::Write;
 
 pub struct Elysia {
     pub main: Callable,
     pub text: Vec<Callable>,
+    pub rust: Vec<Signature>,
     pub data: Vec<Const>,
     pub groups: Vec<Group>,
 }
@@ -50,8 +52,8 @@ impl Bytecode {
                 buf.write_all(&[0x1, *dst as u8, *src as u8])?;
                 buf.write_all(&(*idx as u32).to_le_bytes())?;
             }
-            Bytecode::Pointer(dst, ptr, idx) => {
-                buf.write_all(&[0x2, *dst as u8, ptr.into(), *idx as u8])?;
+            Bytecode::Pointer(dst, pt, ptr) => {
+                buf.write_all(&[0x2, *dst as u8, pt.into(), *ptr as u8])?;
             }
             Bytecode::Load(dst, idx) => {
                 buf.write_all(&[0x4, *dst as u8, *idx as u8])?;
@@ -138,6 +140,7 @@ impl From<&Pointer> for u8 {
         match value {
             Pointer::Function => 0x0,
             Pointer::Group => 0x1,
+            Pointer::Rust => 0x2,
         }
     }
 }
