@@ -7,12 +7,6 @@ use crate::utils::ir::{Const, Instruction, Label, Var};
 
 type Stack = Vec<(Label, Label, Option<(Option<Id>, bool)>)>;
 
-const FELYS: [(&str, &str); 3] = [
-    ("__elysia__", "粉色妖精小姐♪"),
-    ("__cyrene__", "往昔的涟漪♪"),
-    ("__author__", "jonny.jin@uwaterloo.ca"),
-];
-
 impl Block {
     pub fn function(&self, args: Vec<usize>, meta: &mut Meta) -> Result<Function, Fault> {
         let mut stk = Vec::new();
@@ -20,13 +14,6 @@ impl Block {
         ctx.seal(Label::Entry)?;
         for id in args {
             let var = ctx.var();
-            ctx.define(ctx.cursor, Id::Interned(id), var);
-        }
-
-        for (identifier, string) in FELYS {
-            let var = ctx.var();
-            ctx.push(Instruction::Load(var, Const::Str(string.into())));
-            let id = meta.intern.id(identifier);
             ctx.define(ctx.cursor, Id::Interned(id), var);
         }
 

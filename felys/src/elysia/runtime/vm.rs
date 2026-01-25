@@ -5,21 +5,22 @@ use crate::elysia::{Callable, Elysia};
 use crate::utils::ir::{Const, Pointer};
 
 impl Elysia {
-    pub fn exec(&self, args: Object) -> Result<String, String> {
-        let exit = self.kernal(args).map_err(|e| e.recover(&self.groups))?;
+    pub fn exec(&self, args: Object) -> Result<(String, String), String> {
+        let (console, exit) = self.kernal(args).map_err(|e| e.recover(&self.groups))?;
         let mut buf = String::new();
         exit.recover(&mut buf, 0, &self.groups).unwrap();
-        Ok(buf)
+        Ok((console, buf))
     }
 
-    fn kernal(&self, args: Object) -> Result<Object, Fault> {
+    fn kernal(&self, args: Object) -> Result<(String, Object), Fault> {
         let mut runtime = self.init(args)?;
+        let mut console = String::new();
         loop {
             let (idx, frame) = runtime.active();
             let bytecode = self.loc(idx)?.loc(frame.pc)?;
             frame.pc += 1;
-            if let Some(exit) = bytecode.exec(self, &mut runtime)? {
-                break Ok(exit);
+            if let Some(exit) = bytecode.exec(self, &mut runtime, &mut console)? {
+                break Ok((console, exit));
             }
         }
     }
@@ -132,7 +133,12 @@ impl Callable {
 }
 
 impl Bytecode {
-    fn exec(&self, elysia: &Elysia, rt: &mut Runtime) -> Result<Option<Object>, Fault> {
+    fn exec(
+        &self,
+        elysia: &Elysia,
+        rt: &mut Runtime,
+        cs: &mut String,
+    ) -> Result<Option<Object>, Fault> {
         match self {
             Bytecode::Field(dst, src, id) => {
                 let (_, frame) = rt.active();
@@ -236,7 +242,7 @@ impl Bytecode {
                             let obj = frame.load(*arg)?;
                             objs.push(obj);
                         }
-                        frame.store(*dst, f(objs, elysia))?;
+                        frame.store(*dst, f(objs, elysia, cs))?;
                     }
                 };
             }

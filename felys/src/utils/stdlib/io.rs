@@ -4,16 +4,15 @@ use crate::Object;
 
 pub const LIB: [(&str, &str, Signature); 1] = [("io", "print", print)];
 
-fn print(args: Vec<Object>, elysia: &Elysia) -> Object {
-    let mut buf = String::new();
+fn print(args: Vec<Object>, elysia: &Elysia, cs: &mut String) -> Object {
     let mut iter = args.into_iter();
     if let Some(arg) = iter.next() {
-        arg.recover(&mut buf, 0, &elysia.groups).unwrap();
+        arg.recover(cs, 0, &elysia.groups).unwrap();
     }
     for arg in iter {
-        buf.push(' ');
-        arg.recover(&mut buf, 0, &elysia.groups).unwrap();
+        cs.push(' ');
+        arg.recover(cs, 0, &elysia.groups).unwrap();
     }
-    println!("{buf}");
+    cs.push('\n');
     Object::Void
 }
