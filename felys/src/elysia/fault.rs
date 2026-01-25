@@ -5,7 +5,6 @@ pub enum Fault {
     DataType(Object, &'static str),
     BinaryOperation(&'static str, Object, Object),
     UnaryOperation(&'static str, Object),
-    NotExist(&'static str, usize),
     NumArgsNotMatch(usize, Vec<Object>),
     IndexOutOfBounds(Object, isize),
     NotEnoughToUnpack(Object, usize),
@@ -37,10 +36,6 @@ impl Fault {
                 msg.push_str("` to `");
                 src.recover(&mut msg, 0, groups).unwrap();
                 msg.push('`');
-            }
-            Fault::NotExist(sth, idx) => {
-                let s = format!("{} at location <{}> does not exist", sth, idx);
-                msg.push_str(&s);
             }
             Fault::NumArgsNotMatch(expected, args) => {
                 let s = format!("expected {} arguments, got {}: [", expected, args.len());

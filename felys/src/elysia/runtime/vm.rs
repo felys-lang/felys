@@ -17,7 +17,7 @@ impl Elysia {
         let mut console = String::new();
         loop {
             let (idx, frame) = runtime.active();
-            let bytecode = self.loc(idx)?.loc(frame.pc)?;
+            let bytecode = self.loc(idx).loc(frame.pc);
             frame.pc += 1;
             if let Some(exit) = bytecode.exec(self, &mut runtime, &mut console)? {
                 break Ok((console, exit));
@@ -34,10 +34,10 @@ impl Elysia {
         Ok(runtime)
     }
 
-    fn loc(&self, idx: Option<usize>) -> Result<&Callable, Fault> {
+    fn loc(&self, idx: Option<usize>) -> &Callable {
         match idx {
-            Some(x) => self.text.get(x).ok_or(Fault::NotExist("callable", x)),
-            None => Ok(&self.main),
+            Some(x) => self.text.get(x).unwrap(),
+            None => &self.main,
         }
     }
 }
@@ -70,12 +70,12 @@ impl Runtime {
     }
 
     fn ret(&mut self, src: Reg) -> Result<Option<Object>, Fault> {
-        let obj = self.active().1.load(src)?;
+        let obj = self.active().1.load(src);
         if self.stack.pop().is_none() {
             return Ok(Some(obj));
         };
         let dst = self.rets.pop().unwrap();
-        self.active().1.store(dst, obj)?;
+        self.active().1.store(dst, obj);
         Ok(None)
     }
 }
@@ -86,33 +86,24 @@ struct Frame {
 }
 
 impl Frame {
-    fn load(&self, reg: usize) -> Result<Object, Fault> {
+    fn load(&self, reg: usize) -> Object {
         if reg == 0 {
-            return Err(Fault::NotExist("register", reg));
+            panic!();
         }
-        self.registers
-            .get(reg - 1)
-            .cloned()
-            .ok_or(Fault::NotExist("register", reg))
+        self.registers.get(reg - 1).cloned().unwrap()
     }
 
-    fn store(&mut self, reg: usize, obj: Object) -> Result<(), Fault> {
+    fn store(&mut self, reg: usize, obj: Object) {
         if reg == 0 {
-            return Ok(());
+            return;
         }
-        *self
-            .registers
-            .get_mut(reg - 1)
-            .ok_or(Fault::NotExist("register", reg))? = obj;
-        Ok(())
+        *self.registers.get_mut(reg - 1).unwrap() = obj;
     }
 }
 
 impl Callable {
-    fn loc(&self, idx: usize) -> Result<&Bytecode, Fault> {
-        self.bytecodes
-            .get(idx)
-            .ok_or(Fault::NotExist("bytecode", idx))
+    fn loc(&self, idx: usize) -> &Bytecode {
+        self.bytecodes.get(idx).unwrap()
     }
 
     fn loader(&self) -> Vec<Object> {
@@ -142,107 +133,91 @@ impl Bytecode {
         match self {
             Bytecode::Field(dst, src, id) => {
                 let (_, frame) = rt.active();
-                let tmp = frame.load(*src)?;
-                let (gid, group) = tmp.group()?;
-                let idx = elysia
-                    .groups
-                    .get(gid)
-                    .ok_or(Fault::NotExist("group", gid))?
-                    .indices
-                    .get(id)
-                    .ok_or(Fault::NotExist("indices", *id))?;
+                let tmp = frame.load(*src);
+                let (gp, group) = tmp.group()?;
+                let idx = elysia.groups.get(gp).unwrap().indices.get(id).unwrap();
                 let obj = group.get(*idx).cloned().unwrap();
-                frame.store(*dst, obj)?;
+                frame.store(*dst, obj);
             }
             Bytecode::Unpack(dst, src, idx) => {
                 let (_, frame) = rt.active();
-                let tmp = frame.load(*src)?;
+                let tmp = frame.load(*src);
                 let objs = tmp.tuple()?;
                 let obj = objs
                     .get(*idx)
                     .cloned()
                     .ok_or(Fault::NotEnoughToUnpack(tmp, *idx))?;
-                frame.store(*dst, obj)?;
+                frame.store(*dst, obj);
             }
             Bytecode::Pointer(dst, pt, idx) => match pt {
                 Pointer::Function => {
                     let (_, frame) = rt.active();
                     let obj = Object::Pointer(Pointer::Function, *idx);
-                    frame.store(*dst, obj)?;
+                    frame.store(*dst, obj);
                 }
                 Pointer::Group => {
                     let (_, frame) = rt.active();
                     let obj = Object::Pointer(Pointer::Group, *idx);
-                    frame.store(*dst, obj)?;
+                    frame.store(*dst, obj);
                 }
                 Pointer::Rust => {
                     let (_, frame) = rt.active();
                     let obj = Object::Pointer(Pointer::Rust, *idx);
-                    frame.store(*dst, obj)?;
+                    frame.store(*dst, obj);
                 }
             },
             Bytecode::Load(dst, idx) => {
                 let (_, frame) = rt.active();
-                let obj = elysia
-                    .data
-                    .get(*idx)
-                    .ok_or(Fault::NotExist("constant", *idx))?
-                    .into();
-                frame.store(*dst, obj)?;
+                let obj = elysia.data.get(*idx).unwrap().into();
+                frame.store(*dst, obj);
             }
             Bytecode::Binary(dst, lhs, op, rhs) => {
                 let (_, frame) = rt.active();
-                let l = frame.load(*lhs)?;
-                let r = frame.load(*rhs)?;
+                let l = frame.load(*lhs);
+                let r = frame.load(*rhs);
                 let obj = l.binary(op, r)?;
-                frame.store(*dst, obj)?;
+                frame.store(*dst, obj);
             }
             Bytecode::Unary(dst, op, src) => {
                 let (_, frame) = rt.active();
-                let s = frame.load(*src)?;
+                let s = frame.load(*src);
                 let obj = s.unary(op)?;
-                frame.store(*dst, obj)?;
+                frame.store(*dst, obj);
             }
             Bytecode::Call(dst, src, args) => {
                 let (_, frame) = rt.active();
-                let (ty, idx) = frame.load(*src)?.pointer()?;
+                let (ty, idx) = frame.load(*src).pointer()?;
                 match ty {
                     Pointer::Function => {
-                        let callable = elysia
-                            .text
-                            .get(idx)
-                            .ok_or(Fault::NotExist("function", idx))?;
+                        let callable = elysia.text.get(idx).unwrap();
                         let mut objs = callable.loader();
                         for arg in args {
-                            let obj = frame.load(*arg)?;
+                            let obj = frame.load(*arg);
                             objs.push(obj);
                         }
                         rt.call(*dst, idx, callable, objs)?
                     }
                     Pointer::Group => {
-                        let group = elysia
-                            .groups
-                            .get(idx)
-                            .ok_or(Fault::NotExist("group", idx))?;
+                        let group = elysia.groups.get(idx).unwrap();
                         let mut objs = Vec::with_capacity(args.len());
                         for arg in args {
-                            let obj = frame.load(*arg)?;
+                            let obj = frame.load(*arg);
                             objs.push(obj);
                         }
                         let expected = group.indices.len();
                         if expected != args.len() {
                             return Err(Fault::NumArgsNotMatch(expected, objs));
                         }
-                        frame.store(*dst, Object::Group(idx, objs.into()))?;
+                        frame.store(*dst, Object::Group(idx, objs.into()));
                     }
                     Pointer::Rust => {
-                        let f = elysia.rust.get(idx).ok_or(Fault::NotExist("rust", idx))?;
+                        let f = elysia.rust.get(idx).unwrap();
                         let mut objs = Vec::with_capacity(args.len());
                         for arg in args {
-                            let obj = frame.load(*arg)?;
+                            let obj = frame.load(*arg);
                             objs.push(obj);
                         }
-                        frame.store(*dst, f(objs, elysia, cs))?;
+                        frame.store(*dst, f(objs, elysia, cs));
                     }
                 };
             }
@@ -250,25 +225,25 @@ impl Bytecode {
                 let (_, frame) = rt.active();
                 let mut objs = Vec::with_capacity(args.len());
                 for arg in args {
-                    let obj = frame.load(*arg)?;
+                    let obj = frame.load(*arg);
                     objs.push(obj);
                 }
-                frame.store(*dst, Object::List(objs.into()))?;
+                frame.store(*dst, Object::List(objs.into()));
             }
             Bytecode::Tuple(dst, args) => {
                 let (_, frame) = rt.active();
                 let mut objs = Vec::with_capacity(args.len());
                 for arg in args {
-                    let obj = frame.load(*arg)?;
+                    let obj = frame.load(*arg);
                     objs.push(obj);
                 }
-                frame.store(*dst, Object::Tuple(objs.into()))?;
+                frame.store(*dst, Object::Tuple(objs.into()));
             }
             Bytecode::Index(dst, src, index) => {
                 let (_, frame) = rt.active();
-                let tmp = frame.load(*src)?;
+                let tmp = frame.load(*src);
                 let list = tmp.list()?;
-                let int = frame.load(*index)?.int()?;
+                let int = frame.load(*index).int()?;
                 let idx = if int >= 0 {
                     int as usize
                 } else {
@@ -280,34 +255,25 @@ impl Bytecode {
                     .get(idx)
                     .cloned()
                     .ok_or(Fault::IndexOutOfBounds(tmp, int))?;
-                frame.store(*dst, obj)?;
+                frame.store(*dst, obj);
             }
             Bytecode::Method(dst, src, id, args) => {
                 let (_, frame) = rt.active();
-                let obj = frame.load(*src)?;
+                let obj = frame.load(*src);
                 let (gid, _) = obj.group()?;
-                let idx = elysia
-                    .groups
-                    .get(gid)
-                    .ok_or(Fault::NotExist("group", gid))?
-                    .methods
-                    .get(id)
-                    .ok_or(Fault::NotExist("method", *id))?;
-                let callable = elysia
-                    .text
-                    .get(*idx)
-                    .ok_or(Fault::NotExist("callable", *idx))?;
+                let idx = elysia.groups.get(gid).unwrap().methods.get(id).unwrap();
+                let callable = elysia.text.get(*idx).unwrap();
                 let mut objs = callable.loader();
                 objs.push(obj);
                 for arg in args {
-                    let obj = frame.load(*arg)?;
+                    let obj = frame.load(*arg);
                     objs.push(obj);
                 }
                 rt.call(*dst, *idx, callable, objs)?;
             }
             Bytecode::Branch(cond, yes, no) => {
                 let (_, frame) = rt.active();
-                if frame.load(*cond)?.bool()? {
+                if frame.load(*cond).bool()? {
                     frame.pc = *yes;
                 } else {
                     frame.pc = *no;
@@ -317,8 +283,8 @@ impl Bytecode {
             Bytecode::Return(src) => return rt.ret(*src),
             Bytecode::Copy(dst, src) => {
                 let (_, frame) = rt.active();
-                let obj = frame.load(*src)?;
-                frame.store(*dst, obj)?;
+                let obj = frame.load(*src);
+                frame.store(*dst, obj);
             }
         }
         Ok(None)
