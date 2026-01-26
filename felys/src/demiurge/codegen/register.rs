@@ -1,5 +1,5 @@
 use crate::demiurge::codegen::copies::Copy;
-use crate::demiurge::Reg;
+use crate::utils::bytecode::Reg;
 use crate::utils::function::Function;
 use crate::utils::ir::{Instruction, Label, Terminator, Var};
 use std::cmp::{max, Reverse};

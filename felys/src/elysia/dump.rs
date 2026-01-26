@@ -1,23 +1,6 @@
-use crate::demiurge::Bytecode;
-use crate::utils::group::Group;
-use crate::utils::ir::Const;
-use crate::utils::stdlib::utils::Signature;
+use crate::utils::bytecode::Bytecode;
+use crate::utils::stages::{Callable, Elysia};
 use std::io::Write;
-
-pub struct Elysia {
-    pub main: Callable,
-    pub text: Vec<Callable>,
-    pub rust: Vec<Signature>,
-    pub data: Vec<Const>,
-    pub groups: Vec<Group>,
-}
-
-#[derive(Debug)]
-pub struct Callable {
-    pub args: usize,
-    pub registers: usize,
-    pub bytecodes: Vec<Bytecode>,
-}
 
 impl Elysia {
     pub fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {

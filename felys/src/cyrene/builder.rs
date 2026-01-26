@@ -1,14 +1,8 @@
 use crate::cyrene::fault::Fault;
 use crate::cyrene::meta::Meta;
-use crate::demiurge::Demiurge;
-use crate::philia093::Intern;
-use crate::utils::ast::{BufVec, Impl, Item, Root};
+use crate::utils::ast::{BufVec, Impl, Item};
 use crate::utils::group::Group;
-
-pub struct Cyrene {
-    pub root: Root,
-    pub intern: Intern,
-}
+use crate::utils::stages::{Cyrene, Demiurge};
 
 impl Cyrene {
     pub fn cfg(self) -> Result<Demiurge, String> {

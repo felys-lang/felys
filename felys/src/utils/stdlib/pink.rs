@@ -1,7 +1,6 @@
-use crate::elysia::Elysia;
+use crate::utils::stages::Elysia;
 use crate::utils::stdlib::utils::Signature;
 use crate::Object;
-
 pub const LIB: [(&str, &str, Signature); 3] = [
     ("pink", "elysia", elysia),
     ("pink", "cyrene", cyrene),

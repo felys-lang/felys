@@ -1,9 +1,9 @@
 use crate::demiurge::codegen::copies::Copy;
-use crate::demiurge::{Bytecode, Demiurge, Reg};
-use crate::elysia::{Callable, Elysia};
+use crate::utils::bytecode::{Bytecode, Reg};
 use crate::utils::function::Function;
 use crate::utils::group::Group;
 use crate::utils::ir::{Const, Instruction, Label, Pointer, Terminator, Var};
+use crate::utils::stages::{Callable, Demiurge, Elysia};
 use crate::utils::stdlib::utils::stdlib;
 use std::collections::HashMap;
 use std::hash::Hash;

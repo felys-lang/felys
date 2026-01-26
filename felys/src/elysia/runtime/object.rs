@@ -1,6 +1,6 @@
-use crate::demiurge::Idx;
 use crate::elysia::fault::Fault;
 use crate::utils::ast::{BinOp, UnaOp};
+use crate::utils::bytecode::Idx;
 use crate::utils::ir::Pointer;
 use std::rc::Rc;
 
