@@ -105,7 +105,7 @@ impl Demiurge {
         Elysia {
             main: self.main.codegen(&mut ctx),
             text: ctx.functions.linearize(),
-            rust: stdlib().map(|(_, _, x)| x).collect(),
+            rust: stdlib().map(|(_, _, _, x)| x).collect(),
             data: ctx.consts.pool,
             groups: ctx.groups.linearize(),
         }

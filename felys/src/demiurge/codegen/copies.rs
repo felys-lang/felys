@@ -73,10 +73,6 @@ impl Function {
         for (label, target) in edges {
             let trampoline = self.label();
 
-            let fragment = self.modify(trampoline).unwrap();
-            fragment.predecessors.push(label);
-            fragment.terminator = Some(Terminator::Jump(target));
-
             let fragment = self.modify(label).unwrap();
             match fragment.terminator.as_mut().unwrap() {
                 Terminator::Branch(_, yes, no) => {
@@ -85,11 +81,15 @@ impl Function {
                     } else if *no == target {
                         *no = trampoline;
                     } else {
-                        panic!()
+                        continue;
                     }
                 }
-                _ => panic!(),
+                _ => continue,
             }
+
+            let fragment = self.modify(trampoline).unwrap();
+            fragment.predecessors.push(label);
+            fragment.terminator = Some(Terminator::Jump(target));
 
             let fragment = self.modify(target).unwrap();
             *fragment

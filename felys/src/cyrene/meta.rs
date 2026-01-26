@@ -40,7 +40,7 @@ enum Node {
 impl Namespace {
     fn init(intern: &mut Intern) -> Self {
         let mut base = HashMap::new();
-        for (i, (sub, inner, _)) in stdlib().enumerate() {
+        for (i, sub, inner, _) in stdlib() {
             if let Node::Redirect(x) = base
                 .entry(intern.id(sub))
                 .or_insert(Node::Redirect(HashMap::new()))
