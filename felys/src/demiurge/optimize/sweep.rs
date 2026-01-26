@@ -10,6 +10,14 @@ struct Context {
     defs: HashMap<Var, (Label, Id)>,
 }
 
+impl Context {
+    fn visit(&mut self, var: &Var) {
+        if self.active.insert(*var) {
+            self.worklist.push_back(*var);
+        }
+    }
+}
+
 enum Id {
     Ins(usize),
     Phi(usize),
@@ -92,6 +100,7 @@ impl Fragment {
                 instruction.visit(ctx);
             }
         }
+
         self.terminator.as_ref().unwrap().visit(ctx);
     }
 }
@@ -108,25 +117,20 @@ impl Phi {
 
 impl Instruction {
     fn visit(&self, ctx: &mut Context) {
-        let mut add = |var: &Var| {
-            if ctx.active.insert(*var) {
-                ctx.worklist.push_back(*var);
-            }
-        };
         match self {
             Instruction::Field(_, src, _)
             | Instruction::Unpack(_, src, _)
-            | Instruction::Unary(_, _, src) => add(src),
+            | Instruction::Unary(_, _, src) => ctx.visit(src),
             Instruction::Binary(_, src, _, other) | Instruction::Index(_, src, other) => {
-                add(src);
-                add(other);
+                ctx.visit(src);
+                ctx.visit(other);
             }
             Instruction::List(_, args) | Instruction::Tuple(_, args) => {
-                args.iter().for_each(add);
+                args.iter().for_each(|x| ctx.visit(x));
             }
             Instruction::Call(_, src, args) | Instruction::Method(_, src, _, args) => {
-                add(src);
-                args.iter().for_each(add);
+                ctx.visit(src);
+                args.iter().for_each(|x| ctx.visit(x));
             }
             Instruction::Arg(_, _) | Instruction::Pointer(_, _, _) | Instruction::Load(_, _) => {}
         }
@@ -156,13 +160,8 @@ impl Instruction {
 
 impl Terminator {
     fn visit(&self, ctx: &mut Context) {
-        let mut add = |var: &Var| {
-            if ctx.active.insert(*var) {
-                ctx.worklist.push_back(*var);
-            }
-        };
         match self {
-            Terminator::Branch(var, _, _) | Terminator::Return(var) => add(var),
+            Terminator::Branch(var, _, _) | Terminator::Return(var) => ctx.visit(var),
             Terminator::Jump(_) => {}
         }
     }
