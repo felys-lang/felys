@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 #[derive(Debug)]
 pub enum Instruction {
+    Arg(Var, usize),
     Field(Var, Var, usize),
     Unpack(Var, Var, usize),
     Pointer(Var, Pointer, usize),
@@ -16,6 +17,7 @@ pub enum Instruction {
     Method(Var, Var, usize, Vec<Var>),
 }
 
+#[repr(u8)]
 #[derive(Clone, Debug)]
 pub enum Pointer {
     Function,

@@ -5,7 +5,7 @@ pub enum Fault {
     DataType(Object, &'static str),
     BinaryOperation(&'static str, Object, Object),
     UnaryOperation(&'static str, Object),
-    NumArgsNotMatch(usize, Vec<Object>),
+    NumArgsNotMatch(usize, usize),
     IndexOutOfBounds(Object, isize),
     NotEnoughToUnpack(Object, usize),
 }
@@ -38,20 +38,8 @@ impl Fault {
                 msg.push('`');
             }
             Fault::NumArgsNotMatch(expected, args) => {
-                let s = format!("expected {} arguments, got {}: [", expected, args.len());
+                let s = format!("expected {} arguments, got {}", expected, args);
                 msg.push_str(&s);
-                let mut iter = args.iter();
-                if let Some(first) = iter.next() {
-                    msg.push('`');
-                    first.recover(&mut msg, 0, groups).unwrap();
-                    msg.push('`');
-                }
-                for arg in iter {
-                    msg.push_str(", `");
-                    arg.recover(&mut msg, 0, groups).unwrap();
-                    msg.push('`');
-                }
-                msg.push(']');
             }
             Fault::IndexOutOfBounds(obj, index) => {
                 let s = format!("index {} is out of boundaries for `", index);

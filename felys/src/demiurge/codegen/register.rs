@@ -82,10 +82,6 @@ impl Function {
         let mut loops = Vec::new();
 
         let mut index = 0;
-        for i in self.args.clone() {
-            ctx.defs.insert(i, index);
-            index += 1;
-        }
         for label in self.rpo() {
             anchors.insert(label, index);
             let fragment = self.get(label).unwrap();
@@ -152,7 +148,9 @@ impl Instruction {
                     ctx.using(arg, index);
                 }
             }
-            Instruction::Pointer(dst, _, _) | Instruction::Load(dst, _) => {
+            Instruction::Arg(dst, _)
+            | Instruction::Pointer(dst, _, _)
+            | Instruction::Load(dst, _) => {
                 ctx.define(dst, index);
             }
         }

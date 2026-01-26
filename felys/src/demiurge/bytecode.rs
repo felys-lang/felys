@@ -69,6 +69,7 @@ impl Function {
 
 #[derive(Debug)]
 pub enum Bytecode {
+    Arg(Reg, Idx),
     Field(Reg, Reg, usize),
     Unpack(Reg, Reg, usize),
     Pointer(Reg, Pointer, Idx),

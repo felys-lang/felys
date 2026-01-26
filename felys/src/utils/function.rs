@@ -1,10 +1,9 @@
 use crate::utils::ir::{Instruction, Label, Terminator, Var};
 use std::collections::HashMap;
-use std::ops::Range;
 
 #[derive(Debug)]
 pub struct Function {
-    pub args: Range<usize>,
+    pub args: usize,
     pub vars: usize,
     pub entry: Fragment,
     pub fragments: HashMap<usize, Fragment>,
@@ -14,7 +13,7 @@ pub struct Function {
 impl Function {
     pub fn new(args: usize) -> Self {
         Function {
-            args: 0..args,
+            args,
             vars: 0,
             entry: Default::default(),
             fragments: Default::default(),

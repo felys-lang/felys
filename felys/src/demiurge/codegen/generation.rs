@@ -117,7 +117,7 @@ impl Function {
         let copies = self.copies();
         let (allocation, used) = self.allocate(&copies);
         Callable {
-            args: self.args.end,
+            args: self.args,
             registers: used,
             bytecodes: self.lowering(ctx, &allocation, copies),
         }
@@ -163,6 +163,7 @@ impl Function {
 impl Instruction {
     fn codegen(&self, alloc: &HashMap<Var, Reg>, ctx: &mut Context) -> Bytecode {
         match self {
+            Instruction::Arg(dst, idx) => Bytecode::Arg(*alloc.get(dst).unwrap_or(&0), *idx),
             Instruction::Field(dst, src, idx) => Bytecode::Field(
                 *alloc.get(dst).unwrap_or(&0),
                 *alloc.get(src).unwrap_or(&0),

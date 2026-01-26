@@ -12,9 +12,10 @@ impl Block {
         let mut stk = Vec::new();
         let mut ctx = Context::new(args.len());
         ctx.seal(Label::Entry)?;
-        for id in args {
+        for (i, id) in args.iter().enumerate() {
             let var = ctx.var();
-            ctx.define(ctx.cursor, Id::Interned(id), var);
+            ctx.push(Instruction::Arg(var, i));
+            ctx.define(ctx.cursor, Id::Interned(*id), var);
         }
 
         if let Some(var) = self.ir(&mut ctx, &mut stk, meta)? {

@@ -13,15 +13,11 @@ struct Context {
 enum Id {
     Ins(usize),
     Phi(usize),
-    Arg,
 }
 
 impl Function {
     pub fn sweep(&mut self) -> bool {
         let mut ctx = Context::default();
-        for arg in self.args.clone() {
-            ctx.defs.insert(arg, (Label::Entry, Id::Arg));
-        }
 
         for (label, fragment) in self.safe() {
             fragment.initialize(label, &mut ctx);
@@ -42,7 +38,6 @@ impl Function {
                     let phi = fragment.phis.get(*index).unwrap();
                     phi.visit(&mut ctx);
                 }
-                Id::Arg => {}
             }
         }
 
@@ -133,13 +128,14 @@ impl Instruction {
                 add(src);
                 args.iter().for_each(add);
             }
-            Instruction::Pointer(_, _, _) | Instruction::Load(_, _) => {}
+            Instruction::Arg(_, _) | Instruction::Pointer(_, _, _) | Instruction::Load(_, _) => {}
         }
     }
 
     fn dst(&self) -> Var {
         match self {
-            Instruction::Field(dst, _, _)
+            Instruction::Arg(dst, _)
+            | Instruction::Field(dst, _, _)
             | Instruction::Unpack(dst, _, _)
             | Instruction::Load(dst, _)
             | Instruction::Binary(dst, _, _, _)

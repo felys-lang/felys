@@ -74,9 +74,6 @@ impl Function {
 
         let mut meta = Meta::new(self.vars);
         meta.flow.push_back((Label::Entry, Label::Entry));
-        for var in self.args.clone() {
-            meta.update(var, Lattice::Bottom);
-        }
 
         while !meta.flow.is_empty() || !meta.ssa.is_empty() {
             while let Some((pred, label)) = meta.flow.pop_front() {
@@ -186,7 +183,8 @@ impl Instruction {
                 };
                 meta.update(*var, new);
             }
-            Instruction::Field(dst, _, _)
+            Instruction::Arg(dst, _)
+            | Instruction::Field(dst, _, _)
             | Instruction::Unpack(dst, _, _)
             | Instruction::Call(dst, _, _)
             | Instruction::List(dst, _)
@@ -217,7 +215,7 @@ impl Instruction {
             Instruction::List(_, args) | Instruction::Tuple(_, args) => {
                 args.iter().for_each(update);
             }
-            Instruction::Pointer(_, _, _) | Instruction::Load(_, _) => {}
+            Instruction::Arg(_, _) | Instruction::Pointer(_, _, _) | Instruction::Load(_, _) => {}
         }
     }
 }

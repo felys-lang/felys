@@ -118,11 +118,8 @@ impl Impl {
                 meta.functions.insert(ptr, function);
             }
             Impl::Method(secondary, args, block) => {
-                let args = [meta.intern.id("self")]
-                    .iter()
-                    .chain(args)
-                    .cloned()
-                    .collect();
+                let mut args = args.clone();
+                args.push(meta.intern.id("self"));
                 let function = block.function(args, meta)?;
                 let (_, ptr) = meta.namespace.get([id, *secondary].iter()).unwrap();
                 meta.functions.insert(ptr, function);

@@ -1,7 +1,6 @@
 use crate::demiurge::Bytecode;
-use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::group::Group;
-use crate::utils::ir::{Const, Pointer};
+use crate::utils::ir::Const;
 use crate::utils::stdlib::utils::Signature;
 use std::io::Write;
 
@@ -44,25 +43,28 @@ impl Callable {
 impl Bytecode {
     fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
         match self {
+            Bytecode::Arg(dst, idx) => {
+                buf.write_all(&[0x0, *dst as u8, *idx as u8])?;
+            }
             Bytecode::Field(dst, src, id) => {
-                buf.write_all(&[0x0, *dst as u8, *src as u8])?;
+                buf.write_all(&[0x1, *dst as u8, *src as u8])?;
                 buf.write_all(&(*id as u32).to_le_bytes())?;
             }
             Bytecode::Unpack(dst, src, idx) => {
-                buf.write_all(&[0x1, *dst as u8, *src as u8])?;
+                buf.write_all(&[0x2, *dst as u8, *src as u8])?;
                 buf.write_all(&(*idx as u32).to_le_bytes())?;
             }
             Bytecode::Pointer(dst, pt, ptr) => {
-                buf.write_all(&[0x2, *dst as u8, pt.into(), *ptr as u8])?;
+                buf.write_all(&[0x3, *dst as u8, pt.clone() as u8, *ptr as u8])?;
             }
             Bytecode::Load(dst, idx) => {
                 buf.write_all(&[0x4, *dst as u8, *idx as u8])?;
             }
             Bytecode::Binary(dst, lhs, op, rhs) => {
-                buf.write_all(&[0x5, *dst as u8, *lhs as u8, op.into(), *rhs as u8])?;
+                buf.write_all(&[0x5, *dst as u8, *lhs as u8, op.clone() as u8, *rhs as u8])?;
             }
             Bytecode::Unary(dst, op, src) => {
-                buf.write_all(&[0x6, *dst as u8, op.into(), *src as u8])?;
+                buf.write_all(&[0x6, *dst as u8, op.clone() as u8, *src as u8])?;
             }
             Bytecode::Call(dst, src, args) => {
                 buf.write_all(&[0x7, *dst as u8, *src as u8, args.len() as u8])?;
@@ -101,46 +103,5 @@ impl Bytecode {
             }
         }
         Ok(())
-    }
-}
-
-impl From<&BinOp> for u8 {
-    fn from(value: &BinOp) -> Self {
-        match value {
-            BinOp::Or => 0x0,
-            BinOp::And => 0x1,
-            BinOp::Gt => 0x2,
-            BinOp::Ge => 0x3,
-            BinOp::Lt => 0x4,
-            BinOp::Le => 0x5,
-            BinOp::Eq => 0x6,
-            BinOp::Ne => 0x7,
-            BinOp::Add => 0x8,
-            BinOp::Sub => 0x9,
-            BinOp::Mul => 0xA,
-            BinOp::Div => 0xB,
-            BinOp::Mod => 0xC,
-            BinOp::Dot => 0xD,
-        }
-    }
-}
-
-impl From<&UnaOp> for u8 {
-    fn from(value: &UnaOp) -> Self {
-        match value {
-            UnaOp::Not => 0x0,
-            UnaOp::Pos => 0x1,
-            UnaOp::Neg => 0x2,
-        }
-    }
-}
-
-impl From<&Pointer> for u8 {
-    fn from(value: &Pointer) -> Self {
-        match value {
-            Pointer::Function => 0x0,
-            Pointer::Group => 0x1,
-            Pointer::Rust => 0x2,
-        }
     }
 }
