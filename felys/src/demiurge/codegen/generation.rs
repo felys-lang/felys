@@ -163,65 +163,41 @@ impl Function {
 impl Instruction {
     fn codegen(&self, alloc: &HashMap<Var, Reg>, ctx: &mut Context) -> Bytecode {
         match self {
-            Instruction::Arg(dst, idx) => Bytecode::Arg(*alloc.get(dst).unwrap_or(&0), *idx),
-            Instruction::Field(dst, src, idx) => Bytecode::Field(
-                *alloc.get(dst).unwrap_or(&0),
-                *alloc.get(src).unwrap_or(&0),
-                *idx,
-            ),
-            Instruction::Unpack(dst, src, idx) => Bytecode::Unpack(
-                *alloc.get(dst).unwrap_or(&0),
-                *alloc.get(src).unwrap_or(&0),
-                *idx,
-            ),
+            Instruction::Arg(dst, idx) => Bytecode::Arg(alloc[dst], *idx),
+            Instruction::Field(dst, src, idx) => Bytecode::Field(alloc[dst], alloc[src], *idx),
+            Instruction::Unpack(dst, src, idx) => Bytecode::Unpack(alloc[dst], alloc[src], *idx),
             Instruction::Pointer(dst, pt, ptr) => match pt {
-                Pointer::Function => Bytecode::Pointer(
-                    *alloc.get(dst).unwrap_or(&0),
-                    pt.clone(),
-                    ctx.function(*ptr),
-                ),
-                Pointer::Group => {
-                    Bytecode::Pointer(*alloc.get(dst).unwrap_or(&0), pt.clone(), ctx.group(*ptr))
-                }
-                Pointer::Rust => Bytecode::Pointer(*alloc.get(dst).unwrap_or(&0), pt.clone(), *ptr),
+                Pointer::Function => Bytecode::Pointer(alloc[dst], pt.clone(), ctx.function(*ptr)),
+                Pointer::Group => Bytecode::Pointer(alloc[dst], pt.clone(), ctx.group(*ptr)),
+                Pointer::Rust => Bytecode::Pointer(alloc[dst], pt.clone(), *ptr),
             },
-            Instruction::Load(dst, id) => {
-                Bytecode::Load(*alloc.get(dst).unwrap_or(&0), ctx.consts.index(id.clone()))
-            }
+            Instruction::Load(dst, id) => Bytecode::Load(alloc[dst], ctx.consts.index(id.clone())),
             Instruction::Binary(dst, lhs, op, rhs) => Bytecode::Binary(
-                *alloc.get(dst).unwrap_or(&0),
+                alloc[dst],
                 *alloc.get(lhs).unwrap_or(&0),
                 op.clone(),
                 *alloc.get(rhs).unwrap_or(&0),
             ),
-            Instruction::Unary(dst, op, src) => Bytecode::Unary(
-                *alloc.get(dst).unwrap_or(&0),
-                op.clone(),
-                *alloc.get(src).unwrap_or(&0),
-            ),
+            Instruction::Unary(dst, op, src) => Bytecode::Unary(alloc[dst], op.clone(), alloc[src]),
             Instruction::Call(dst, src, args) => Bytecode::Call(
-                *alloc.get(dst).unwrap_or(&0),
-                *alloc.get(src).unwrap_or(&0),
-                args.iter().map(|x| *alloc.get(x).unwrap_or(&0)).collect(),
+                alloc[dst],
+                alloc[src],
+                args.iter().map(|x| alloc[x]).collect(),
             ),
-            Instruction::List(dst, args) => Bytecode::List(
-                *alloc.get(dst).unwrap_or(&0),
-                args.iter().map(|x| *alloc.get(x).unwrap_or(&0)).collect(),
-            ),
-            Instruction::Tuple(dst, args) => Bytecode::Tuple(
-                *alloc.get(dst).unwrap_or(&0),
-                args.iter().map(|x| *alloc.get(x).unwrap_or(&0)).collect(),
-            ),
-            Instruction::Index(dst, src, index) => Bytecode::Index(
-                *alloc.get(dst).unwrap_or(&0),
-                *alloc.get(src).unwrap_or(&0),
-                *alloc.get(index).unwrap_or(&0),
-            ),
+            Instruction::List(dst, args) => {
+                Bytecode::List(alloc[dst], args.iter().map(|x| alloc[x]).collect())
+            }
+            Instruction::Tuple(dst, args) => {
+                Bytecode::Tuple(alloc[dst], args.iter().map(|x| alloc[x]).collect())
+            }
+            Instruction::Index(dst, src, index) => {
+                Bytecode::Index(alloc[dst], alloc[src], alloc[index])
+            }
             Instruction::Method(dst, src, id, args) => Bytecode::Method(
-                *alloc.get(dst).unwrap_or(&0),
-                *alloc.get(src).unwrap_or(&0),
+                alloc[dst],
+                alloc[src],
                 *id,
-                args.iter().map(|x| *alloc.get(x).unwrap_or(&0)).collect(),
+                args.iter().map(|x| alloc[x]).collect(),
             ),
         }
     }

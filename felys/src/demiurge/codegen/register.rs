@@ -24,6 +24,7 @@ struct Context {
 impl Context {
     fn define(&mut self, var: &Var, index: usize) {
         self.defs.entry(*var).or_insert(index);
+        self.uses.entry(*var).or_insert(index);
     }
 
     fn using(&mut self, var: &Var, index: usize) {
@@ -50,7 +51,7 @@ impl Function {
         intervals.sort_by_key(|(_, start, _)| *start);
 
         let mut active = BinaryHeap::<Reverse<(Var, Reg)>>::new();
-        let mut used = 1;
+        let mut used = 0;
         let mut registers = Vec::new();
         let mut mapping = HashMap::new();
 
@@ -73,7 +74,7 @@ impl Function {
             active.push(Reverse((end, reg)));
         }
 
-        (mapping, used - 1)
+        (mapping, used)
     }
 
     fn precompute(&self, copies: &HashMap<Label, Vec<Copy>>) -> Context {

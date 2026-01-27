@@ -96,17 +96,11 @@ struct Frame {
 
 impl Frame {
     fn load(&self, reg: usize) -> Object {
-        if reg == 0 {
-            panic!();
-        }
-        self.registers.get(reg - 1).cloned().unwrap()
+        self.registers.get(reg).cloned().unwrap()
     }
 
     fn store(&mut self, reg: usize, obj: Object) {
-        if reg == 0 {
-            return;
-        }
-        *self.registers.get_mut(reg - 1).unwrap() = obj;
+        *self.registers.get_mut(reg).unwrap() = obj;
     }
 
     fn gather(&self, args: &[Reg]) -> Vec<Object> {
