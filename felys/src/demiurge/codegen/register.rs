@@ -45,7 +45,7 @@ impl Function {
         &self,
         rpo: &[Label],
         copies: &HashMap<Label, Vec<Copy>>,
-    ) -> (HashMap<Var, Reg>, usize) {
+    ) -> (HashMap<Var, Reg>, Reg) {
         let ctx = self.precompute(copies, rpo);
         let mut intervals = ctx
             .uses

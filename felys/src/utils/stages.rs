@@ -1,6 +1,6 @@
 use crate::philia093::Intern;
 use crate::utils::ast::Root;
-use crate::utils::bytecode::Bytecode;
+use crate::utils::bytecode::{Bytecode, Reg};
 use crate::utils::function::Function;
 use crate::utils::group::Group;
 use crate::utils::ir::Const;
@@ -29,6 +29,6 @@ pub struct Elysia {
 #[derive(Debug)]
 pub struct Callable {
     pub args: usize,
-    pub registers: usize,
+    pub registers: Reg,
     pub bytecodes: Vec<Bytecode>,
 }

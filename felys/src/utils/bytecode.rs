@@ -21,6 +21,6 @@ pub enum Bytecode {
     Copy(Reg, Reg),
 }
 
-pub type Reg = usize;
+pub type Reg = u8;
 
 pub type Idx = usize;
