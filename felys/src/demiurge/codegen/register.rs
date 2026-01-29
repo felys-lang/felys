@@ -27,7 +27,7 @@ impl Context {
         self.uses.entry(*var).or_insert(index);
     }
 
-    fn using(&mut self, var: &Var, index: usize) {
+    fn extend(&mut self, var: &Var, index: usize) {
         match self.uses.entry(*var) {
             Entry::Occupied(mut e) => {
                 let last = max(index, *e.get());
@@ -41,12 +41,16 @@ impl Context {
 }
 
 impl Function {
-    pub fn allocate(&self, copies: &HashMap<Label, Vec<Copy>>) -> (HashMap<Var, Reg>, usize) {
-        let ctx = self.precompute(copies);
+    pub fn allocate(
+        &self,
+        rpo: &[Label],
+        copies: &HashMap<Label, Vec<Copy>>,
+    ) -> (HashMap<Var, Reg>, usize) {
+        let ctx = self.precompute(copies, rpo);
         let mut intervals = ctx
             .uses
             .iter()
-            .map(|(var, last)| (*var, ctx.defs[var], *last))
+            .map(|(var, last)| (*var, *ctx.defs.get(var).unwrap(), *last))
             .collect::<Vec<_>>();
         intervals.sort_by_key(|(_, start, _)| *start);
 
@@ -77,24 +81,24 @@ impl Function {
         (mapping, used)
     }
 
-    fn precompute(&self, copies: &HashMap<Label, Vec<Copy>>) -> Context {
+    fn precompute(&self, copies: &HashMap<Label, Vec<Copy>>, rpo: &[Label]) -> Context {
         let mut ctx = Context::default();
         let mut anchors = HashMap::new();
         let mut loops = Vec::new();
 
         let mut index = 0;
-        for label in self.rpo() {
-            anchors.insert(label, index);
-            let fragment = self.get(label).unwrap();
+        for label in rpo {
+            anchors.insert(*label, index);
+            let fragment = self.get(*label).unwrap();
             for (idx, instruction) in fragment.instructions.iter().enumerate() {
                 instruction.du(index, &mut ctx);
-                ctx.indices.insert((label, Id::Ins(idx)), index);
+                ctx.indices.insert((*label, Id::Ins(idx)), index);
                 index += 1;
             }
-            if let Some(copy) = copies.get(&label) {
+            if let Some(copy) = copies.get(label) {
                 for (idx, copy) in copy.iter().enumerate() {
                     copy.du(index, &mut ctx);
-                    ctx.indices.insert((label, Id::Copy(idx)), index);
+                    ctx.indices.insert((*label, Id::Copy(idx)), index);
                     index += 1;
                 }
             }
@@ -103,7 +107,7 @@ impl Function {
                 .as_ref()
                 .unwrap()
                 .du(index, &mut ctx, &mut anchors, &mut loops);
-            ctx.indices.insert((label, Id::Term), index);
+            ctx.indices.insert((*label, Id::Term), index);
 
             index += 1;
         }
@@ -128,25 +132,25 @@ impl Instruction {
             | Instruction::Unpack(dst, src, _)
             | Instruction::Unary(dst, _, src) => {
                 ctx.define(dst, index);
-                ctx.using(src, index);
+                ctx.extend(src, index);
             }
 
             Instruction::Binary(dst, lhs, _, rhs) | Instruction::Index(dst, lhs, rhs) => {
                 ctx.define(dst, index);
-                ctx.using(lhs, index);
-                ctx.using(rhs, index);
+                ctx.extend(lhs, index);
+                ctx.extend(rhs, index);
             }
             Instruction::Call(dst, src, args) | Instruction::Method(dst, src, _, args) => {
                 ctx.define(dst, index);
-                ctx.using(src, index);
+                ctx.extend(src, index);
                 for arg in args {
-                    ctx.using(arg, index);
+                    ctx.extend(arg, index);
                 }
             }
             Instruction::List(dst, args) | Instruction::Tuple(dst, args) => {
                 ctx.define(dst, index);
                 for arg in args {
-                    ctx.using(arg, index);
+                    ctx.extend(arg, index);
                 }
             }
             Instruction::Arg(dst, _)
@@ -174,12 +178,12 @@ impl Terminator {
 
         match self {
             Terminator::Branch(var, yes, no) => {
-                ctx.using(var, index);
+                ctx.extend(var, index);
                 extend(yes);
                 extend(no);
             }
             Terminator::Return(var) => {
-                ctx.using(var, index);
+                ctx.extend(var, index);
             }
             Terminator::Jump(target) => {
                 extend(target);
@@ -191,6 +195,6 @@ impl Terminator {
 impl Copy {
     fn du(&self, index: usize, ctx: &mut Context) {
         ctx.define(&self.0, index);
-        ctx.using(&self.1, index);
+        ctx.extend(&self.1, index);
     }
 }

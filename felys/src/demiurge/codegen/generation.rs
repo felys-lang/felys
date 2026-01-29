@@ -115,11 +115,12 @@ impl Demiurge {
 impl Function {
     fn codegen(&mut self, ctx: &mut Context) -> Callable {
         let copies = self.copies();
-        let (allocation, used) = self.allocate(&copies);
+        let rpo = self.rpo();
+        let (allocation, used) = self.allocate(&rpo, &copies);
         Callable {
             args: self.args,
             registers: used,
-            bytecodes: self.lowering(ctx, &allocation, copies),
+            bytecodes: self.lowering(ctx, &allocation, &rpo, copies),
         }
     }
 
@@ -127,25 +128,26 @@ impl Function {
         &mut self,
         ctx: &mut Context,
         alloc: &HashMap<Var, Reg>,
+        rpo: &[Label],
         mut copies: HashMap<Label, Vec<Copy>>,
     ) -> Vec<Bytecode> {
         let mut index = 0;
         let mut map = HashMap::new();
-        for label in self.order() {
-            map.insert(label, index);
-            let fragment = self.get(label).unwrap();
+        for label in rpo {
+            map.insert(*label, index);
+            let fragment = self.get(*label).unwrap();
             let body = fragment.instructions.len();
-            let copy = copies.get(&label).map(|x| x.len()).unwrap_or(0);
+            let copy = copies.get(label).map(|x| x.len()).unwrap_or(0);
             let term = fragment.terminator.is_some() as usize;
             index += copy + body + term
         }
 
         let mut bytecodes = Vec::with_capacity(index);
-        for label in self.order() {
-            let fragment = self.get(label).unwrap();
+        for label in rpo {
+            let fragment = self.get(*label).unwrap();
             let body = fragment.instructions.iter().map(|x| x.codegen(alloc, ctx));
             let copy = copies
-                .remove(&label)
+                .remove(label)
                 .unwrap_or_default()
                 .into_iter()
                 .map(|copy| copy.codegen(alloc));
