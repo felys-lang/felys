@@ -375,7 +375,7 @@ impl Path {
 impl Lit {
     fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Option<Var>, Fault> {
         let var = ctx.var();
-        if let Some(c) = ctx.cache.get(self) {
+        if let Some(c) = ctx.consts.get(self) {
             ctx.push(Instruction::Load(var, c.clone()));
             return Ok(var.into());
         }
@@ -395,7 +395,7 @@ impl Lit {
                     .get(x)
                     .unwrap()
                     .parse::<f64>()
-                    .unwrap()
+                    .map_err(|_| Fault::InvalidFloat(self.clone()))?
                     .to_bits();
                 Const::Float(value)
             }

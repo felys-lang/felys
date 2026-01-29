@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 
 pub struct Context {
     pub cursor: Label,
-    pub cache: HashMap<Lit, Const>,
+    pub consts: HashMap<Lit, Const>,
     ids: usize,
     f: Function,
     defs: HashMap<Label, HashMap<Id, Var>>,
@@ -25,7 +25,7 @@ impl Context {
     pub fn new(args: usize) -> Self {
         Self {
             cursor: Label::Entry,
-            cache: Default::default(),
+            consts: Default::default(),
             ids: 0,
             f: Function::new(args),
             defs: Default::default(),

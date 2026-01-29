@@ -11,6 +11,7 @@ pub enum Fault {
     InconsistentIfElse(Block, Option<Rc<Expr>>),
     FunctionNoReturn(Block),
     InvalidInt(Lit),
+    InvalidFloat(Lit),
     InvalidStrChunk(Chunk),
     NoReturnValue(Rc<Expr>),
     BreakExprNotAllowed(Expr),
@@ -75,6 +76,11 @@ impl Fault {
             }
             Fault::InvalidInt(lit) => {
                 msg.push_str("this integer cannot be stored as `isize`\n");
+                msg.push_str(ERROR);
+                lit.recover(&mut msg, intern).unwrap();
+            }
+            Fault::InvalidFloat(lit) => {
+                msg.push_str("this decimal cannot be stored as `f64`\n");
                 msg.push_str(ERROR);
                 lit.recover(&mut msg, intern).unwrap();
             }
