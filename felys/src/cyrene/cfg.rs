@@ -29,7 +29,7 @@ impl Block {
             .lookup(ctx.cursor, Id::Ret)
             .ok_or(Fault::FunctionNoReturn(self.clone()))?;
         ctx.ret(var);
-        Ok(ctx.export())
+        Ok(ctx.into())
     }
 
     fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Option<Var>, Fault> {

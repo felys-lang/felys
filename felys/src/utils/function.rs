@@ -71,15 +71,6 @@ impl Function {
             .chain([(Label::Exit, &mut self.exit)])
     }
 
-    pub fn order(&self) -> impl Iterator<Item=Label> {
-        let mut order = self.fragments.keys().cloned().collect::<Vec<_>>();
-        order.sort_unstable();
-        [Label::Entry]
-            .into_iter()
-            .chain(order.into_iter().map(Label::Id))
-            .chain([Label::Exit])
-    }
-
     pub fn rpo(&self) -> Vec<Label> {
         let mut order = Vec::new();
         let mut visited = HashSet::new();

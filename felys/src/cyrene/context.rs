@@ -34,10 +34,6 @@ impl Context {
         }
     }
 
-    pub fn export(self) -> Function {
-        self.f
-    }
-
     pub fn id(&mut self) -> Id {
         let id = self.ids;
         self.ids += 1;
@@ -171,5 +167,11 @@ impl Context {
         };
         self.define(label, id, var);
         Some(var)
+    }
+}
+
+impl From<Context> for Function {
+    fn from(value: Context) -> Self {
+        value.f
     }
 }
