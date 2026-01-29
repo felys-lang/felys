@@ -114,7 +114,7 @@ impl Function {
 
         for (start, end) in loops {
             for (var, last) in ctx.uses.iter_mut() {
-                let def = ctx.defs[var];
+                let def = *ctx.defs.get(var).unwrap();
                 if def < start && *last >= start {
                     *last = max(*last, end);
                 }
