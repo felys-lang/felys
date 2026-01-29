@@ -96,17 +96,17 @@ impl Runtime {
 
 struct Frame {
     pc: Index,
-    registers: Box<[Object]>,
+    registers: Box<[Option<Object>]>,
     args: Box<[Reg]>,
 }
 
 impl Frame {
     fn load(&self, reg: Reg) -> Object {
-        self.registers.get(reg as usize).cloned().unwrap()
+        self.registers.get(reg as usize).cloned().unwrap().unwrap()
     }
 
     fn store(&mut self, reg: Reg, obj: Object) {
-        *self.registers.get_mut(reg as usize).unwrap() = obj;
+        *self.registers.get_mut(reg as usize).unwrap() = Some(obj);
     }
 
     fn gather(&self, args: &[Reg]) -> Vec<Object> {
@@ -130,7 +130,7 @@ impl Callable {
         }
         let frame = Frame {
             pc: 0,
-            registers: vec![Object::Void; self.registers as usize].into_boxed_slice(),
+            registers: vec![None; self.registers as usize].into_boxed_slice(),
             args: args.into_boxed_slice(),
         };
         Ok(frame)

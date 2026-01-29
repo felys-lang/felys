@@ -350,7 +350,6 @@ impl Object {
             Object::Int(x) => write!(f, "{}", x),
             Object::Float(x) => write!(f, "{}", x),
             Object::Bool(x) => write!(f, "{}", x),
-            Object::Void => write!(f, "<void>"),
         }
     }
 }

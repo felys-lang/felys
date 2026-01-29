@@ -14,7 +14,6 @@ pub enum Object {
     Int(isize),
     Float(f64),
     Bool(bool),
-    Void,
 }
 
 impl Object {
