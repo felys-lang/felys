@@ -1,15 +1,15 @@
 use crate::elysia::fault::Fault;
 use crate::utils::ast::{BinOp, UnaOp};
-use crate::utils::bytecode::Idx;
+use crate::utils::bytecode::Index;
 use crate::utils::ir::Pointer;
 use std::rc::Rc;
 
 #[derive(Clone, Debug)]
 pub enum Object {
-    Pointer(Pointer, Idx),
+    Pointer(Pointer, Index),
     List(Rc<[Object]>),
     Tuple(Rc<[Object]>),
-    Group(usize, Rc<[Object]>),
+    Group(Index, Rc<[Object]>),
     Str(Rc<str>),
     Int(isize),
     Float(f64),
@@ -34,7 +34,7 @@ impl Object {
         }
     }
 
-    pub fn group(&self) -> Result<(usize, Rc<[Object]>), Fault> {
+    pub fn group(&self) -> Result<(Index, Rc<[Object]>), Fault> {
         if let Object::Group(x, elements) = self {
             Ok((*x, elements.clone()))
         } else {
@@ -42,7 +42,7 @@ impl Object {
         }
     }
 
-    pub fn pointer(&self) -> Result<(Pointer, usize), Fault> {
+    pub fn pointer(&self) -> Result<(Pointer, Index), Fault> {
         if let Object::Pointer(ty, idx) = self {
             Ok((ty.clone(), *idx))
         } else {

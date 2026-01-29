@@ -330,7 +330,7 @@ impl Object {
                 write!(f, ")")
             }
             Object::Group(id, objs) => {
-                let group = groups.get(*id).unwrap();
+                let group = groups.get(*id as usize).unwrap();
                 let indent = indent + 1;
                 writeln!(f, "{id}: {{")?;
                 let mut iter = objs.iter().enumerate();

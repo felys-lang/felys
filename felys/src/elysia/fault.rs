@@ -7,7 +7,7 @@ pub enum Fault {
     UnaryOperation(&'static str, Object),
     NumArgsNotMatch(usize, usize),
     IndexOutOfBounds(Object, isize),
-    NotEnoughToUnpack(Object, usize),
+    NotEnoughToUnpack(Object, u32),
 }
 
 impl Fault {

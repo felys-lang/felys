@@ -1,5 +1,5 @@
 use crate::demiurge::codegen::copies::Copy;
-use crate::utils::bytecode::{Bytecode, Reg};
+use crate::utils::bytecode::{Bytecode, Index, Reg};
 use crate::utils::function::Function;
 use crate::utils::group::Group;
 use crate::utils::ir::{Const, Instruction, Label, Pointer, Terminator, Var};
@@ -167,15 +167,30 @@ impl Function {
 impl Instruction {
     fn codegen(&self, alloc: &HashMap<Var, Reg>, ctx: &mut Context) -> Bytecode {
         match self {
-            Instruction::Arg(dst, idx) => Bytecode::Arg(alloc[dst], *idx),
-            Instruction::Field(dst, src, idx) => Bytecode::Field(alloc[dst], alloc[src], *idx),
-            Instruction::Unpack(dst, src, idx) => Bytecode::Unpack(alloc[dst], alloc[src], *idx),
+            Instruction::Arg(dst, idx) => Bytecode::Arg(alloc[dst], Index::try_from(*idx).unwrap()),
+            Instruction::Field(dst, src, id) => Bytecode::Field(alloc[dst], alloc[src], *id),
+            Instruction::Unpack(dst, src, idx) => {
+                Bytecode::Unpack(alloc[dst], alloc[src], Index::try_from(*idx).unwrap())
+            }
             Instruction::Pointer(dst, pt, ptr) => match pt {
-                Pointer::Function => Bytecode::Pointer(alloc[dst], pt.clone(), ctx.function(*ptr)),
-                Pointer::Group => Bytecode::Pointer(alloc[dst], pt.clone(), ctx.group(*ptr)),
-                Pointer::Rust => Bytecode::Pointer(alloc[dst], pt.clone(), *ptr),
+                Pointer::Function => Bytecode::Pointer(
+                    alloc[dst],
+                    pt.clone(),
+                    Index::try_from(ctx.function(*ptr)).unwrap(),
+                ),
+                Pointer::Group => Bytecode::Pointer(
+                    alloc[dst],
+                    pt.clone(),
+                    Index::try_from(ctx.group(*ptr)).unwrap(),
+                ),
+                Pointer::Rust => {
+                    Bytecode::Pointer(alloc[dst], pt.clone(), Index::try_from(*ptr).unwrap())
+                }
             },
-            Instruction::Load(dst, id) => Bytecode::Load(alloc[dst], ctx.consts.index(id.clone())),
+            Instruction::Load(dst, id) => Bytecode::Load(
+                alloc[dst],
+                Index::try_from(ctx.consts.index(id.clone())).unwrap(),
+            ),
             Instruction::Binary(dst, lhs, op, rhs) => Bytecode::Binary(
                 alloc[dst],
                 *alloc.get(lhs).unwrap_or(&0),
@@ -210,8 +225,12 @@ impl Instruction {
 impl Terminator {
     fn codegen(&self, alloc: &HashMap<Var, Reg>, map: &HashMap<Label, usize>) -> Bytecode {
         match self {
-            Terminator::Branch(cond, yes, no) => Bytecode::Branch(alloc[cond], map[yes], map[no]),
-            Terminator::Jump(to) => Bytecode::Jump(map[to]),
+            Terminator::Branch(cond, yes, no) => Bytecode::Branch(
+                alloc[cond],
+                Index::try_from(map[yes]).unwrap(),
+                Index::try_from(map[no]).unwrap(),
+            ),
+            Terminator::Jump(to) => Bytecode::Jump(Index::try_from(map[to]).unwrap()),
             Terminator::Return(var) => Bytecode::Return(alloc[var]),
         }
     }

@@ -3,11 +3,11 @@ use crate::utils::ir::Pointer;
 
 #[derive(Debug)]
 pub enum Bytecode {
-    Arg(Reg, Idx),
+    Arg(Reg, Index),
     Field(Reg, Reg, usize),
-    Unpack(Reg, Reg, usize),
-    Pointer(Reg, Pointer, Idx),
-    Load(Reg, Idx),
+    Unpack(Reg, Reg, Index),
+    Pointer(Reg, Pointer, Index),
+    Load(Reg, Index),
     Binary(Reg, Reg, BinOp, Reg),
     Unary(Reg, UnaOp, Reg),
     Call(Reg, Reg, Vec<Reg>),
@@ -15,12 +15,12 @@ pub enum Bytecode {
     Tuple(Reg, Vec<Reg>),
     Index(Reg, Reg, Reg),
     Method(Reg, Reg, usize, Vec<Reg>),
-    Branch(Reg, Idx, Idx),
-    Jump(Idx),
+    Branch(Reg, Index, Index),
+    Jump(Index),
     Return(Reg),
     Copy(Reg, Reg),
 }
 
 pub type Reg = u8;
 
-pub type Idx = usize;
+pub type Index = u32;

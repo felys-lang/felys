@@ -1,14 +1,71 @@
 use crate::utils::bytecode::Bytecode;
+use crate::utils::group::Group;
+use crate::utils::ir::Const;
 use crate::utils::stages::{Callable, Elysia};
 use std::io::Write;
 
 impl Elysia {
     pub fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
         self.main.dump(buf)?;
+
+        buf.write_all(&(self.text.len() as u32).to_le_bytes())?;
         for callable in self.text.iter() {
             callable.dump(buf)?;
         }
+
+        buf.write_all(&(self.data.len() as u32).to_le_bytes())?;
+        for constant in self.data.iter() {
+            constant.dump(buf)?;
+        }
+
+        buf.write_all(&(self.groups.len() as u32).to_le_bytes())?;
+        for group in self.groups.iter() {
+            group.dump(buf)?;
+        }
+
         Ok(())
+    }
+}
+
+impl Group {
+    fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
+        buf.write_all(&(self.methods.len() as u32).to_le_bytes())?;
+        for (id, idx) in self.methods.iter() {
+            buf.write_all(&id.to_le_bytes())?;
+            buf.write_all(&idx.to_le_bytes())?;
+        }
+
+        buf.write_all(&(self.indices.len() as u32).to_le_bytes())?;
+        for (id, idx) in self.indices.iter() {
+            buf.write_all(&id.to_le_bytes())?;
+            buf.write_all(&idx.to_le_bytes())?;
+        }
+
+        buf.write_all(&(self.fields.len() as u32).to_le_bytes())?;
+        for field in self.fields.iter() {
+            buf.write_all(&field.to_le_bytes())?;
+        }
+        Ok(())
+    }
+}
+
+impl Const {
+    fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
+        match self {
+            Const::Int(x) => {
+                buf.write_all(&[0x0])?;
+                buf.write_all(&x.to_le_bytes())
+            }
+            Const::Float(x) => {
+                buf.write_all(&[0x1])?;
+                buf.write_all(&x.to_le_bytes())
+            }
+            Const::Bool(x) => buf.write_all(&[0x2, *x as u8]),
+            Const::Str(x) => {
+                buf.write_all(&[0x3])?;
+                buf.write_all(x.as_bytes())
+            }
+        }
     }
 }
 
@@ -27,7 +84,8 @@ impl Bytecode {
     fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
         match self {
             Bytecode::Arg(dst, idx) => {
-                buf.write_all(&[0x0, *dst, *idx as u8])?;
+                buf.write_all(&[0x0, *dst])?;
+                buf.write_all(&idx.to_le_bytes())?;
             }
             Bytecode::Field(dst, src, id) => {
                 buf.write_all(&[0x1, *dst, *src])?;
@@ -38,10 +96,12 @@ impl Bytecode {
                 buf.write_all(&(*idx as u32).to_le_bytes())?;
             }
             Bytecode::Pointer(dst, pt, ptr) => {
-                buf.write_all(&[0x3, *dst, pt.clone() as u8, *ptr as u8])?;
+                buf.write_all(&[0x3, *dst, pt.clone() as u8])?;
+                buf.write_all(&ptr.to_le_bytes())?;
             }
             Bytecode::Load(dst, idx) => {
-                buf.write_all(&[0x4, *dst, *idx as u8])?;
+                buf.write_all(&[0x4, *dst])?;
+                buf.write_all(&idx.to_le_bytes())?;
             }
             Bytecode::Binary(dst, lhs, op, rhs) => {
                 buf.write_all(&[0x5, *dst, *lhs, op.clone() as u8, *rhs])?;
@@ -71,12 +131,12 @@ impl Bytecode {
             }
             Bytecode::Branch(cond, yes, no) => {
                 buf.write_all(&[0xC, *cond])?;
-                buf.write_all(&(*yes as u32).to_le_bytes())?;
-                buf.write_all(&(*no as u32).to_le_bytes())?;
+                buf.write_all(&(*yes).to_le_bytes())?;
+                buf.write_all(&(*no).to_le_bytes())?;
             }
             Bytecode::Jump(target) => {
                 buf.write_all(&[0xD])?;
-                buf.write_all(&(*target as u32).to_le_bytes())?;
+                buf.write_all(&(*target).to_le_bytes())?;
             }
             Bytecode::Return(src) => {
                 buf.write_all(&[0xE, *src])?;
