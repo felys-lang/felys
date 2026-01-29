@@ -89,11 +89,11 @@ impl Bytecode {
             }
             Bytecode::Field(dst, src, id) => {
                 buf.write_all(&[0x1, *dst, *src])?;
-                buf.write_all(&(*id as u32).to_le_bytes())?;
+                buf.write_all(&id.to_le_bytes())?;
             }
             Bytecode::Unpack(dst, src, idx) => {
                 buf.write_all(&[0x2, *dst, *src])?;
-                buf.write_all(&(*idx as u32).to_le_bytes())?;
+                buf.write_all(&idx.to_le_bytes())?;
             }
             Bytecode::Pointer(dst, pt, ptr) => {
                 buf.write_all(&[0x3, *dst, pt.clone() as u8])?;
