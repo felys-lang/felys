@@ -145,16 +145,18 @@ impl Function {
         let mut bytecodes = Vec::with_capacity(index);
         for label in rpo {
             let fragment = self.get(*label).unwrap();
+
             let body = fragment.instructions.iter().map(|x| x.codegen(alloc, ctx));
+            bytecodes.extend(body);
+
             let copy = copies
                 .remove(label)
                 .unwrap_or_default()
                 .into_iter()
                 .map(|copy| copy.codegen(alloc));
-            let term = fragment.terminator.as_ref().map(|x| x.codegen(alloc, &map));
-            bytecodes.extend(body);
             bytecodes.extend(copy);
-            if let Some(term) = term {
+
+            if let Some(term) = fragment.terminator.as_ref().map(|x| x.codegen(alloc, &map)) {
                 bytecodes.push(term);
             }
         }
@@ -208,20 +210,15 @@ impl Instruction {
 impl Terminator {
     fn codegen(&self, alloc: &HashMap<Var, Reg>, map: &HashMap<Label, usize>) -> Bytecode {
         match self {
-            Terminator::Branch(cond, yes, no) => {
-                Bytecode::Branch(*alloc.get(cond).unwrap_or(&0), map[yes], map[no])
-            }
+            Terminator::Branch(cond, yes, no) => Bytecode::Branch(alloc[cond], map[yes], map[no]),
             Terminator::Jump(to) => Bytecode::Jump(map[to]),
-            Terminator::Return(var) => Bytecode::Return(*alloc.get(var).unwrap_or(&0)),
+            Terminator::Return(var) => Bytecode::Return(alloc[var]),
         }
     }
 }
 
 impl Copy {
     fn codegen(&self, alloc: &HashMap<Var, Reg>) -> Bytecode {
-        Bytecode::Copy(
-            *alloc.get(&self.0).unwrap_or(&0),
-            *alloc.get(&self.1).unwrap_or(&0),
-        )
+        Bytecode::Copy(alloc[&self.0], alloc[&self.1])
     }
 }
