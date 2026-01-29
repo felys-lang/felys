@@ -20,8 +20,8 @@ impl Block {
 
         if let Some(var) = self.ir(&mut ctx, &mut stk, meta)? {
             ctx.define(ctx.cursor, Id::Ret, var);
-            ctx.jump(Label::Exit);
         }
+        ctx.jump(Label::Exit);
         ctx.seal(Label::Exit)?;
 
         ctx.cursor = Label::Exit;
@@ -202,10 +202,7 @@ impl Expr {
                 ctx.cursor = body;
                 stk.push((body, end, Some((None, false))));
                 block.ir(ctx, stk, meta)?;
-                let (wb, seen) = stk.pop().unwrap().2.unwrap();
-                if !seen {
-                    return Err(Fault::InfiniteLoop(self.clone()));
-                }
+                let (wb, _) = stk.pop().unwrap().2.unwrap();
 
                 ctx.jump(body);
                 ctx.seal(body)?;

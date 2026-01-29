@@ -60,7 +60,25 @@ impl Context {
         fragment.instructions.push(instruction);
     }
 
+    fn dead(&self) -> bool {
+        if self.cursor == Label::Entry {
+            return false;
+        }
+
+        if self.sealed.contains(&self.cursor)
+            && let Some(frag) = self.f.get(self.cursor)
+            && frag.predecessors.is_empty()
+        {
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn jump(&mut self, to: Label) {
+        if self.dead() {
+            return;
+        }
         let fragment = self.f.modify(self.cursor).unwrap();
         if fragment.terminator.is_some() {
             return;
@@ -71,6 +89,9 @@ impl Context {
     }
 
     pub fn branch(&mut self, cond: Var, to: Label, or: Label) {
+        if self.dead() {
+            return;
+        }
         let fragment = self.f.modify(self.cursor).unwrap();
         if fragment.terminator.is_some() {
             return;
@@ -82,6 +103,9 @@ impl Context {
     }
 
     pub fn ret(&mut self, var: Var) {
+        if self.dead() {
+            return;
+        }
         let fragment = self.f.modify(self.cursor).unwrap();
         if fragment.terminator.is_some() {
             return;

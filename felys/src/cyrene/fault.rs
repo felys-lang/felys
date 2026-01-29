@@ -15,7 +15,6 @@ pub enum Fault {
     NoReturnValue(Rc<Expr>),
     BreakExprNotAllowed(Expr),
     InconsistentBreakBehavior(Option<Rc<Expr>>),
-    InfiniteLoop(Expr),
     ValueNotDefined(usize),
 }
 
@@ -104,11 +103,6 @@ impl Fault {
                 Expr::Break(expr)
                     .recover(&mut msg, ERROR, 0, intern)
                     .unwrap();
-            }
-            Fault::InfiniteLoop(expr) => {
-                msg.push_str("this is an infinite loop\n");
-                msg.push_str(ERROR);
-                expr.recover(&mut msg, ERROR, 0, intern).unwrap();
             }
             Fault::ValueNotDefined(id) => {
                 msg.push_str("this value is not defined\n");
