@@ -8,17 +8,17 @@ impl Elysia {
     pub fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
         self.main.dump(buf)?;
 
-        buf.write_all(&u32::try_from(self.text.len()).unwrap().to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.text.len()).unwrap().to_be_bytes())?;
         for callable in self.text.iter() {
             callable.dump(buf)?;
         }
 
-        buf.write_all(&u32::try_from(self.data.len()).unwrap().to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.data.len()).unwrap().to_be_bytes())?;
         for constant in self.data.iter() {
             constant.dump(buf)?;
         }
 
-        buf.write_all(&u32::try_from(self.groups.len()).unwrap().to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.groups.len()).unwrap().to_be_bytes())?;
         for group in self.groups.iter() {
             group.dump(buf)?;
         }
@@ -29,21 +29,21 @@ impl Elysia {
 
 impl Group {
     fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
-        buf.write_all(&u32::try_from(self.methods.len()).unwrap().to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.methods.len()).unwrap().to_be_bytes())?;
         for (id, idx) in self.methods.iter() {
-            buf.write_all(&id.to_le_bytes())?;
-            buf.write_all(&idx.to_le_bytes())?;
+            buf.write_all(&id.to_be_bytes())?;
+            buf.write_all(&idx.to_be_bytes())?;
         }
 
-        buf.write_all(&u32::try_from(self.indices.len()).unwrap().to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.indices.len()).unwrap().to_be_bytes())?;
         for (id, idx) in self.indices.iter() {
-            buf.write_all(&id.to_le_bytes())?;
-            buf.write_all(&idx.to_le_bytes())?;
+            buf.write_all(&id.to_be_bytes())?;
+            buf.write_all(&idx.to_be_bytes())?;
         }
 
-        buf.write_all(&u32::try_from(self.fields.len()).unwrap().to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.fields.len()).unwrap().to_be_bytes())?;
         for field in self.fields.iter() {
-            buf.write_all(&field.to_le_bytes())?;
+            buf.write_all(&field.to_be_bytes())?;
         }
         Ok(())
     }
@@ -54,11 +54,11 @@ impl Const {
         match self {
             Const::Int(x) => {
                 buf.write_all(&[0x0])?;
-                buf.write_all(&x.to_le_bytes())
+                buf.write_all(&x.to_be_bytes())
             }
             Const::Float(x) => {
                 buf.write_all(&[0x1])?;
-                buf.write_all(&x.to_le_bytes())
+                buf.write_all(&x.to_be_bytes())
             }
             Const::Bool(x) => buf.write_all(&[0x2, *x as u8]),
             Const::Str(x) => {
@@ -72,7 +72,7 @@ impl Const {
 impl Callable {
     fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
         buf.write_all(&[self.registers])?;
-        buf.write_all(&u32::try_from(self.bytecodes.len()).unwrap().to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.bytecodes.len()).unwrap().to_be_bytes())?;
         for bytecode in self.bytecodes.iter() {
             bytecode.dump(buf)?;
         }
@@ -85,23 +85,23 @@ impl Bytecode {
         match self {
             Bytecode::Arg(dst, idx) => {
                 buf.write_all(&[0x0, *dst])?;
-                buf.write_all(&idx.to_le_bytes())?;
+                buf.write_all(&idx.to_be_bytes())?;
             }
             Bytecode::Field(dst, src, id) => {
                 buf.write_all(&[0x1, *dst, *src])?;
-                buf.write_all(&id.to_le_bytes())?;
+                buf.write_all(&id.to_be_bytes())?;
             }
             Bytecode::Unpack(dst, src, idx) => {
                 buf.write_all(&[0x2, *dst, *src])?;
-                buf.write_all(&idx.to_le_bytes())?;
+                buf.write_all(&idx.to_be_bytes())?;
             }
             Bytecode::Pointer(dst, pt, ptr) => {
                 buf.write_all(&[0x3, *dst, pt.clone() as u8])?;
-                buf.write_all(&ptr.to_le_bytes())?;
+                buf.write_all(&ptr.to_be_bytes())?;
             }
             Bytecode::Load(dst, idx) => {
                 buf.write_all(&[0x4, *dst])?;
-                buf.write_all(&idx.to_le_bytes())?;
+                buf.write_all(&idx.to_be_bytes())?;
             }
             Bytecode::Binary(dst, lhs, op, rhs) => {
                 buf.write_all(&[0x5, *dst, *lhs, op.clone() as u8, *rhs])?;
@@ -110,15 +110,15 @@ impl Bytecode {
                 buf.write_all(&[0x6, *dst, op.clone() as u8, *src])?;
             }
             Bytecode::Call(dst, src, args) => {
-                buf.write_all(&[0x7, *dst, *src, args.len() as u8])?;
+                buf.write_all(&[0x7, *dst, *src, u8::try_from(args.len()).unwrap()])?;
                 buf.write_all(args)?;
             }
             Bytecode::List(dst, args) => {
-                buf.write_all(&[0x8, *dst, args.len() as u8])?;
+                buf.write_all(&[0x8, *dst, u8::try_from(args.len()).unwrap()])?;
                 buf.write_all(args)?;
             }
             Bytecode::Tuple(dst, args) => {
-                buf.write_all(&[0x9, *dst, args.len() as u8])?;
+                buf.write_all(&[0x9, *dst, u8::try_from(args.len()).unwrap()])?;
                 buf.write_all(args)?;
             }
             Bytecode::Index(dst, src, index) => {
@@ -126,17 +126,18 @@ impl Bytecode {
             }
             Bytecode::Method(dst, src, id, args) => {
                 buf.write_all(&[0xB, *dst, *src])?;
-                buf.write_all(&(*id).to_le_bytes())?;
+                buf.write_all(&(*id).to_be_bytes())?;
+                buf.write_all(&[u8::try_from(args.len()).unwrap()])?;
                 buf.write_all(args)?;
             }
             Bytecode::Branch(cond, yes, no) => {
                 buf.write_all(&[0xC, *cond])?;
-                buf.write_all(&(*yes).to_le_bytes())?;
-                buf.write_all(&(*no).to_le_bytes())?;
+                buf.write_all(&(*yes).to_be_bytes())?;
+                buf.write_all(&(*no).to_be_bytes())?;
             }
             Bytecode::Jump(target) => {
                 buf.write_all(&[0xD])?;
-                buf.write_all(&(*target).to_le_bytes())?;
+                buf.write_all(&(*target).to_be_bytes())?;
             }
             Bytecode::Return(src) => {
                 buf.write_all(&[0xE, *src])?;
