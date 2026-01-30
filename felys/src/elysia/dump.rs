@@ -8,17 +8,17 @@ impl Elysia {
     pub fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
         self.main.dump(buf)?;
 
-        buf.write_all(&(self.text.len() as u32).to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.text.len()).unwrap().to_le_bytes())?;
         for callable in self.text.iter() {
             callable.dump(buf)?;
         }
 
-        buf.write_all(&(self.data.len() as u32).to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.data.len()).unwrap().to_le_bytes())?;
         for constant in self.data.iter() {
             constant.dump(buf)?;
         }
 
-        buf.write_all(&(self.groups.len() as u32).to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.groups.len()).unwrap().to_le_bytes())?;
         for group in self.groups.iter() {
             group.dump(buf)?;
         }
@@ -29,19 +29,19 @@ impl Elysia {
 
 impl Group {
     fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
-        buf.write_all(&(self.methods.len() as u32).to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.methods.len()).unwrap().to_le_bytes())?;
         for (id, idx) in self.methods.iter() {
             buf.write_all(&id.to_le_bytes())?;
             buf.write_all(&idx.to_le_bytes())?;
         }
 
-        buf.write_all(&(self.indices.len() as u32).to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.indices.len()).unwrap().to_le_bytes())?;
         for (id, idx) in self.indices.iter() {
             buf.write_all(&id.to_le_bytes())?;
             buf.write_all(&idx.to_le_bytes())?;
         }
 
-        buf.write_all(&(self.fields.len() as u32).to_le_bytes())?;
+        buf.write_all(&u32::try_from(self.fields.len()).unwrap().to_le_bytes())?;
         for field in self.fields.iter() {
             buf.write_all(&field.to_le_bytes())?;
         }
@@ -71,8 +71,8 @@ impl Const {
 
 impl Callable {
     fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
-        buf.write_all(&[self.args as u8, self.registers])?;
-        buf.write_all(&(self.bytecodes.len() as u32).to_le_bytes())?;
+        buf.write_all(&[self.registers])?;
+        buf.write_all(&u32::try_from(self.bytecodes.len()).unwrap().to_le_bytes())?;
         for bytecode in self.bytecodes.iter() {
             bytecode.dump(buf)?;
         }
