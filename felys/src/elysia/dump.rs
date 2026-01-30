@@ -1,4 +1,4 @@
-use crate::utils::bytecode::Bytecode;
+use crate::utils::bytecode::{Bytecode, Index, Reg};
 use crate::utils::group::Group;
 use crate::utils::ir::Const;
 use crate::utils::stages::{Callable, Elysia};
@@ -8,17 +8,17 @@ impl Elysia {
     pub fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
         self.main.dump(buf)?;
 
-        buf.write_all(&u32::try_from(self.text.len()).unwrap().to_be_bytes())?;
+        buf.write_all(&Index::try_from(self.text.len()).unwrap().to_be_bytes())?;
         for callable in self.text.iter() {
             callable.dump(buf)?;
         }
 
-        buf.write_all(&u32::try_from(self.data.len()).unwrap().to_be_bytes())?;
+        buf.write_all(&Index::try_from(self.data.len()).unwrap().to_be_bytes())?;
         for constant in self.data.iter() {
             constant.dump(buf)?;
         }
 
-        buf.write_all(&u32::try_from(self.groups.len()).unwrap().to_be_bytes())?;
+        buf.write_all(&Index::try_from(self.groups.len()).unwrap().to_be_bytes())?;
         for group in self.groups.iter() {
             group.dump(buf)?;
         }
@@ -29,19 +29,19 @@ impl Elysia {
 
 impl Group {
     fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
-        buf.write_all(&u32::try_from(self.methods.len()).unwrap().to_be_bytes())?;
+        buf.write_all(&Index::try_from(self.methods.len()).unwrap().to_be_bytes())?;
         for (id, idx) in self.methods.iter() {
             buf.write_all(&id.to_be_bytes())?;
             buf.write_all(&idx.to_be_bytes())?;
         }
 
-        buf.write_all(&u32::try_from(self.indices.len()).unwrap().to_be_bytes())?;
+        buf.write_all(&Index::try_from(self.indices.len()).unwrap().to_be_bytes())?;
         for (id, idx) in self.indices.iter() {
             buf.write_all(&id.to_be_bytes())?;
             buf.write_all(&idx.to_be_bytes())?;
         }
 
-        buf.write_all(&u32::try_from(self.fields.len()).unwrap().to_be_bytes())?;
+        buf.write_all(&Index::try_from(self.fields.len()).unwrap().to_be_bytes())?;
         for field in self.fields.iter() {
             buf.write_all(&field.to_be_bytes())?;
         }
@@ -72,7 +72,7 @@ impl Const {
 impl Callable {
     fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
         buf.write_all(&[self.registers])?;
-        buf.write_all(&u32::try_from(self.bytecodes.len()).unwrap().to_be_bytes())?;
+        buf.write_all(&Index::try_from(self.bytecodes.len()).unwrap().to_be_bytes())?;
         for bytecode in self.bytecodes.iter() {
             bytecode.dump(buf)?;
         }
@@ -110,15 +110,15 @@ impl Bytecode {
                 buf.write_all(&[0x6, *dst, op.clone() as u8, *src])?;
             }
             Bytecode::Call(dst, src, args) => {
-                buf.write_all(&[0x7, *dst, *src, u8::try_from(args.len()).unwrap()])?;
+                buf.write_all(&[0x7, *dst, *src, Reg::try_from(args.len()).unwrap()])?;
                 buf.write_all(args)?;
             }
             Bytecode::List(dst, args) => {
-                buf.write_all(&[0x8, *dst, u8::try_from(args.len()).unwrap()])?;
+                buf.write_all(&[0x8, *dst, Reg::try_from(args.len()).unwrap()])?;
                 buf.write_all(args)?;
             }
             Bytecode::Tuple(dst, args) => {
-                buf.write_all(&[0x9, *dst, u8::try_from(args.len()).unwrap()])?;
+                buf.write_all(&[0x9, *dst, Reg::try_from(args.len()).unwrap()])?;
                 buf.write_all(args)?;
             }
             Bytecode::Index(dst, src, index) => {
@@ -127,7 +127,7 @@ impl Bytecode {
             Bytecode::Method(dst, src, id, args) => {
                 buf.write_all(&[0xB, *dst, *src])?;
                 buf.write_all(&(*id).to_be_bytes())?;
-                buf.write_all(&[u8::try_from(args.len()).unwrap()])?;
+                buf.write_all(&[Reg::try_from(args.len()).unwrap()])?;
                 buf.write_all(args)?;
             }
             Bytecode::Branch(cond, yes, no) => {
