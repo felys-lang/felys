@@ -126,7 +126,7 @@ impl Bytecode {
             }
             Bytecode::Method(dst, src, id, args) => {
                 buf.write_all(&[0xB, *dst, *src])?;
-                buf.write_all(&(*id as u32).to_le_bytes())?;
+                buf.write_all(&(*id).to_le_bytes())?;
                 buf.write_all(args)?;
             }
             Bytecode::Branch(cond, yes, no) => {

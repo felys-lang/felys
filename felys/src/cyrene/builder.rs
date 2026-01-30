@@ -1,6 +1,6 @@
 use crate::cyrene::fault::Fault;
 use crate::cyrene::meta::Meta;
-use crate::utils::ast::{BufVec, Impl, Item};
+use crate::utils::ast::{Impl, Item};
 use crate::utils::group::Group;
 use crate::utils::stages::{Cyrene, Demiurge};
 
@@ -38,7 +38,7 @@ impl Item {
             let gp = meta
                 .namespace
                 .allocate(&[], *id)
-                .ok_or(Fault::DuplicatePath(BufVec::new([*id], vec![])))?;
+                .ok_or(Fault::DuplicatePath(*id, vec![]))?;
             let group = Group::new(fields.iter().copied().collect());
             meta.groups.insert(gp, group);
         }
@@ -55,7 +55,7 @@ impl Item {
             Item::Fn(id, _, _) => {
                 meta.namespace
                     .attach(&[], *id)
-                    .ok_or(Fault::DuplicatePath(BufVec::new([*id], vec![])))?;
+                    .ok_or(Fault::DuplicatePath(*id, vec![]))?;
             }
             _ => {}
         }
@@ -88,16 +88,16 @@ impl Impl {
             Impl::Associated(secondary, _, _) => {
                 meta.namespace
                     .attach(&[id], *secondary)
-                    .ok_or(Fault::DuplicatePath(BufVec::new([id], vec![*secondary])))?;
+                    .ok_or(Fault::DuplicatePath(id, vec![*secondary]))?;
             }
             Impl::Method(secondary, _, _) => {
                 let ptr = meta
                     .namespace
                     .attach(&[id], *secondary)
-                    .ok_or(Fault::DuplicatePath(BufVec::new([id], vec![*secondary])))?;
+                    .ok_or(Fault::DuplicatePath(id, vec![*secondary]))?;
                 let (_, gp) = meta.namespace.get([id].iter()).unwrap();
                 let group = meta.groups.get_mut(&gp).unwrap();
-                group.methods.insert(*secondary, ptr);
+                group.attach(*secondary, ptr);
             }
         }
         Ok(())

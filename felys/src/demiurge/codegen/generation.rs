@@ -1,5 +1,5 @@
 use crate::demiurge::codegen::copies::Copy;
-use crate::utils::bytecode::{Bytecode, Index, Reg};
+use crate::utils::bytecode::{Bytecode, Id, Index, Reg};
 use crate::utils::function::Function;
 use crate::utils::group::Group;
 use crate::utils::ir::{Const, Instruction, Label, Pointer, Terminator, Var};
@@ -69,9 +69,9 @@ impl Context {
         }
     }
 
-    fn group(&mut self, key: usize) -> usize {
+    fn group(&mut self, key: usize) -> Index {
         if let Some(index) = self.groups.indices.get(&key) {
-            *index
+            Index::try_from(*index).unwrap()
         } else {
             let index = self.groups.indices.len();
             self.groups.indices.insert(key, index);
@@ -79,22 +79,22 @@ impl Context {
             group
                 .methods
                 .values_mut()
-                .for_each(|x| *x = self.function(*x));
+                .for_each(|x| *x = self.function(*x as usize));
             self.groups.pool.insert(index, group);
-            index
+            Index::try_from(index).unwrap()
         }
     }
 
-    fn function(&mut self, key: usize) -> usize {
+    fn function(&mut self, key: usize) -> Index {
         if let Some(index) = self.functions.indices.get(&key) {
-            *index
+            Index::try_from(*index).unwrap()
         } else {
             let index = self.functions.indices.len();
             self.functions.indices.insert(key, index);
             let mut function = self.functions.source.remove(&key).unwrap();
             let callable = function.codegen(self);
             self.functions.pool.insert(index, callable);
-            index
+            Index::try_from(index).unwrap()
         }
     }
 }
@@ -168,7 +168,9 @@ impl Instruction {
     fn codegen(&self, alloc: &HashMap<Var, Reg>, ctx: &mut Context) -> Bytecode {
         match self {
             Instruction::Arg(dst, idx) => Bytecode::Arg(alloc[dst], Index::try_from(*idx).unwrap()),
-            Instruction::Field(dst, src, id) => Bytecode::Field(alloc[dst], alloc[src], *id),
+            Instruction::Field(dst, src, id) => {
+                Bytecode::Field(alloc[dst], alloc[src], Id::try_from(*id).unwrap())
+            }
             Instruction::Unpack(dst, src, idx) => {
                 Bytecode::Unpack(alloc[dst], alloc[src], Index::try_from(*idx).unwrap())
             }
@@ -215,7 +217,7 @@ impl Instruction {
             Instruction::Method(dst, src, id, args) => Bytecode::Method(
                 alloc[dst],
                 alloc[src],
-                *id,
+                Id::try_from(*id).unwrap(),
                 args.iter().map(|x| alloc[x]).collect(),
             ),
         }

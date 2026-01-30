@@ -160,7 +160,7 @@ impl Bytecode {
                     .indices
                     .get(id)
                     .unwrap();
-                let obj = group.get(*idx).cloned().unwrap();
+                let obj = group.get(*idx as usize).cloned().unwrap();
                 frame.store(*dst, obj);
             }
             Bytecode::Unpack(dst, src, idx) => {
@@ -267,7 +267,7 @@ impl Bytecode {
                     .unwrap();
                 let mut args = args.clone();
                 args.push(*src);
-                let new = elysia.text.get(*idx).unwrap().frame(args)?;
+                let new = elysia.text.get(*idx as usize).unwrap().frame(args)?;
                 rt.call(*dst, *idx as Index, new)?;
             }
             Bytecode::Branch(cond, yes, no) => {

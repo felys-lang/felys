@@ -7,7 +7,7 @@ pub enum Fault {
     BlockEarlyReturn(Block, usize),
     OutsideLoop(Expr),
     PathNotExist(Path),
-    DuplicatePath(BufVec<usize, 1>),
+    DuplicatePath(usize, Vec<usize>),
     InconsistentIfElse(Block, Option<Rc<Expr>>),
     FunctionNoReturn(Block),
     InvalidInt(Lit),
@@ -48,10 +48,12 @@ impl Fault {
                 msg.push_str(ERROR);
                 path.recover(&mut msg, intern).unwrap();
             }
-            Fault::DuplicatePath(buf) => {
+            Fault::DuplicatePath(buf, vec) => {
                 msg.push_str("this path is already defined\n");
                 msg.push_str(ERROR);
-                Path(buf).recover(&mut msg, intern).unwrap();
+                Path(BufVec::new([buf], vec))
+                    .recover(&mut msg, intern)
+                    .unwrap();
             }
             Fault::InconsistentIfElse(block, alter) => {
                 if let Some(alter) = alter {
