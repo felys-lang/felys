@@ -193,7 +193,7 @@ fn condition() -> Result<(), String> {
 
     let (_, exit) = eval(
         args.clone(),
-        "while true { if true { return 1; } else { return 0; } }",
+        "while true { if true { return 1; } else { return 0; } } 0",
     )?;
     assert!(eq(exit, Object::Int(1))?);
 

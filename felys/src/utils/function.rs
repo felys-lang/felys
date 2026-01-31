@@ -78,15 +78,15 @@ impl Function {
             if !visited.insert(label) {
                 return;
             }
-            match f.get(label).unwrap().terminator.as_ref() {
-                Some(Terminator::Branch(_, yes, no)) => {
+            match f.get(label).unwrap().terminator.as_ref().unwrap() {
+                Terminator::Branch(_, yes, no) => {
                     dfs(f, *yes, visited, order);
                     dfs(f, *no, visited, order);
                 }
-                Some(Terminator::Jump(target)) => {
+                Terminator::Jump(target) => {
                     dfs(f, *target, visited, order);
                 }
-                _ => {}
+                Terminator::Return(_) => {}
             }
             order.push(label);
         }
