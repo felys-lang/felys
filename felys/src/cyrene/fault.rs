@@ -13,8 +13,6 @@ pub enum Fault {
     InvalidFloat(Lit),
     InvalidStrChunk(Chunk),
     NoReturnValue(Rc<Expr>),
-    BreakExprNotAllowed(Expr),
-    InconsistentBreakBehavior(Option<Rc<Expr>>),
     ValueNotDefined(usize),
 }
 
@@ -78,22 +76,6 @@ impl Fault {
                 msg.push_str("this expression does not have a return value\n");
                 msg.push_str(ERROR);
                 expr.recover(&mut msg, ERROR, 0, intern).unwrap();
-            }
-            Fault::BreakExprNotAllowed(expr) => {
-                msg.push_str("`break` with expression is not allowed here\n");
-                msg.push_str(ERROR);
-                expr.recover(&mut msg, ERROR, 0, intern).unwrap();
-            }
-            Fault::InconsistentBreakBehavior(expr) => {
-                if expr.is_some() {
-                    msg.push_str("this `break` has an expression, while the others don't\n");
-                } else {
-                    msg.push_str("this `break` doesn't have an expression, while the others do\n");
-                }
-                msg.push_str(ERROR);
-                Expr::Break(expr)
-                    .recover(&mut msg, ERROR, 0, intern)
-                    .unwrap();
             }
             Fault::ValueNotDefined(id) => {
                 msg.push_str("this value is not defined\n");

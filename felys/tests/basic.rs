@@ -229,3 +229,28 @@ fn condition() -> Result<(), String> {
 
     Ok(())
 }
+
+#[test]
+fn loops() -> Result<(), String> {
+    let args = Object::List([].into());
+
+    let (_, exit) = eval(args.clone(), "loop { break 1; }")?;
+    assert!(eq(exit, Object::Int(1))?);
+
+    let (_, exit) = eval(args.clone(), "loop { return 1; }")?;
+    assert!(eq(exit, Object::Int(1))?);
+
+    let (_, exit) = eval(
+        args.clone(),
+        "x = true; loop { if x { x = false; continue; } else { break 1; } }",
+    )?;
+    assert!(eq(exit, Object::Int(1))?);
+
+    let (_, exit) = eval(
+        args.clone(),
+        "loop { break loop { break loop { break 1; } } }",
+    )?;
+    assert!(eq(exit, Object::Int(1))?);
+
+    Ok(())
+}

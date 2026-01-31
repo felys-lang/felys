@@ -5,7 +5,7 @@ use crate::utils::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Path, 
 use crate::utils::function::Function;
 use crate::utils::ir::{Const, Instruction, Label, Var};
 
-type Stack = Vec<(Label, Label, Option<(Option<Id>, bool)>)>;
+type Stack = Vec<(Label, Label, Option<(Id, Option<bool>)>)>;
 
 impl Block {
     pub fn function(&self, args: Vec<usize>, meta: &mut Meta) -> Result<Function, Fault> {
@@ -112,33 +112,18 @@ impl Expr {
                     .last()
                     .cloned()
                     .ok_or(Fault::OutsideLoop(self.clone()))?;
-                match (expr, wb) {
-                    (Some(x), Some((Some(id), _))) => {
-                        let var = x
-                            .ir(ctx, stk, meta)?
-                            .ok_or(Fault::NoReturnValue(x.clone()))?;
-                        ctx.define(ctx.cursor, id, var);
+                if let Some((id, action)) = wb
+                    && action.unwrap_or(true)
+                {
+                    if let Some(x) = expr
+                        && let Some(var) = x.ir(ctx, stk, meta)?
+                    {
+                        stk.last_mut().unwrap().2.as_mut().unwrap().1 = Some(true);
+                        ctx.define(ctx.cursor, id, var)
+                    } else {
+                        stk.last_mut().unwrap().2.as_mut().unwrap().1 = Some(false);
                     }
-                    (Some(x), Some((None, false))) => {
-                        let var = x
-                            .ir(ctx, stk, meta)?
-                            .ok_or(Fault::NoReturnValue(x.clone()))?;
-                        let id = ctx.id();
-                        *stk.last_mut().unwrap().2.as_mut().unwrap() = (Some(id), true);
-                        ctx.define(ctx.cursor, id, var);
-                    }
-                    (Some(_), None) => return Err(Fault::BreakExprNotAllowed(self.clone())),
-                    (Some(x), Some((None, true))) => {
-                        return Err(Fault::InconsistentBreakBehavior(Some(x.clone())));
-                    }
-                    (None, Some((Some(_), _))) => {
-                        return Err(Fault::InconsistentBreakBehavior(None));
-                    }
-                    (None, Some((None, false))) => {
-                        *stk.last_mut().unwrap().2.as_mut().unwrap() = (None, true);
-                    }
-                    (None, Some((None, true))) | (None, None) => {}
-                };
+                }
                 ctx.jump(end);
                 Ok(None)
             }
@@ -193,21 +178,22 @@ impl Expr {
             Expr::Loop(block) => {
                 let body = ctx.label();
                 let end = ctx.label();
+                let ret = ctx.id();
 
                 ctx.jump(body);
 
                 ctx.cursor = body;
-                stk.push((body, end, Some((None, false))));
+                stk.push((body, end, Some((ret, None))));
                 block.ir(ctx, stk, meta)?;
-                let (wb, _) = stk.pop().unwrap().2.unwrap();
+                let action = stk.pop().unwrap().2.unwrap().1;
 
                 ctx.jump(body);
                 ctx.seal(body)?;
                 ctx.seal(end)?;
 
                 ctx.cursor = end;
-                if let Some(id) = wb {
-                    let var = ctx.lookup(ctx.cursor, id).unwrap();
+                if action.unwrap_or(false) {
+                    let var = ctx.lookup(ctx.cursor, ret).unwrap();
                     Ok(Some(var))
                 } else {
                     Ok(None)
@@ -353,19 +339,27 @@ impl Expr {
 
 impl Path {
     fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Option<Var>, Fault> {
-        if self.0.len() == 1 {
-            let id = Id::Interned(self.0.buffer()[0]);
-            if let Some(var) = ctx.lookup(ctx.cursor, id) {
-                return Ok(var.into());
-            }
+        if let Some(id) = self.ident()
+            && let Some(var) = ctx.lookup(ctx.cursor, id)
+        {
+            return Ok(var.into());
         }
-        let var = ctx.var();
-        if let Some((ptr, id)) = meta.namespace.get(self.0.iter()) {
-            ctx.push(Instruction::Pointer(var, ptr, id));
-        } else {
+
+        let Some((ptr, id)) = meta.namespace.get(self.0.iter()) else {
             return Err(Fault::PathNotExist(self.clone()));
-        }
+        };
+
+        let var = ctx.var();
+        ctx.push(Instruction::Pointer(var, ptr, id));
         Ok(var.into())
+    }
+
+    fn ident(&self) -> Option<Id> {
+        if self.0.len() == 1 {
+            Some(Id::Interned(self.0.buffer()[0]))
+        } else {
+            None
+        }
     }
 }
 
