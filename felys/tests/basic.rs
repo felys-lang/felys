@@ -203,5 +203,23 @@ fn condition() -> Result<(), String> {
     )?;
     assert!(eq(exit, Object::Int(1))?);
 
+    let (_, exit) = eval(
+        args.clone(),
+        "if true { if true { if true { return 1; } } } args",
+    )?;
+    assert!(eq(exit, Object::Int(1))?);
+
+    let (_, exit) = eval(
+        args.clone(),
+        "if true { if true { if true { return args; } } } 0",
+    )?;
+    assert!(eq(exit, args.clone())?);
+
+    let (_, exit) = eval(
+        args.clone(),
+        "if true { if true { if false { return args; } } } 1",
+    )?;
+    assert!(eq(exit, Object::Int(1))?);
+
     Ok(())
 }
