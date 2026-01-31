@@ -102,14 +102,11 @@ impl Function {
                     index += 1;
                 }
             }
-            fragment
-                .terminator
-                .as_ref()
-                .unwrap()
-                .du(index, &mut ctx, &mut anchors, &mut loops);
-            ctx.indices.insert((*label, Id::Term), index);
-
-            index += 1;
+            if let Some(terminator) = fragment.terminator.as_ref() {
+                terminator.du(index, &mut ctx, &mut anchors, &mut loops);
+                ctx.indices.insert((*label, Id::Term), index);
+                index += 1;
+            }
         }
 
         for (start, end) in loops {

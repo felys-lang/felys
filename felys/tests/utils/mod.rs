@@ -1,8 +1,7 @@
 use felys::{BinOp, Object, PhiLia093};
 
-pub fn eval(body: &'static str) -> Result<(String, Object), String> {
-    let wrapped = format!("fn main(args) {{ return {body}; }}");
-    let args = Object::List([].into());
+pub fn eval(args: Object, body: &'static str) -> Result<(String, Object), String> {
+    let wrapped = format!("fn main(args) {{ {body} }}");
 
     let (uo, ue) = pipeline(wrapped.clone(), args.clone(), 0)?;
     let (oo, oe) = pipeline(wrapped, args, usize::MAX)?;

@@ -20,8 +20,8 @@ impl Block {
 
         if let Some(var) = self.ir(&mut ctx, &mut stk, meta)? {
             ctx.define(ctx.cursor, Id::Ret, var);
+            ctx.jump(Label::Exit);
         }
-        ctx.jump(Label::Exit);
         ctx.seal(Label::Exit)?;
 
         ctx.cursor = Label::Exit;

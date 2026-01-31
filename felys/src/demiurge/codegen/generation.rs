@@ -177,17 +177,13 @@ impl Instruction {
             Instruction::Pointer(dst, pt, ptr) => match pt {
                 Pointer::Function => Bytecode::Pointer(
                     alloc[dst],
-                    pt.clone(),
+                    *pt,
                     Index::try_from(ctx.function(*ptr)).unwrap(),
                 ),
-                Pointer::Group => Bytecode::Pointer(
-                    alloc[dst],
-                    pt.clone(),
-                    Index::try_from(ctx.group(*ptr)).unwrap(),
-                ),
-                Pointer::Rust => {
-                    Bytecode::Pointer(alloc[dst], pt.clone(), Index::try_from(*ptr).unwrap())
+                Pointer::Group => {
+                    Bytecode::Pointer(alloc[dst], *pt, Index::try_from(ctx.group(*ptr)).unwrap())
                 }
+                Pointer::Rust => Bytecode::Pointer(alloc[dst], *pt, Index::try_from(*ptr).unwrap()),
             },
             Instruction::Load(dst, id) => Bytecode::Load(
                 alloc[dst],
@@ -196,10 +192,10 @@ impl Instruction {
             Instruction::Binary(dst, lhs, op, rhs) => Bytecode::Binary(
                 alloc[dst],
                 *alloc.get(lhs).unwrap_or(&0),
-                op.clone(),
+                *op,
                 *alloc.get(rhs).unwrap_or(&0),
             ),
-            Instruction::Unary(dst, op, src) => Bytecode::Unary(alloc[dst], op.clone(), alloc[src]),
+            Instruction::Unary(dst, op, src) => Bytecode::Unary(alloc[dst], *op, alloc[src]),
             Instruction::Call(dst, src, args) => Bytecode::Call(
                 alloc[dst],
                 alloc[src],

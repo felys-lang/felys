@@ -49,7 +49,7 @@ impl Function {
         }
     }
 
-    pub fn safe(&self) -> impl Iterator<Item=(Label, &Fragment)> {
+    pub fn safe(&self) -> impl Iterator<Item = (Label, &Fragment)> {
         let fragments = self
             .fragments
             .iter()
@@ -60,7 +60,7 @@ impl Function {
             .chain([(Label::Exit, &self.exit)])
     }
 
-    pub fn cautious(&mut self) -> impl Iterator<Item=(Label, &mut Fragment)> {
+    pub fn cautious(&mut self) -> impl Iterator<Item = (Label, &mut Fragment)> {
         let fragments = self
             .fragments
             .iter_mut()
@@ -78,15 +78,15 @@ impl Function {
             if !visited.insert(label) {
                 return;
             }
-            match f.get(label).unwrap().terminator.as_ref().unwrap() {
-                Terminator::Branch(_, yes, no) => {
+            match f.get(label).unwrap().terminator.as_ref() {
+                Some(Terminator::Branch(_, yes, no)) => {
                     dfs(f, *yes, visited, order);
                     dfs(f, *no, visited, order);
                 }
-                Terminator::Jump(target) => {
+                Some(Terminator::Jump(target)) => {
                     dfs(f, *target, visited, order);
                 }
-                Terminator::Return(_) => {}
+                _ => {}
             }
             order.push(label);
         }
