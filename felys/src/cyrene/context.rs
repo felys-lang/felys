@@ -71,17 +71,18 @@ impl Context {
         }
     }
 
-    pub fn jump(&mut self, to: Label) {
+    pub fn jump(&mut self, to: Label) -> bool {
         if self.dead() {
-            return;
+            return false;
         }
         let fragment = self.f.modify(self.cursor).unwrap();
         if fragment.terminator.is_some() {
-            return;
+            return false;
         }
         fragment.terminator = Some(Terminator::Jump(to));
         let cursor = self.cursor;
         self.f.modify(to).unwrap().predecessors.push(cursor);
+        true
     }
 
     pub fn branch(&mut self, cond: Var, to: Label, or: Label) {
@@ -157,9 +158,13 @@ impl Context {
         } else {
             let var = self.f.var();
             self.define(label, id, var);
+
             let mut operands = Vec::new();
             for pred in predecessors {
-                let v = self.lookup(pred, id)?;
+                let Some(v) = self.lookup(pred, id) else {
+                    self.defs.get_mut(&label).unwrap().remove(&id);
+                    return None;
+                };
                 operands.push((pred, v));
             }
             self.phi(label, var, operands);

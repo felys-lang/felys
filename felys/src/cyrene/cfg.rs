@@ -93,7 +93,7 @@ impl Pat {
                 if let Some(bop) = op {
                     let lhs = ctx.lookup(ctx.cursor, id).unwrap();
                     let var = ctx.var();
-                    ctx.push(Instruction::Binary(var, lhs, bop.clone(), rhs));
+                    ctx.push(Instruction::Binary(var, lhs, *bop, rhs));
                     rhs = var;
                 }
                 ctx.define(ctx.cursor, id, rhs)
@@ -152,6 +152,7 @@ impl Expr {
                 let then = ctx.label();
                 let otherwise = ctx.label();
                 let join = ctx.label();
+                let ret = ctx.id();
 
                 let cond = expr
                     .ir(ctx, stk, meta)?
@@ -160,35 +161,31 @@ impl Expr {
                 ctx.seal(then)?;
                 ctx.seal(otherwise)?;
 
+                let mut returned = [false, false];
+                let mut joined = [false, false];
+
                 ctx.cursor = then;
-                let mut ret = None;
                 if let Some(var) = block.ir(ctx, stk, meta)? {
-                    let id = ctx.id();
-                    ret = Some(id);
-                    ctx.define(ctx.cursor, id, var);
+                    ctx.define(ctx.cursor, ret, var);
+                    returned[0] = true;
                 }
-                ctx.jump(join);
+                joined[0] = ctx.jump(join);
 
                 ctx.cursor = otherwise;
-                if let Some(alt) = alter {
-                    let tmp = alt.ir(ctx, stk, meta)?;
-                    if let Some(var) = tmp
-                        && let Some(id) = ret
-                    {
-                        ctx.define(ctx.cursor, id, var);
-                    } else if tmp.is_none() && ret.is_some() || tmp.is_some() && ret.is_none() {
-                        return Err(Fault::InconsistentIfElse(block.clone(), alter.clone()));
-                    }
-                } else if ret.is_some() {
-                    return Err(Fault::InconsistentIfElse(block.clone(), None));
+                if let Some(alt) = alter
+                    && let Some(var) = alt.ir(ctx, stk, meta)?
+                {
+                    ctx.define(ctx.cursor, ret, var);
+                    returned[1] = true;
                 }
+                joined[1] = ctx.jump(join);
 
-                ctx.jump(join);
                 ctx.seal(join)?;
 
                 ctx.cursor = join;
-                if let Some(id) = ret {
-                    Ok(ctx.lookup(ctx.cursor, id).unwrap().into())
+                if joined == returned && (returned[0] || returned[1]) {
+                    let var = ctx.lookup(ctx.cursor, ret).unwrap();
+                    Ok(Some(var))
                 } else {
                     Ok(None)
                 }
@@ -257,7 +254,7 @@ impl Expr {
                     .ir(ctx, stk, meta)?
                     .ok_or(Fault::NoReturnValue(rhs.clone()))?;
                 let var = ctx.var();
-                ctx.push(Instruction::Binary(var, l, op.clone(), r));
+                ctx.push(Instruction::Binary(var, l, *op, r));
                 Ok(var.into())
             }
             Expr::Call(expr, args) => {
@@ -346,7 +343,7 @@ impl Expr {
                     .ir(ctx, stk, meta)?
                     .ok_or(Fault::NoReturnValue(inner.clone()))?;
                 let var = ctx.var();
-                ctx.push(Instruction::Unary(var, op.clone(), i));
+                ctx.push(Instruction::Unary(var, *op, i));
                 Ok(var.into())
             }
             Expr::Path(path) => path.ir(ctx, meta),
@@ -437,6 +434,7 @@ impl Lit {
                 Const::Str(value.into())
             }
         };
+        ctx.consts.insert(self.clone(), c.clone());
         ctx.push(Instruction::Load(var, c));
         Ok(var.into())
     }
