@@ -176,6 +176,12 @@ fn condition() -> Result<(), String> {
     let (_, exit) = eval(args.clone(), "if true { 1 } else { 0 }")?;
     assert!(eq(exit, Object::Int(1))?);
 
+    let (_, exit) = eval(args.clone(), "if true { 1 } else { return 0; }")?;
+    assert!(eq(exit, Object::Int(1))?);
+
+    let (_, exit) = eval(args.clone(), "if true { return 1; } else { 0 }")?;
+    assert!(eq(exit, Object::Int(1))?);
+
     let (_, exit) = eval(
         args.clone(),
         "x = false; if true { x = 1; } else { return 0; } x",

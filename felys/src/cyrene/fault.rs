@@ -8,7 +8,6 @@ pub enum Fault {
     OutsideLoop(Expr),
     PathNotExist(Path),
     DuplicatePath(usize, Vec<usize>),
-    InconsistentIfElse(Block, Option<Rc<Expr>>),
     FunctionNoReturn(Block),
     InvalidInt(Lit),
     InvalidFloat(Lit),
@@ -54,22 +53,6 @@ impl Fault {
                 Path(BufVec::new([buf], vec))
                     .recover(&mut msg, intern)
                     .unwrap();
-            }
-            Fault::InconsistentIfElse(block, alter) => {
-                if let Some(alter) = alter {
-                    msg.push_str("one of `if` and `else` returns while the other one doesn't\n");
-                    msg.push_str(ERROR);
-                    block.recover(&mut msg, ERROR, 0, None, intern).unwrap();
-                    msg.push('\n');
-                    msg.push_str(OK);
-                    msg.push('\n');
-                    msg.push_str(ERROR);
-                    alter.recover(&mut msg, ERROR, 0, intern).unwrap();
-                } else {
-                    msg.push_str("`if` has return value but `else` is missing\n");
-                    msg.push_str(ERROR);
-                    block.recover(&mut msg, ERROR, 0, None, intern).unwrap();
-                }
             }
             Fault::FunctionNoReturn(block) => {
                 msg.push_str("function body does not have return value\n");

@@ -20,8 +20,8 @@ impl Block {
 
         if let Some(var) = self.ir(&mut ctx, &mut stk, meta)? {
             ctx.define(ctx.cursor, Id::Ret, var);
-            ctx.jump(Label::Exit);
         }
+        ctx.jump(Label::Exit);
         ctx.seal(Label::Exit)?;
 
         ctx.cursor = Label::Exit;
@@ -208,7 +208,7 @@ impl Expr {
                 ctx.cursor = end;
                 if let Some(id) = wb {
                     let var = ctx.lookup(ctx.cursor, id).unwrap();
-                    Ok(var.into())
+                    Ok(Some(var))
                 } else {
                     Ok(None)
                 }
