@@ -3,7 +3,6 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct Group {
-    pub fields: Box<[Id]>,
     pub indices: HashMap<Id, Index>,
     pub methods: HashMap<Id, Index>,
 }
@@ -15,7 +14,6 @@ impl Group {
             indices.insert(Id::try_from(*field).unwrap(), Index::try_from(i).unwrap());
         }
         Self {
-            fields: fields.iter().map(|x| Id::try_from(*x).unwrap()).collect(),
             indices,
             methods: HashMap::new(),
         }

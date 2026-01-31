@@ -18,7 +18,7 @@ pub enum Instruction {
 }
 
 #[repr(u8)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Pointer {
     Function,
     Group,

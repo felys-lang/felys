@@ -6,3 +6,5 @@ mod utils;
 
 pub use crate::elysia::Object;
 pub use crate::philia093::PhiLia093;
+pub use crate::utils::ast::BinOp;
+pub use crate::utils::ast::UnaOp;

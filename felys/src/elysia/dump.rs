@@ -41,10 +41,6 @@ impl Group {
             buf.write_all(&idx.to_be_bytes())?;
         }
 
-        buf.write_all(&Index::try_from(self.fields.len()).unwrap().to_be_bytes())?;
-        for field in self.fields.iter() {
-            buf.write_all(&field.to_be_bytes())?;
-        }
         Ok(())
     }
 }

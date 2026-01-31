@@ -1,34 +1,32 @@
-use felys::{Object, PhiLia093};
+use felys::{BinOp, Object, PhiLia093};
 
-pub fn eval(body: &'static str) -> Result<(String, String), String> {
+pub fn eval(body: &'static str) -> Result<(String, Object), String> {
     let wrapped = format!("fn main(args) {{ return {body}; }}");
     let args = Object::List([].into());
 
-    let unoptimized = {
-        let mut stdout = String::new();
-        let exit = PhiLia093::from(wrapped.clone())
-            .parse()?
-            .cfg()?
-            .optimize(0)?
-            .codegen()
-            .exec(args.clone(), &mut stdout)?;
-        (stdout, exit)
-    };
+    let (uo, ue) = pipeline(wrapped.clone(), args.clone(), 0)?;
+    let (oo, oe) = pipeline(wrapped, args, usize::MAX)?;
 
-    let optimized = {
-        let mut stdout = String::new();
-        let exit = PhiLia093::from(wrapped)
-            .parse()?
-            .cfg()?
-            .optimize(42)?
-            .codegen()
-            .exec(args, &mut stdout)?;
-        (stdout, exit)
-    };
-
-    if unoptimized != optimized {
-        return Err("inconsistent generation".to_string());
+    if uo != oo {
+        Err("inconsistent stdout".to_string())
+    } else if ue.clone().binary(BinOp::Ne, oe)?.bool()? {
+        Err("inconsistent exit".to_string())
+    } else {
+        Ok((uo, ue))
     }
+}
 
-    Ok(optimized)
+pub fn eq(lhs: Object, rhs: Object) -> Result<bool, String> {
+    lhs.binary(BinOp::Eq, rhs)?.bool().map_err(String::from)
+}
+
+fn pipeline(code: String, args: Object, o: usize) -> Result<(String, Object), String> {
+    let mut stdout = String::new();
+    let exit = PhiLia093::from(code)
+        .parse()?
+        .cfg()?
+        .optimize(o)?
+        .codegen()
+        .exec(args, &mut stdout)?;
+    Ok((stdout, exit))
 }

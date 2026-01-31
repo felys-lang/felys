@@ -5,13 +5,8 @@ use crate::utils::ir::{Const, Pointer};
 use crate::utils::stages::{Callable, Elysia};
 
 impl Elysia {
-    pub fn exec(&self, args: Object, stdout: &mut String) -> Result<String, String> {
-        let exit = self
-            .kernal(args, stdout)
-            .map_err(|e| e.recover(&self.groups))?;
-        let mut buf = String::new();
-        exit.recover(&mut buf, 0, &self.groups).unwrap();
-        Ok(buf)
+    pub fn exec(&self, args: Object, stdout: &mut String) -> Result<Object, String> {
+        self.kernal(args, stdout).map_err(String::from)
     }
 
     fn kernal(&self, args: Object, stdout: &mut String) -> Result<Object, Fault> {
@@ -30,7 +25,7 @@ impl Elysia {
         let runtime = Runtime {
             args,
             rets: vec![],
-            main: self.main.frame(vec![1])?,
+            main: self.main.frame(vec![0])?,
             stack: vec![],
         };
         Ok(runtime)
@@ -142,7 +137,7 @@ impl Bytecode {
         &self,
         elysia: &Elysia,
         rt: &mut Runtime,
-        cs: &mut String,
+        so: &mut String,
     ) -> Result<Option<Object>, Fault> {
         match self {
             Bytecode::Arg(dst, idx) => {
@@ -195,13 +190,13 @@ impl Bytecode {
                 let frame = rt.frame();
                 let l = frame.load(*lhs);
                 let r = frame.load(*rhs);
-                let obj = l.binary(op, r)?;
+                let obj = l.binary(*op, r)?;
                 frame.store(*dst, obj);
             }
             Bytecode::Unary(dst, op, src) => {
                 let frame = rt.frame();
                 let s = frame.load(*src);
-                let obj = s.unary(op)?;
+                let obj = s.unary(*op)?;
                 frame.store(*dst, obj);
             }
             Bytecode::Call(dst, src, args) => {
@@ -224,7 +219,7 @@ impl Bytecode {
                     Pointer::Rust => {
                         let f = elysia.rust.get(idx as usize).unwrap();
                         let objs = frame.gather(args);
-                        frame.store(*dst, f(objs, elysia, cs));
+                        frame.store(*dst, f(objs, so));
                     }
                 };
             }
