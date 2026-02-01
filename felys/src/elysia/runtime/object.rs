@@ -12,8 +12,8 @@ pub enum Object {
     Tuple(Rc<[Object]>),
     Group(Index, Rc<[Object]>),
     Str(Rc<str>),
-    Int(isize),
-    Float(f64),
+    Int(i32),
+    Float(f32),
     Bool(bool),
 }
 
@@ -110,7 +110,7 @@ impl Object {
         }
     }
 
-    pub fn int(&self) -> Result<isize, Fault> {
+    pub fn int(&self) -> Result<i32, Fault> {
         if let Object::Int(x) = self {
             Ok(*x)
         } else {
@@ -118,7 +118,7 @@ impl Object {
         }
     }
 
-    pub fn float(&self) -> Result<f64, Fault> {
+    pub fn float(&self) -> Result<f32, Fault> {
         if let Object::Float(x) = self {
             Ok(*x)
         } else {
@@ -353,14 +353,14 @@ impl Object {
     }
 }
 
-impl From<f64> for Object {
-    fn from(x: f64) -> Object {
+impl From<f32> for Object {
+    fn from(x: f32) -> Object {
         Object::Float(x)
     }
 }
 
-impl From<isize> for Object {
-    fn from(x: isize) -> Object {
+impl From<i32> for Object {
+    fn from(x: i32) -> Object {
         Object::Int(x)
     }
 }

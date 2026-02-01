@@ -20,8 +20,8 @@ pub enum Instruction {
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Pointer {
-    Function,
     Group,
+    Function,
     Rust,
 }
 
@@ -43,8 +43,8 @@ pub enum Label {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Const {
-    Int(isize),
-    Float(u64),
+    Int(i32),
+    Float(u32),
     Bool(bool),
     Str(Rc<str>),
 }

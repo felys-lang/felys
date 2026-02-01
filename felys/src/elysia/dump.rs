@@ -59,6 +59,7 @@ impl Const {
             Const::Bool(x) => buf.write_all(&[0x2, *x as u8]),
             Const::Str(x) => {
                 buf.write_all(&[0x3])?;
+                buf.write_all(&Index::try_from(x.len()).unwrap().to_be_bytes())?;
                 buf.write_all(x.as_bytes())
             }
         }
@@ -67,7 +68,7 @@ impl Const {
 
 impl Callable {
     fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
-        buf.write_all(&[self.registers])?;
+        buf.write_all(&[self.args as u8, self.registers])?;
         buf.write_all(&Index::try_from(self.bytecodes.len()).unwrap().to_be_bytes())?;
         for bytecode in self.bytecodes.iter() {
             bytecode.dump(buf)?;
@@ -92,7 +93,7 @@ impl Bytecode {
                 buf.write_all(&idx.to_be_bytes())?;
             }
             Bytecode::Pointer(dst, pt, ptr) => {
-                buf.write_all(&[0x3, *dst, pt.clone() as u8])?;
+                buf.write_all(&[0x3, *dst, *pt as u8])?;
                 buf.write_all(&ptr.to_be_bytes())?;
             }
             Bytecode::Load(dst, idx) => {
@@ -100,10 +101,10 @@ impl Bytecode {
                 buf.write_all(&idx.to_be_bytes())?;
             }
             Bytecode::Binary(dst, lhs, op, rhs) => {
-                buf.write_all(&[0x5, *dst, *lhs, op.clone() as u8, *rhs])?;
+                buf.write_all(&[0x5, *dst, *lhs, *op as u8, *rhs])?;
             }
             Bytecode::Unary(dst, op, src) => {
-                buf.write_all(&[0x6, *dst, op.clone() as u8, *src])?;
+                buf.write_all(&[0x6, *dst, *op as u8, *src])?;
             }
             Bytecode::Call(dst, src, args) => {
                 buf.write_all(&[0x7, *dst, *src, Reg::try_from(args.len()).unwrap()])?;

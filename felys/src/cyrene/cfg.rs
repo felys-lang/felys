@@ -385,7 +385,7 @@ impl Lit {
                     .intern
                     .get(x)
                     .unwrap()
-                    .parse::<f64>()
+                    .parse::<f32>()
                     .map_err(|_| Fault::InvalidFloat(self.clone()))?
                     .to_bits();
                 Const::Float(value)

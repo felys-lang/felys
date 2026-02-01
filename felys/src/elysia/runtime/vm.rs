@@ -242,7 +242,7 @@ impl Bytecode {
                     int as usize
                 } else {
                     list.len()
-                        .checked_sub(int.unsigned_abs())
+                        .checked_sub(int.unsigned_abs() as usize)
                         .ok_or(Fault::IndexOutOfBounds(tmp.clone(), int))?
                 };
                 let obj = list
@@ -289,7 +289,7 @@ impl From<&Const> for Object {
     fn from(value: &Const) -> Self {
         match value {
             Const::Int(x) => Object::Int(*x),
-            Const::Float(x) => Object::Float(f64::from_bits(*x)),
+            Const::Float(x) => Object::Float(f32::from_bits(*x)),
             Const::Bool(x) => Object::Bool(*x),
             Const::Str(x) => Object::Str(x.clone()),
         }

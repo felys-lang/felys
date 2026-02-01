@@ -13,5 +13,5 @@ fn print(args: Vec<Object>, so: &mut String) -> Object {
         so.push_str(&arg.to_string());
     }
     so.push('\n');
-    Object::Int(args.len() as isize)
+    Object::Int(args.len() as i32)
 }

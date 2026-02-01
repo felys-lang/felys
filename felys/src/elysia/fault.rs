@@ -5,7 +5,7 @@ pub enum Fault {
     BinaryOperation(&'static str, Object, Object),
     UnaryOperation(&'static str, Object),
     NumArgsNotMatch(usize, usize),
-    IndexOutOfBounds(Object, isize),
+    IndexOutOfBounds(Object, i32),
     NotEnoughToUnpack(Object, u32),
 }
 
