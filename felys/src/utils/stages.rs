@@ -28,7 +28,7 @@ pub struct Elysia {
 
 #[derive(Debug)]
 pub struct Callable {
-    pub args: usize,
+    pub args: Reg,
     pub registers: Reg,
     pub bytecodes: Vec<Bytecode>,
 }

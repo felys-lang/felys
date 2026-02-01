@@ -68,7 +68,7 @@ impl Const {
 
 impl Callable {
     fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
-        buf.write_all(&[self.args as u8, self.registers])?;
+        buf.write_all(&[self.args, self.registers])?;
         buf.write_all(&Index::try_from(self.bytecodes.len()).unwrap().to_be_bytes())?;
         for bytecode in self.bytecodes.iter() {
             bytecode.dump(buf)?;

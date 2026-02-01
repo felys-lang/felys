@@ -1,5 +1,6 @@
 use crate::cyrene::fault::Fault;
 use crate::utils::ast::Lit;
+use crate::utils::bytecode::Reg;
 use crate::utils::function::{Function, Phi};
 use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
 use std::collections::{HashMap, HashSet};
@@ -22,7 +23,7 @@ pub enum Id {
 }
 
 impl Context {
-    pub fn new(args: usize) -> Self {
+    pub fn new(args: Reg) -> Self {
         Self {
             cursor: Label::Entry,
             consts: Default::default(),

@@ -86,7 +86,7 @@ impl Const {
 impl Callable {
     fn load<L: Load>(src: &mut L) -> Result<Callable> {
         let callable = Callable {
-            args: src.u8()? as usize,
+            args: src.u8()?,
             registers: src.u8()?,
             bytecodes: {
                 let len = src.u32()?;

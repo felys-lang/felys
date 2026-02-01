@@ -30,7 +30,7 @@ fn object() -> Result<(), String> {
                 Object::Int(0),
                 Object::List([Object::Int(0), Object::Int(0)].into())
             ]
-            .into()
+                .into()
         )
     )?);
 
@@ -42,7 +42,7 @@ fn object() -> Result<(), String> {
                 Object::Int(1),
                 Object::Tuple([Object::Int(1), Object::Int(1)].into())
             ]
-            .into()
+                .into()
         )
     )?);
 

@@ -120,8 +120,8 @@ impl Callable {
     }
 
     fn frame(&self, args: Vec<Reg>) -> Result<Frame, Fault> {
-        if self.args != args.len() {
-            return Err(Fault::NumArgsNotMatch(self.args, args.len()));
+        if self.args as usize != args.len() {
+            return Err(Fault::NumArgsNotMatch(self.args as usize, args.len()));
         }
         let frame = Frame {
             pc: 0,

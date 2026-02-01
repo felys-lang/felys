@@ -2,6 +2,7 @@ use crate::cyrene::context::{Context, Id};
 use crate::cyrene::fault::Fault;
 use crate::cyrene::meta::Meta;
 use crate::utils::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Path, Stmt};
+use crate::utils::bytecode::Reg;
 use crate::utils::function::Function;
 use crate::utils::ir::{Const, Instruction, Label, Var};
 
@@ -10,7 +11,7 @@ type Stack = Vec<(Label, Label, Option<(Id, Option<bool>)>)>;
 impl Block {
     pub fn function(&self, args: Vec<usize>, meta: &mut Meta) -> Result<Function, Fault> {
         let mut stk = Vec::new();
-        let mut ctx = Context::new(args.len());
+        let mut ctx = Context::new(Reg::try_from(args.len()).unwrap());
         ctx.seal(Label::Entry)?;
         for (i, id) in args.iter().enumerate() {
             let var = ctx.var();

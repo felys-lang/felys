@@ -1,9 +1,10 @@
+use crate::utils::bytecode::Reg;
 use crate::utils::ir::{Instruction, Label, Terminator, Var};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub struct Function {
-    pub args: usize,
+    pub args: Reg,
     pub vars: usize,
     pub entry: Fragment,
     pub fragments: HashMap<usize, Fragment>,
@@ -11,7 +12,7 @@ pub struct Function {
 }
 
 impl Function {
-    pub fn new(args: usize) -> Self {
+    pub fn new(args: Reg) -> Self {
         Function {
             args,
             vars: 0,
@@ -49,7 +50,7 @@ impl Function {
         }
     }
 
-    pub fn safe(&self) -> impl Iterator<Item = (Label, &Fragment)> {
+    pub fn safe(&self) -> impl Iterator<Item=(Label, &Fragment)> {
         let fragments = self
             .fragments
             .iter()
@@ -60,7 +61,7 @@ impl Function {
             .chain([(Label::Exit, &self.exit)])
     }
 
-    pub fn cautious(&mut self) -> impl Iterator<Item = (Label, &mut Fragment)> {
+    pub fn cautious(&mut self) -> impl Iterator<Item=(Label, &mut Fragment)> {
         let fragments = self
             .fragments
             .iter_mut()
