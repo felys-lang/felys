@@ -59,9 +59,9 @@ impl Display for Object {
                     write!(f, ", ")?;
                     obj.recover(f)?
                 }
-                write!(f, "> : {id:#010x}")
+                write!(f, "> as {id:#010x}")
             }
-            Object::Str(x) => write!(f, "\"{}\"", x),
+            Object::Str(x) => write!(f, "{}", x),
             Object::Int(x) => write!(f, "{}", x),
             Object::Float(x) => write!(f, "{}", x),
             Object::Bool(x) => write!(f, "{}", x),
