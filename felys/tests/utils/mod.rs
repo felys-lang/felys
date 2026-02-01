@@ -1,15 +1,15 @@
 use felys::{BinOp, Elysia, Object, PhiLia093};
 
-pub fn eval(
+pub fn exec(
     args: Object,
-    body: &'static str,
+    defs: &str,
+    body: &str,
     expect: Object,
-    stdout: &'static str,
+    stdout: &str,
 ) -> Result<(), String> {
-    let wrapped = format!("fn main(args) {{ {body} }}");
-
+    let wrapped = format!("{defs} fn main(args) {{ {body} }}");
     for o in [0, 1, 2, usize::MAX] {
-        for elysia in compile(wrapped.clone(), o)? {
+        for elysia in compile(wrapped.as_str(), o)? {
             let mut out = String::new();
             let obj = elysia.exec(args.clone(), &mut out)?;
 
@@ -24,8 +24,12 @@ pub fn eval(
     Ok(())
 }
 
-fn compile(code: String, o: usize) -> Result<[Elysia; 2], String> {
-    let elysia = PhiLia093::from(code).parse()?.cfg()?.optimize(o)?.codegen();
+fn compile(code: &str, o: usize) -> Result<[Elysia; 2], String> {
+    let elysia = PhiLia093::from(code.to_string())
+        .parse()?
+        .cfg()?
+        .optimize(o)?
+        .codegen();
 
     let mut binary = Vec::with_capacity(256);
     elysia.dump(&mut binary).unwrap();
