@@ -104,7 +104,7 @@ impl Namespace {
         }
     }
 
-    pub fn get<'a>(&self, mut path: impl Iterator<Item=&'a usize>) -> Option<(Pointer, usize)> {
+    pub fn get<'a>(&self, mut path: impl Iterator<Item = &'a usize>) -> Option<(Pointer, usize)> {
         let mut cursor = &self.tree;
         let mut tmp = None;
 

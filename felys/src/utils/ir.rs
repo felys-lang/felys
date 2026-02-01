@@ -17,7 +17,6 @@ pub enum Instruction {
     Method(Var, Var, usize, Vec<Var>),
 }
 
-#[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Pointer {
     Group,
