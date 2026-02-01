@@ -18,7 +18,7 @@ Felys is an interpreted programming language written in Rust that comes with a c
 - [Cyrene](felys/src/cyrene): Control flow graph builder and transformer to IR
 - [Demiurge](felys/src/demiurge): Dead code elimination, register allocation, and codegen
 - [Elysia](felys/src/elysia): Execution runtime and bytecode loader/dumper
-  
+
 ## License
 
 Distributed under the terms of the [LICENSE](LICENSE).
