@@ -1,39 +1,28 @@
-use crate::utils::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Path, Stmt};
 use crate::cyrene::context::{Context, Id};
 use crate::cyrene::fault::Fault;
 use crate::cyrene::meta::Meta;
+use crate::utils::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Path, Stmt};
+use crate::utils::bytecode::Reg;
 use crate::utils::function::Function;
 use crate::utils::ir::{Const, Instruction, Label, Var};
 
-type Stack = Vec<(Label, Label, Option<(Option<Id>, bool)>)>;
-
-const FELYS: [(&str, &str); 3] = [
-    ("__elysia__", "粉色妖精小姐♪"),
-    ("__cyrene__", "往昔的涟漪♪"),
-    ("__author__", "jonny.jin@uwaterloo.ca"),
-];
+type Stack = Vec<(Label, Label, Option<(Id, Option<bool>)>)>;
 
 impl Block {
     pub fn function(&self, args: Vec<usize>, meta: &mut Meta) -> Result<Function, Fault> {
         let mut stk = Vec::new();
-        let mut ctx = Context::new(args.len());
+        let mut ctx = Context::new(Reg::try_from(args.len()).unwrap());
         ctx.seal(Label::Entry)?;
-        for id in args {
+        for (i, id) in args.iter().enumerate() {
             let var = ctx.var();
-            ctx.define(ctx.cursor, Id::Interned(id), var);
-        }
-
-        for (identifier, string) in FELYS {
-            let var = ctx.var();
-            ctx.push(Instruction::Load(var, Const::Str(string.into())));
-            let id = meta.intern.id(identifier);
-            ctx.define(ctx.cursor, Id::Interned(id), var);
+            ctx.push(Instruction::Arg(var, i));
+            ctx.define(ctx.cursor, Id::Interned(*id), var);
         }
 
         if let Some(var) = self.ir(&mut ctx, &mut stk, meta)? {
             ctx.define(ctx.cursor, Id::Ret, var);
-            ctx.jump(Label::Exit);
         }
+        ctx.jump(Label::Exit);
         ctx.seal(Label::Exit)?;
 
         ctx.cursor = Label::Exit;
@@ -41,7 +30,7 @@ impl Block {
             .lookup(ctx.cursor, Id::Ret)
             .ok_or(Fault::FunctionNoReturn(self.clone()))?;
         ctx.ret(var);
-        Ok(ctx.export())
+        Ok(ctx.into())
     }
 
     fn ir(&self, ctx: &mut Context, stk: &mut Stack, meta: &Meta) -> Result<Option<Var>, Fault> {
@@ -105,7 +94,7 @@ impl Pat {
                 if let Some(bop) = op {
                     let lhs = ctx.lookup(ctx.cursor, id).unwrap();
                     let var = ctx.var();
-                    ctx.push(Instruction::Binary(var, lhs, bop.clone(), rhs));
+                    ctx.push(Instruction::Binary(var, lhs, *bop, rhs));
                     rhs = var;
                 }
                 ctx.define(ctx.cursor, id, rhs)
@@ -124,33 +113,18 @@ impl Expr {
                     .last()
                     .cloned()
                     .ok_or(Fault::OutsideLoop(self.clone()))?;
-                match (expr, wb) {
-                    (Some(x), Some((Some(id), _))) => {
-                        let var = x
-                            .ir(ctx, stk, meta)?
-                            .ok_or(Fault::NoReturnValue(x.clone()))?;
-                        ctx.define(ctx.cursor, id, var);
+                if let Some((id, action)) = wb
+                    && action.unwrap_or(true)
+                {
+                    if let Some(x) = expr
+                        && let Some(var) = x.ir(ctx, stk, meta)?
+                    {
+                        stk.last_mut().unwrap().2.as_mut().unwrap().1 = Some(true);
+                        ctx.define(ctx.cursor, id, var)
+                    } else {
+                        stk.last_mut().unwrap().2.as_mut().unwrap().1 = Some(false);
                     }
-                    (Some(x), Some((None, false))) => {
-                        let var = x
-                            .ir(ctx, stk, meta)?
-                            .ok_or(Fault::NoReturnValue(x.clone()))?;
-                        let id = ctx.id();
-                        *stk.last_mut().unwrap().2.as_mut().unwrap() = (Some(id), true);
-                        ctx.define(ctx.cursor, id, var);
-                    }
-                    (Some(_), None) => return Err(Fault::BreakExprNotAllowed(self.clone())),
-                    (Some(x), Some((None, true))) => {
-                        return Err(Fault::InconsistentBreakBehavior(Some(x.clone())));
-                    }
-                    (None, Some((Some(_), _))) => {
-                        return Err(Fault::InconsistentBreakBehavior(None));
-                    }
-                    (None, Some((None, false))) => {
-                        *stk.last_mut().unwrap().2.as_mut().unwrap() = (None, true);
-                    }
-                    (None, Some((None, true))) | (None, None) => {}
-                };
+                }
                 ctx.jump(end);
                 Ok(None)
             }
@@ -164,6 +138,7 @@ impl Expr {
                 let then = ctx.label();
                 let otherwise = ctx.label();
                 let join = ctx.label();
+                let ret = ctx.id();
 
                 let cond = expr
                     .ir(ctx, stk, meta)?
@@ -172,35 +147,31 @@ impl Expr {
                 ctx.seal(then)?;
                 ctx.seal(otherwise)?;
 
+                let mut returned = [false, false];
+                let mut joined = [false, false];
+
                 ctx.cursor = then;
-                let mut ret = None;
                 if let Some(var) = block.ir(ctx, stk, meta)? {
-                    let id = ctx.id();
-                    ret = Some(id);
-                    ctx.define(ctx.cursor, id, var);
+                    ctx.define(ctx.cursor, ret, var);
+                    returned[0] = true;
                 }
-                ctx.jump(join);
+                joined[0] = ctx.jump(join);
 
                 ctx.cursor = otherwise;
-                if let Some(alt) = alter {
-                    let tmp = alt.ir(ctx, stk, meta)?;
-                    if let Some(var) = tmp
-                        && let Some(id) = ret
-                    {
-                        ctx.define(ctx.cursor, id, var);
-                    } else if tmp.is_none() && ret.is_some() || tmp.is_some() && ret.is_none() {
-                        return Err(Fault::InconsistentIfElse(block.clone(), alter.clone()));
-                    }
-                } else if ret.is_some() {
-                    return Err(Fault::InconsistentIfElse(block.clone(), None));
+                if let Some(alt) = alter
+                    && let Some(var) = alt.ir(ctx, stk, meta)?
+                {
+                    ctx.define(ctx.cursor, ret, var);
+                    returned[1] = true;
                 }
+                joined[1] = ctx.jump(join);
 
-                ctx.jump(join);
                 ctx.seal(join)?;
 
                 ctx.cursor = join;
-                if let Some(id) = ret {
-                    Ok(ctx.lookup(ctx.cursor, id).unwrap().into())
+                if joined == returned && (returned[0] || returned[1]) {
+                    let var = ctx.lookup(ctx.cursor, ret).unwrap();
+                    Ok(Some(var))
                 } else {
                     Ok(None)
                 }
@@ -208,25 +179,23 @@ impl Expr {
             Expr::Loop(block) => {
                 let body = ctx.label();
                 let end = ctx.label();
+                let ret = ctx.id();
 
                 ctx.jump(body);
 
                 ctx.cursor = body;
-                stk.push((body, end, Some((None, false))));
+                stk.push((body, end, Some((ret, None))));
                 block.ir(ctx, stk, meta)?;
-                let (wb, seen) = stk.pop().unwrap().2.unwrap();
-                if !seen {
-                    return Err(Fault::InfiniteLoop(self.clone()));
-                }
+                let action = stk.pop().unwrap().2.unwrap().1;
 
                 ctx.jump(body);
                 ctx.seal(body)?;
                 ctx.seal(end)?;
 
                 ctx.cursor = end;
-                if let Some(id) = wb {
-                    let var = ctx.lookup(ctx.cursor, id).unwrap();
-                    Ok(var.into())
+                if action.unwrap_or(false) {
+                    let var = ctx.lookup(ctx.cursor, ret).unwrap();
+                    Ok(Some(var))
                 } else {
                     Ok(None)
                 }
@@ -272,7 +241,7 @@ impl Expr {
                     .ir(ctx, stk, meta)?
                     .ok_or(Fault::NoReturnValue(rhs.clone()))?;
                 let var = ctx.var();
-                ctx.push(Instruction::Binary(var, l, op.clone(), r));
+                ctx.push(Instruction::Binary(var, l, *op, r));
                 Ok(var.into())
             }
             Expr::Call(expr, args) => {
@@ -361,7 +330,7 @@ impl Expr {
                     .ir(ctx, stk, meta)?
                     .ok_or(Fault::NoReturnValue(inner.clone()))?;
                 let var = ctx.var();
-                ctx.push(Instruction::Unary(var, op.clone(), i));
+                ctx.push(Instruction::Unary(var, *op, i));
                 Ok(var.into())
             }
             Expr::Path(path) => path.ir(ctx, meta),
@@ -371,28 +340,34 @@ impl Expr {
 
 impl Path {
     fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Option<Var>, Fault> {
-        if self.0.len() == 1 {
-            let id = Id::Interned(self.0.buffer()[0]);
-            if let Some(var) = ctx.lookup(ctx.cursor, id) {
-                return Ok(var.into());
-            }
+        if let Some(id) = self.ident()
+            && let Some(var) = ctx.lookup(ctx.cursor, id)
+        {
+            return Ok(var.into());
         }
-        let var = ctx.var();
-        if let Some(id) = meta.constructors.get(self.0.iter()) {
-            ctx.push(Instruction::Group(var, id));
-        } else if let Some(id) = meta.ns.get(self.0.iter()) {
-            ctx.push(Instruction::Function(var, id));
-        } else {
+
+        let Some((ptr, id)) = meta.namespace.get(self.0.iter()) else {
             return Err(Fault::PathNotExist(self.clone()));
-        }
+        };
+
+        let var = ctx.var();
+        ctx.push(Instruction::Pointer(var, ptr, id));
         Ok(var.into())
+    }
+
+    fn ident(&self) -> Option<Id> {
+        if self.0.len() == 1 {
+            Some(Id::Interned(self.0.buffer()[0]))
+        } else {
+            None
+        }
     }
 }
 
 impl Lit {
     fn ir(&self, ctx: &mut Context, meta: &Meta) -> Result<Option<Var>, Fault> {
         let var = ctx.var();
-        if let Some(c) = ctx.cache.get(self) {
+        if let Some(c) = ctx.consts.get(self) {
             ctx.push(Instruction::Load(var, c.clone()));
             return Ok(var.into());
         }
@@ -411,8 +386,8 @@ impl Lit {
                     .intern
                     .get(x)
                     .unwrap()
-                    .parse::<f64>()
-                    .unwrap()
+                    .parse::<f32>()
+                    .map_err(|_| Fault::InvalidFloat(self.clone()))?
                     .to_bits();
                 Const::Float(value)
             }
@@ -454,6 +429,7 @@ impl Lit {
                 Const::Str(value.into())
             }
         };
+        ctx.consts.insert(self.clone(), c.clone());
         ctx.push(Instruction::Load(var, c));
         Ok(var.into())
     }

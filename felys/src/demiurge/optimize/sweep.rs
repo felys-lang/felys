@@ -10,18 +10,22 @@ struct Context {
     defs: HashMap<Var, (Label, Id)>,
 }
 
+impl Context {
+    fn visit(&mut self, var: &Var) {
+        if self.active.insert(*var) {
+            self.worklist.push_back(*var);
+        }
+    }
+}
+
 enum Id {
     Ins(usize),
     Phi(usize),
-    Arg,
 }
 
 impl Function {
     pub fn sweep(&mut self) -> bool {
         let mut ctx = Context::default();
-        for arg in self.args.clone() {
-            ctx.defs.insert(arg, (Label::Entry, Id::Arg));
-        }
 
         for (label, fragment) in self.safe() {
             fragment.initialize(label, &mut ctx);
@@ -42,7 +46,6 @@ impl Function {
                     let phi = fragment.phis.get(*index).unwrap();
                     phi.visit(&mut ctx);
                 }
-                Id::Arg => {}
             }
         }
 
@@ -97,6 +100,7 @@ impl Fragment {
                 instruction.visit(ctx);
             }
         }
+
         self.terminator.as_ref().unwrap().visit(ctx);
     }
 }
@@ -113,35 +117,30 @@ impl Phi {
 
 impl Instruction {
     fn visit(&self, ctx: &mut Context) {
-        let mut add = |var: &Var| {
-            if ctx.active.insert(*var) {
-                ctx.worklist.push_back(*var);
-            }
-        };
         match self {
             Instruction::Field(_, src, _)
             | Instruction::Unpack(_, src, _)
-            | Instruction::Unary(_, _, src) => add(src),
+            | Instruction::Unary(_, _, src) => ctx.visit(src),
             Instruction::Binary(_, src, _, other) | Instruction::Index(_, src, other) => {
-                add(src);
-                add(other);
+                ctx.visit(src);
+                ctx.visit(other);
             }
             Instruction::List(_, args) | Instruction::Tuple(_, args) => {
-                args.iter().for_each(add);
+                args.iter().for_each(|x| ctx.visit(x));
             }
             Instruction::Call(_, src, args) | Instruction::Method(_, src, _, args) => {
-                add(src);
-                args.iter().for_each(add);
+                ctx.visit(src);
+                args.iter().for_each(|x| ctx.visit(x));
             }
-            Instruction::Group(_, _) | Instruction::Function(_, _) | Instruction::Load(_, _) => {}
+            Instruction::Arg(_, _) | Instruction::Pointer(_, _, _) | Instruction::Load(_, _) => {}
         }
     }
 
     fn dst(&self) -> Var {
         match self {
-            Instruction::Field(dst, _, _)
+            Instruction::Arg(dst, _)
+            | Instruction::Field(dst, _, _)
             | Instruction::Unpack(dst, _, _)
-            | Instruction::Function(dst, _)
             | Instruction::Load(dst, _)
             | Instruction::Binary(dst, _, _, _)
             | Instruction::Unary(dst, _, _)
@@ -150,7 +149,7 @@ impl Instruction {
             | Instruction::Tuple(dst, _)
             | Instruction::Index(dst, _, _)
             | Instruction::Method(dst, _, _, _)
-            | Instruction::Group(dst, _) => *dst,
+            | Instruction::Pointer(dst, _, _) => *dst,
         }
     }
 
@@ -161,13 +160,8 @@ impl Instruction {
 
 impl Terminator {
     fn visit(&self, ctx: &mut Context) {
-        let mut add = |var: &Var| {
-            if ctx.active.insert(*var) {
-                ctx.worklist.push_back(*var);
-            }
-        };
         match self {
-            Terminator::Branch(var, _, _) | Terminator::Return(var) => add(var),
+            Terminator::Branch(var, _, _) | Terminator::Return(var) => ctx.visit(var),
             Terminator::Jump(_) => {}
         }
     }

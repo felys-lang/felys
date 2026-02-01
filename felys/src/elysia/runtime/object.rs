@@ -1,25 +1,72 @@
-use crate::utils::ast::{BinOp, UnaOp};
-use crate::demiurge::Idx;
 use crate::elysia::fault::Fault;
+use crate::utils::ast::{BinOp, UnaOp};
+use crate::utils::bytecode::Index;
+use crate::utils::ir::Pointer;
+use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
 #[derive(Clone, Debug)]
 pub enum Object {
-    Pointer(Pointer, Idx),
+    Pointer(Pointer, Index),
     List(Rc<[Object]>),
     Tuple(Rc<[Object]>),
-    Group(usize, Rc<[Object]>),
+    Group(Index, Rc<[Object]>),
     Str(Rc<str>),
-    Int(isize),
-    Float(f64),
+    Int(i32),
+    Float(f32),
     Bool(bool),
-    Void,
 }
 
-#[derive(Clone, Debug)]
-pub enum Pointer {
-    Function,
-    Group,
+impl Display for Object {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Object::Pointer(pt, ptr) => match pt {
+                Pointer::Function => write!(f, "F @ {ptr:#010x}"),
+                Pointer::Group => write!(f, "G @ {ptr:#010x}"),
+                Pointer::Rust => write!(f, "R @ {ptr:#010x}"),
+            },
+            Object::List(objs) => {
+                write!(f, "[")?;
+                let mut iter = objs.iter();
+                if let Some(first) = iter.next() {
+                    first.recover(f)?
+                }
+                for obj in iter {
+                    write!(f, ", ")?;
+                    obj.recover(f)?
+                }
+                write!(f, "]")
+            }
+            Object::Tuple(objs) => {
+                write!(f, "(")?;
+                let mut iter = objs.iter();
+                if let Some(first) = iter.next() {
+                    first.recover(f)?
+                }
+                for obj in iter {
+                    write!(f, ", ")?;
+                    obj.recover(f)?
+                }
+                write!(f, ")")
+            }
+            Object::Group(id, objs) => {
+                write!(f, "<")?;
+                let mut iter = objs.iter();
+                if let Some(first) = iter.next() {
+                    first.recover(f)?
+                }
+                for obj in iter {
+                    write!(f, ", ")?;
+                    obj.recover(f)?
+                }
+                write!(f, "> : {id:#010x}")
+            }
+            Object::Str(x) => write!(f, "\"{}\"", x),
+            Object::Int(x) => write!(f, "{}", x),
+            Object::Float(x) => write!(f, "{}", x),
+            Object::Bool(x) => write!(f, "{}", x),
+        }
+    }
 }
 
 impl Object {
@@ -39,7 +86,7 @@ impl Object {
         }
     }
 
-    pub fn group(&self) -> Result<(usize, Rc<[Object]>), Fault> {
+    pub fn group(&self) -> Result<(Index, Rc<[Object]>), Fault> {
         if let Object::Group(x, elements) = self {
             Ok((*x, elements.clone()))
         } else {
@@ -47,9 +94,9 @@ impl Object {
         }
     }
 
-    pub fn pointer(&self) -> Result<(Pointer, usize), Fault> {
+    pub fn pointer(&self) -> Result<(Pointer, Index), Fault> {
         if let Object::Pointer(ty, idx) = self {
-            Ok((ty.clone(), *idx))
+            Ok((*ty, *idx))
         } else {
             Err(Fault::DataType(self.clone(), "ptr"))
         }
@@ -63,7 +110,7 @@ impl Object {
         }
     }
 
-    pub fn int(&self) -> Result<isize, Fault> {
+    pub fn int(&self) -> Result<i32, Fault> {
         if let Object::Int(x) = self {
             Ok(*x)
         } else {
@@ -71,7 +118,7 @@ impl Object {
         }
     }
 
-    pub fn float(&self) -> Result<f64, Fault> {
+    pub fn float(&self) -> Result<f32, Fault> {
         if let Object::Float(x) = self {
             Ok(*x)
         } else {
@@ -87,7 +134,7 @@ impl Object {
         }
     }
 
-    pub fn binary(self, op: &BinOp, rhs: Object) -> Result<Object, Fault> {
+    pub fn binary(self, op: BinOp, rhs: Object) -> Result<Object, Fault> {
         match op {
             BinOp::Or => self.or(rhs),
             BinOp::And => self.and(rhs),
@@ -106,7 +153,7 @@ impl Object {
         }
     }
 
-    pub fn unary(self, op: &UnaOp) -> Result<Object, Fault> {
+    pub fn unary(self, op: UnaOp) -> Result<Object, Fault> {
         match op {
             UnaOp::Not => self.not(),
             UnaOp::Pos => self.pos(),
@@ -172,13 +219,49 @@ impl Object {
             Object::Float(x) => x == rhs.float()?,
             Object::Bool(x) => x == rhs.bool()?,
             Object::Str(x) => x.as_ref() == rhs.str()?,
-            _ => return Err(Fault::BinaryOperation("==", self, rhs)),
+            Object::Tuple(lhs) => {
+                let objs = rhs.tuple()?;
+                if lhs.len() != objs.len() {
+                    return Ok(Object::Bool(false));
+                }
+                for (x, y) in lhs.iter().zip(objs.iter()) {
+                    if !x.clone().eq(y.clone())?.bool()? {
+                        return Ok(Object::Bool(false));
+                    }
+                }
+                true
+            }
+            Object::List(lhs) => {
+                let objs = rhs.list()?;
+                if lhs.len() != objs.len() {
+                    return Ok(Object::Bool(false));
+                }
+                for (x, y) in lhs.iter().zip(objs.iter()) {
+                    if !x.clone().eq(y.clone())?.bool()? {
+                        return Ok(Object::Bool(false));
+                    }
+                }
+                true
+            }
+            Object::Group(idx, lhs) => {
+                let (i, objs) = rhs.group()?;
+                if idx != i || lhs.len() != objs.len() {
+                    return Ok(Object::Bool(false));
+                }
+                for (x, y) in lhs.iter().zip(objs.iter()) {
+                    if !x.clone().eq(y.clone())?.bool()? {
+                        return Ok(Object::Bool(false));
+                    }
+                }
+                true
+            }
+            Object::Pointer(pt, ptr) => (pt, ptr) == rhs.pointer()?,
         };
         Ok(Object::Bool(value))
     }
 
     fn ne(self, rhs: Object) -> Result<Object, Fault> {
-        let value = self.eq(rhs)?.bool()?;
+        let value = !self.eq(rhs)?.bool()?;
         Ok(Object::Bool(value))
     }
 
@@ -270,14 +353,14 @@ impl Object {
     }
 }
 
-impl From<f64> for Object {
-    fn from(x: f64) -> Object {
+impl From<f32> for Object {
+    fn from(x: f32) -> Object {
         Object::Float(x)
     }
 }
 
-impl From<isize> for Object {
-    fn from(x: isize) -> Object {
+impl From<i32> for Object {
+    fn from(x: i32) -> Object {
         Object::Int(x)
     }
 }

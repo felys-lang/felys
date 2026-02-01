@@ -1,7 +1,7 @@
 mod dump;
 
-mod runtime;
 mod fault;
+mod runtime;
+mod load;
 
-pub use dump::*;
 pub use runtime::*;

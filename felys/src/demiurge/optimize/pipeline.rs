@@ -1,6 +1,6 @@
 use crate::demiurge::fault::Fault;
-use crate::demiurge::Demiurge;
 use crate::utils::function::Function;
+use crate::utils::stages::Demiurge;
 
 impl Demiurge {
     pub fn optimize(mut self, limit: usize) -> Result<Self, String> {

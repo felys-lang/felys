@@ -1,9 +1,10 @@
 use crate::demiurge::codegen::copies::Copy;
-use crate::demiurge::{Bytecode, Demiurge, Reg};
-use crate::elysia::{Callable, Elysia};
+use crate::utils::bytecode::{Bytecode, Id, Index, Reg};
 use crate::utils::function::Function;
 use crate::utils::group::Group;
-use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
+use crate::utils::ir::{Const, Instruction, Label, Pointer, Terminator, Var};
+use crate::utils::stages::{Callable, Demiurge, Elysia};
+use crate::utils::stdlib::utils::stdlib;
 use std::collections::HashMap;
 use std::hash::Hash;
 
@@ -68,9 +69,9 @@ impl Context {
         }
     }
 
-    fn group(&mut self, key: usize) -> usize {
+    fn group(&mut self, key: usize) -> Index {
         if let Some(index) = self.groups.indices.get(&key) {
-            *index
+            Index::try_from(*index).unwrap()
         } else {
             let index = self.groups.indices.len();
             self.groups.indices.insert(key, index);
@@ -78,22 +79,22 @@ impl Context {
             group
                 .methods
                 .values_mut()
-                .for_each(|x| *x = self.function(*x));
+                .for_each(|x| *x = self.function(*x as usize));
             self.groups.pool.insert(index, group);
-            index
+            Index::try_from(index).unwrap()
         }
     }
 
-    fn function(&mut self, key: usize) -> usize {
+    fn function(&mut self, key: usize) -> Index {
         if let Some(index) = self.functions.indices.get(&key) {
-            *index
+            Index::try_from(*index).unwrap()
         } else {
             let index = self.functions.indices.len();
             self.functions.indices.insert(key, index);
             let mut function = self.functions.source.remove(&key).unwrap();
             let callable = function.codegen(self);
             self.functions.pool.insert(index, callable);
-            index
+            Index::try_from(index).unwrap()
         }
     }
 }
@@ -104,6 +105,7 @@ impl Demiurge {
         Elysia {
             main: self.main.codegen(&mut ctx),
             text: ctx.functions.linearize(),
+            rust: stdlib().map(|(_, _, _, x)| x).collect(),
             data: ctx.consts.pool,
             groups: ctx.groups.linearize(),
         }
@@ -113,11 +115,12 @@ impl Demiurge {
 impl Function {
     fn codegen(&mut self, ctx: &mut Context) -> Callable {
         let copies = self.copies();
-        let (allocation, used) = self.allocate(&copies);
+        let rpo = self.rpo();
+        let (allocation, used) = self.allocate(&rpo, &copies);
         Callable {
-            args: self.args.end,
+            args: self.args,
             registers: used,
-            bytecodes: self.lowering(ctx, &allocation, copies),
+            bytecodes: self.lowering(ctx, &allocation, &rpo, copies),
         }
     }
 
@@ -125,32 +128,35 @@ impl Function {
         &mut self,
         ctx: &mut Context,
         alloc: &HashMap<Var, Reg>,
+        rpo: &[Label],
         mut copies: HashMap<Label, Vec<Copy>>,
     ) -> Vec<Bytecode> {
         let mut index = 0;
         let mut map = HashMap::new();
-        for label in self.order() {
-            map.insert(label, index);
-            let fragment = self.get(label).unwrap();
+        for label in rpo {
+            map.insert(*label, index);
+            let fragment = self.get(*label).unwrap();
             let body = fragment.instructions.len();
-            let copy = copies.get(&label).map(|x| x.len()).unwrap_or(0);
+            let copy = copies.get(label).map(|x| x.len()).unwrap_or(0);
             let term = fragment.terminator.is_some() as usize;
             index += copy + body + term
         }
 
         let mut bytecodes = Vec::with_capacity(index);
-        for label in self.order() {
-            let fragment = self.get(label).unwrap();
+        for label in rpo {
+            let fragment = self.get(*label).unwrap();
+
             let body = fragment.instructions.iter().map(|x| x.codegen(alloc, ctx));
+            bytecodes.extend(body);
+
             let copy = copies
-                .remove(&label)
+                .remove(label)
                 .unwrap_or_default()
                 .into_iter()
                 .map(|copy| copy.codegen(alloc));
-            let term = fragment.terminator.as_ref().map(|x| x.codegen(alloc, &map));
-            bytecodes.extend(body);
             bytecodes.extend(copy);
-            if let Some(term) = term {
+
+            if let Some(term) = fragment.terminator.as_ref().map(|x| x.codegen(alloc, &map)) {
                 bytecodes.push(term);
             }
         }
@@ -161,59 +167,54 @@ impl Function {
 impl Instruction {
     fn codegen(&self, alloc: &HashMap<Var, Reg>, ctx: &mut Context) -> Bytecode {
         match self {
-            Instruction::Field(dst, src, idx) => Bytecode::Field(
-                *alloc.get(dst).unwrap_or(&0),
-                *alloc.get(src).unwrap_or(&0),
-                *idx,
+            Instruction::Arg(dst, idx) => Bytecode::Arg(alloc[dst], Index::try_from(*idx).unwrap()),
+            Instruction::Field(dst, src, id) => {
+                Bytecode::Field(alloc[dst], alloc[src], Id::try_from(*id).unwrap())
+            }
+            Instruction::Unpack(dst, src, idx) => {
+                Bytecode::Unpack(alloc[dst], alloc[src], Index::try_from(*idx).unwrap())
+            }
+            Instruction::Pointer(dst, pt, ptr) => match pt {
+                Pointer::Function => Bytecode::Pointer(
+                    alloc[dst],
+                    *pt,
+                    Index::try_from(ctx.function(*ptr)).unwrap(),
+                ),
+                Pointer::Group => {
+                    Bytecode::Pointer(alloc[dst], *pt, Index::try_from(ctx.group(*ptr)).unwrap())
+                }
+                Pointer::Rust => Bytecode::Pointer(alloc[dst], *pt, Index::try_from(*ptr).unwrap()),
+            },
+            Instruction::Load(dst, id) => Bytecode::Load(
+                alloc[dst],
+                Index::try_from(ctx.consts.index(id.clone())).unwrap(),
             ),
-            Instruction::Unpack(dst, src, idx) => Bytecode::Unpack(
-                *alloc.get(dst).unwrap_or(&0),
-                *alloc.get(src).unwrap_or(&0),
-                *idx,
-            ),
-            Instruction::Group(dst, id) => {
-                Bytecode::Group(*alloc.get(dst).unwrap_or(&0), ctx.group(*id))
-            }
-            Instruction::Function(dst, id) => {
-                Bytecode::Function(*alloc.get(dst).unwrap_or(&0), ctx.function(*id))
-            }
-            Instruction::Load(dst, id) => {
-                Bytecode::Load(*alloc.get(dst).unwrap_or(&0), ctx.consts.index(id.clone()))
-            }
             Instruction::Binary(dst, lhs, op, rhs) => Bytecode::Binary(
-                *alloc.get(dst).unwrap_or(&0),
+                alloc[dst],
                 *alloc.get(lhs).unwrap_or(&0),
-                op.clone(),
+                *op,
                 *alloc.get(rhs).unwrap_or(&0),
             ),
-            Instruction::Unary(dst, op, src) => Bytecode::Unary(
-                *alloc.get(dst).unwrap_or(&0),
-                op.clone(),
-                *alloc.get(src).unwrap_or(&0),
-            ),
+            Instruction::Unary(dst, op, src) => Bytecode::Unary(alloc[dst], *op, alloc[src]),
             Instruction::Call(dst, src, args) => Bytecode::Call(
-                *alloc.get(dst).unwrap_or(&0),
-                *alloc.get(src).unwrap_or(&0),
-                args.iter().map(|x| *alloc.get(x).unwrap_or(&0)).collect(),
+                alloc[dst],
+                alloc[src],
+                args.iter().map(|x| alloc[x]).collect(),
             ),
-            Instruction::List(dst, args) => Bytecode::List(
-                *alloc.get(dst).unwrap_or(&0),
-                args.iter().map(|x| *alloc.get(x).unwrap_or(&0)).collect(),
-            ),
-            Instruction::Tuple(dst, args) => Bytecode::Tuple(
-                *alloc.get(dst).unwrap_or(&0),
-                args.iter().map(|x| *alloc.get(x).unwrap_or(&0)).collect(),
-            ),
-            Instruction::Index(dst, src, index) => Bytecode::Index(
-                *alloc.get(dst).unwrap_or(&0),
-                *alloc.get(src).unwrap_or(&0),
-                *alloc.get(index).unwrap_or(&0),
-            ),
+            Instruction::List(dst, args) => {
+                Bytecode::List(alloc[dst], args.iter().map(|x| alloc[x]).collect())
+            }
+            Instruction::Tuple(dst, args) => {
+                Bytecode::Tuple(alloc[dst], args.iter().map(|x| alloc[x]).collect())
+            }
+            Instruction::Index(dst, src, index) => {
+                Bytecode::Index(alloc[dst], alloc[src], alloc[index])
+            }
             Instruction::Method(dst, src, id, args) => Bytecode::Method(
-                *alloc.get(dst).unwrap_or(&0),
-                *alloc.get(src).unwrap_or(&0),
-                *id,
-                args.iter().map(|x| *alloc.get(x).unwrap_or(&0)).collect(),
+                alloc[dst],
+                alloc[src],
+                Id::try_from(*id).unwrap(),
+                args.iter().map(|x| alloc[x]).collect(),
             ),
         }
     }
@@ -222,20 +223,19 @@ impl Instruction {
 impl Terminator {
     fn codegen(&self, alloc: &HashMap<Var, Reg>, map: &HashMap<Label, usize>) -> Bytecode {
         match self {
-            Terminator::Branch(cond, yes, no) => {
-                Bytecode::Branch(*alloc.get(cond).unwrap_or(&0), map[yes], map[no])
-            }
-            Terminator::Jump(to) => Bytecode::Jump(map[to]),
-            Terminator::Return(var) => Bytecode::Return(*alloc.get(var).unwrap_or(&0)),
+            Terminator::Branch(cond, yes, no) => Bytecode::Branch(
+                alloc[cond],
+                Index::try_from(map[yes]).unwrap(),
+                Index::try_from(map[no]).unwrap(),
+            ),
+            Terminator::Jump(to) => Bytecode::Jump(Index::try_from(map[to]).unwrap()),
+            Terminator::Return(var) => Bytecode::Return(alloc[var]),
         }
     }
 }
 
 impl Copy {
     fn codegen(&self, alloc: &HashMap<Var, Reg>) -> Bytecode {
-        Bytecode::Copy(
-            *alloc.get(&self.0).unwrap_or(&0),
-            *alloc.get(&self.1).unwrap_or(&0),
-        )
+        Bytecode::Copy(alloc[&self.0], alloc[&self.1])
     }
 }

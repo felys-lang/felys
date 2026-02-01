@@ -1,74 +1,41 @@
 use crate::elysia::Object;
-use crate::utils::group::Group;
 
 pub enum Fault {
     DataType(Object, &'static str),
     BinaryOperation(&'static str, Object, Object),
     UnaryOperation(&'static str, Object),
-    NotExist(&'static str, usize),
-    NumArgsNotMatch(usize, Vec<Object>),
-    IndexOutOfBounds(Object, isize),
-    NotEnoughToUnpack(Object, usize),
+    NumArgsNotMatch(usize, usize),
+    IndexOutOfBounds(Object, i32),
+    NotEnoughToUnpack(Object, u32),
 }
 
-impl Fault {
-    pub fn recover(self, groups: &[Group]) -> String {
+impl From<Fault> for String {
+    fn from(value: Fault) -> Self {
         let mut msg = "Elysia: ".to_string();
-        match self {
+        match value {
             Fault::DataType(obj, ty) => {
-                msg.push_str("expecting `");
-                obj.recover(&mut msg, 0, groups).unwrap();
-                msg.push_str("` to be `");
-                msg.push_str(ty);
-                msg.push('`');
+                let s = format!("expecting `{obj}` to be `{ty}`");
+                msg.push_str(&s);
             }
             Fault::BinaryOperation(op, lhs, rhs) => {
-                msg.push_str("cannot apply `");
-                msg.push_str(op);
-                msg.push_str("` to `");
-                lhs.recover(&mut msg, 0, groups).unwrap();
-                msg.push_str("` and `");
-                rhs.recover(&mut msg, 0, groups).unwrap();
-                msg.push('`');
+                let s = format!("cannot apply `{op}` to `{lhs}` and `{rhs}`");
+                msg.push_str(&s);
             }
             Fault::UnaryOperation(op, src) => {
-                msg.push_str("cannot apply `");
-                msg.push_str(op);
-                msg.push_str("` to `");
-                src.recover(&mut msg, 0, groups).unwrap();
-                msg.push('`');
-            }
-            Fault::NotExist(sth, idx) => {
-                let s = format!("{} at location <{}> does not exist", sth, idx);
+                let s = format!("cannot apply `{op}` to `{src}`");
                 msg.push_str(&s);
             }
             Fault::NumArgsNotMatch(expected, args) => {
-                let s = format!("expected {} arguments, got {}: [", expected, args.len());
+                let s = format!("expected {expected} arguments, got {args}");
                 msg.push_str(&s);
-                let mut iter = args.iter();
-                if let Some(first) = iter.next() {
-                    msg.push('`');
-                    first.recover(&mut msg, 0, groups).unwrap();
-                    msg.push('`');
-                }
-                for arg in iter {
-                    msg.push_str(", `");
-                    arg.recover(&mut msg, 0, groups).unwrap();
-                    msg.push('`');
-                }
-                msg.push(']');
             }
             Fault::IndexOutOfBounds(obj, index) => {
-                let s = format!("index {} is out of boundaries for `", index);
+                let s = format!("index {index} is out of boundaries for `{obj}`");
                 msg.push_str(&s);
-                obj.recover(&mut msg, 0, groups).unwrap();
-                msg.push('`');
             }
             Fault::NotEnoughToUnpack(obj, index) => {
-                let s = format!("cannot unpack element at index {} for `", index);
+                let s = format!("cannot unpack element at index {index} for `{obj}`");
                 msg.push_str(&s);
-                obj.recover(&mut msg, 0, groups).unwrap();
-                msg.push('`');
             }
         }
         msg.push('\n');

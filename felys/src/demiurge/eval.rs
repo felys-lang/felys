@@ -1,5 +1,5 @@
-use crate::utils::ast::{BinOp, UnaOp};
 use crate::demiurge::fault::Fault;
+use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::ir::Const;
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
@@ -39,7 +39,7 @@ impl Const {
         }
     }
 
-    fn int(&self) -> Result<isize, Fault> {
+    fn int(&self) -> Result<i32, Fault> {
         if let Const::Int(x) = self {
             Ok(*x)
         } else {
@@ -47,9 +47,9 @@ impl Const {
         }
     }
 
-    fn float(&self) -> Result<f64, Fault> {
+    fn float(&self) -> Result<f32, Fault> {
         if let Const::Float(x) = self {
-            Ok(f64::from_bits(*x))
+            Ok(f32::from_bits(*x))
         } else {
             Err(Fault::ConstantType(self.clone(), "float"))
         }
@@ -86,7 +86,7 @@ impl Const {
     fn gt(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
             Const::Int(x) => (*x) > rhs.int()?,
-            Const::Float(x) => f64::from_bits(*x) > rhs.float()?,
+            Const::Float(x) => f32::from_bits(*x) > rhs.float()?,
             _ => {
                 return Err(Fault::BinaryOperation(">", self.clone(), rhs.clone()));
             }
@@ -97,7 +97,7 @@ impl Const {
     fn ge(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
             Const::Int(x) => (*x) >= rhs.int()?,
-            Const::Float(x) => f64::from_bits(*x) >= rhs.float()?,
+            Const::Float(x) => f32::from_bits(*x) >= rhs.float()?,
             _ => {
                 return Err(Fault::BinaryOperation(">=", self.clone(), rhs.clone()));
             }
@@ -108,7 +108,7 @@ impl Const {
     fn lt(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
             Const::Int(x) => (*x) < rhs.int()?,
-            Const::Float(x) => f64::from_bits(*x) < rhs.float()?,
+            Const::Float(x) => f32::from_bits(*x) < rhs.float()?,
             _ => {
                 return Err(Fault::BinaryOperation("<", self.clone(), rhs.clone()));
             }
@@ -119,7 +119,7 @@ impl Const {
     fn le(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
             Const::Int(x) => (*x) <= rhs.int()?,
-            Const::Float(x) => f64::from_bits(*x) <= rhs.float()?,
+            Const::Float(x) => f32::from_bits(*x) <= rhs.float()?,
             _ => {
                 return Err(Fault::BinaryOperation("<=", self.clone(), rhs.clone()));
             }
@@ -130,7 +130,7 @@ impl Const {
     fn eq(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
             Const::Int(x) => (*x) == rhs.int()?,
-            Const::Float(x) => f64::from_bits(*x) == rhs.float()?,
+            Const::Float(x) => f32::from_bits(*x) == rhs.float()?,
             Const::Bool(x) => *x == rhs.bool()?,
             Const::Str(x) => x.as_ref() == rhs.str()?,
         };
@@ -140,7 +140,7 @@ impl Const {
     fn ne(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
             Const::Int(x) => (*x) != rhs.int()?,
-            Const::Float(x) => f64::from_bits(*x) != rhs.float()?,
+            Const::Float(x) => f32::from_bits(*x) != rhs.float()?,
             Const::Bool(x) => *x != rhs.bool()?,
             Const::Str(x) => x.as_ref() != rhs.str()?,
         };
@@ -153,7 +153,7 @@ impl Const {
                 .checked_add(rhs.int()?)
                 .ok_or(Fault::BinaryOperation("+", self.clone(), rhs.clone()))?
                 .into(),
-            Const::Float(x) => f64::from_bits(*x).add(rhs.float()?).into(),
+            Const::Float(x) => f32::from_bits(*x).add(rhs.float()?).into(),
             Const::Str(x) => format!("{}{}", x, rhs.str()?).into(),
             _ => {
                 return Err(Fault::BinaryOperation("+", self.clone(), rhs.clone()));
@@ -171,7 +171,7 @@ impl Const {
                     rhs.clone(),
                 ))?)
             }
-            Const::Float(x) => f64::from_bits(*x).sub(rhs.float()?).into(),
+            Const::Float(x) => f32::from_bits(*x).sub(rhs.float()?).into(),
             _ => {
                 return Err(Fault::BinaryOperation("-", self.clone(), rhs.clone()));
             }
@@ -185,7 +185,7 @@ impl Const {
                 .checked_mul(rhs.int()?)
                 .ok_or(Fault::BinaryOperation("*", self.clone(), rhs.clone()))?
                 .into(),
-            Const::Float(x) => f64::from_bits(*x).mul(rhs.float()?).into(),
+            Const::Float(x) => f32::from_bits(*x).mul(rhs.float()?).into(),
             _ => {
                 return Err(Fault::BinaryOperation("*", self.clone(), rhs.clone()));
             }
@@ -199,7 +199,7 @@ impl Const {
                 .checked_div(rhs.int()?)
                 .ok_or(Fault::BinaryOperation("/", self.clone(), rhs.clone()))?
                 .into(),
-            Const::Float(x) => f64::from_bits(*x).div(rhs.float()?).into(),
+            Const::Float(x) => f32::from_bits(*x).div(rhs.float()?).into(),
             _ => {
                 return Err(Fault::BinaryOperation("/", self.clone(), rhs.clone()));
             }
@@ -210,7 +210,7 @@ impl Const {
     fn rem(&self, rhs: &Const) -> Result<Const, Fault> {
         let value = match self {
             Const::Int(x) => (*x).rem(rhs.int()?).into(),
-            Const::Float(x) => f64::from_bits(*x).rem(rhs.float()?).into(),
+            Const::Float(x) => f32::from_bits(*x).rem(rhs.float()?).into(),
             _ => {
                 return Err(Fault::BinaryOperation("%", self.clone(), rhs.clone()));
             }
@@ -241,21 +241,21 @@ impl Const {
     fn neg(&self) -> Result<Const, Fault> {
         let value = match self {
             Const::Int(x) => (-*x).into(),
-            Const::Float(x) => (-f64::from_bits(*x)).into(),
+            Const::Float(x) => (-f32::from_bits(*x)).into(),
             _ => return Err(Fault::UnaryOperation("-", self.clone())),
         };
         Ok(value)
     }
 }
 
-impl From<f64> for Const {
-    fn from(x: f64) -> Const {
+impl From<f32> for Const {
+    fn from(x: f32) -> Const {
         Const::Float(x.to_bits())
     }
 }
 
-impl From<isize> for Const {
-    fn from(x: isize) -> Const {
+impl From<i32> for Const {
+    fn from(x: i32) -> Const {
         Const::Int(x)
     }
 }

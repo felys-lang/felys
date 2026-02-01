@@ -33,7 +33,7 @@ impl Display for Const {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Const::Int(x) => write!(f, "{}", x),
-            Const::Float(x) => write!(f, "{}", f64::from_bits(*x)),
+            Const::Float(x) => write!(f, "{}", f32::from_bits(*x)),
             Const::Bool(x) => write!(f, "{}", x),
             Const::Str(x) => write!(f, "\"{}\"", x),
         }

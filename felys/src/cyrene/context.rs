@@ -1,12 +1,13 @@
-use crate::utils::ast::Lit;
 use crate::cyrene::fault::Fault;
+use crate::utils::ast::Lit;
+use crate::utils::bytecode::Reg;
 use crate::utils::function::{Function, Phi};
 use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
 use std::collections::{HashMap, HashSet};
 
 pub struct Context {
     pub cursor: Label,
-    pub cache: HashMap<Lit, Const>,
+    pub consts: HashMap<Lit, Const>,
     ids: usize,
     f: Function,
     defs: HashMap<Label, HashMap<Id, Var>>,
@@ -22,20 +23,16 @@ pub enum Id {
 }
 
 impl Context {
-    pub fn new(args: usize) -> Self {
+    pub fn new(args: Reg) -> Self {
         Self {
             cursor: Label::Entry,
-            cache: Default::default(),
+            consts: Default::default(),
             ids: 0,
             f: Function::new(args),
             defs: Default::default(),
             incompleted: Default::default(),
             sealed: Default::default(),
         }
-    }
-
-    pub fn export(self) -> Function {
-        self.f
     }
 
     pub fn id(&mut self) -> Id {
@@ -60,17 +57,39 @@ impl Context {
         fragment.instructions.push(instruction);
     }
 
-    pub fn jump(&mut self, to: Label) {
+    fn dead(&self) -> bool {
+        if self.cursor == Label::Entry {
+            return false;
+        }
+
+        if self.sealed.contains(&self.cursor)
+            && let Some(frag) = self.f.get(self.cursor)
+            && frag.predecessors.is_empty()
+        {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn jump(&mut self, to: Label) -> bool {
+        if self.dead() {
+            return false;
+        }
         let fragment = self.f.modify(self.cursor).unwrap();
         if fragment.terminator.is_some() {
-            return;
+            return false;
         }
         fragment.terminator = Some(Terminator::Jump(to));
         let cursor = self.cursor;
         self.f.modify(to).unwrap().predecessors.push(cursor);
+        true
     }
 
     pub fn branch(&mut self, cond: Var, to: Label, or: Label) {
+        if self.dead() {
+            return;
+        }
         let fragment = self.f.modify(self.cursor).unwrap();
         if fragment.terminator.is_some() {
             return;
@@ -82,6 +101,9 @@ impl Context {
     }
 
     pub fn ret(&mut self, var: Var) {
+        if self.dead() {
+            return;
+        }
         let fragment = self.f.modify(self.cursor).unwrap();
         if fragment.terminator.is_some() {
             return;
@@ -89,7 +111,7 @@ impl Context {
         fragment.terminator = Some(Terminator::Return(var));
     }
 
-    pub fn phi(&mut self, label: Label, var: Var, inputs: Vec<(Label, Var)>) {
+    fn phi(&mut self, label: Label, var: Var, inputs: Vec<(Label, Var)>) {
         let phi = Phi { var, inputs };
         self.f.modify(label).unwrap().phis.push(phi);
     }
@@ -137,9 +159,13 @@ impl Context {
         } else {
             let var = self.f.var();
             self.define(label, id, var);
+
             let mut operands = Vec::new();
             for pred in predecessors {
-                let v = self.lookup(pred, id)?;
+                let Some(v) = self.lookup(pred, id) else {
+                    self.defs.get_mut(&label).unwrap().remove(&id);
+                    return None;
+                };
                 operands.push((pred, v));
             }
             self.phi(label, var, operands);
@@ -147,5 +173,11 @@ impl Context {
         };
         self.define(label, id, var);
         Some(var)
+    }
+}
+
+impl From<Context> for Function {
+    fn from(value: Context) -> Self {
+        value.f
     }
 }

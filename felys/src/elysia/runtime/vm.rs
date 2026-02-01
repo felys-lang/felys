@@ -1,24 +1,21 @@
-use crate::demiurge::{Bytecode, Reg};
 use crate::elysia::fault::Fault;
-use crate::elysia::runtime::object::{Object, Pointer};
-use crate::elysia::{Callable, Elysia};
-use crate::utils::ir::Const;
+use crate::elysia::runtime::object::Object;
+use crate::utils::bytecode::{Bytecode, Index, Reg};
+use crate::utils::ir::{Const, Pointer};
+use crate::utils::stages::{Callable, Elysia};
 
 impl Elysia {
-    pub fn exec(&self, args: Object) -> Result<String, String> {
-        let exit = self.kernal(args).map_err(|e| e.recover(&self.groups))?;
-        let mut buf = String::new();
-        exit.recover(&mut buf, 0, &self.groups).unwrap();
-        Ok(buf)
+    pub fn exec(&self, args: Object, stdout: &mut String) -> Result<Object, String> {
+        self.kernal(args, stdout).map_err(String::from)
     }
 
-    fn kernal(&self, args: Object) -> Result<Object, Fault> {
+    fn kernal(&self, args: Object, stdout: &mut String) -> Result<Object, Fault> {
         let mut runtime = self.init(args)?;
         loop {
             let (idx, frame) = runtime.active();
-            let bytecode = self.loc(idx)?.loc(frame.pc)?;
+            let bytecode = self.loc(idx).loc(frame.pc);
             frame.pc += 1;
-            if let Some(exit) = bytecode.exec(self, &mut runtime)? {
+            if let Some(exit) = bytecode.exec(self, &mut runtime, stdout)? {
                 break Ok(exit);
             }
         }
@@ -26,274 +23,262 @@ impl Elysia {
 
     fn init(&self, args: Object) -> Result<Runtime, Fault> {
         let runtime = Runtime {
+            args,
             rets: vec![],
-            main: self.main.frame(vec![args])?,
+            main: self.main.frame(vec![0])?,
             stack: vec![],
         };
         Ok(runtime)
     }
 
-    fn loc(&self, idx: Option<usize>) -> Result<&Callable, Fault> {
+    fn loc(&self, idx: Option<Index>) -> &Callable {
         match idx {
-            Some(x) => self.text.get(x).ok_or(Fault::NotExist("callable", x)),
-            None => Ok(&self.main),
+            Some(x) => self.text.get(x as usize).unwrap(),
+            None => &self.main,
         }
     }
 }
 
 struct Runtime {
+    args: Object,
     rets: Vec<Reg>,
     main: Frame,
-    stack: Vec<(usize, Frame)>,
+    stack: Vec<(Index, Frame)>,
 }
 
 impl Runtime {
-    fn active(&mut self) -> (Option<usize>, &mut Frame) {
+    fn active(&mut self) -> (Option<Index>, &mut Frame) {
         self.stack
             .last_mut()
             .map(|(idx, frame)| (Some(*idx), frame))
             .unwrap_or((None, &mut self.main))
     }
 
-    fn call(
-        &mut self,
-        dst: Reg,
-        idx: usize,
-        callable: &Callable,
-        args: Vec<Object>,
-    ) -> Result<(), Fault> {
-        let new = callable.frame(args)?;
+    fn frame(&mut self) -> &mut Frame {
+        self.stack
+            .last_mut()
+            .map(|(_, frame)| frame)
+            .unwrap_or(&mut self.main)
+    }
+
+    fn arg(&mut self, idx: Index) -> Object {
+        if let Some(tmp) = self.stack.pop() {
+            let reg = *tmp.1.args.get(idx as usize).unwrap();
+            let obj = self.frame().load(reg);
+            self.stack.push(tmp);
+            obj
+        } else {
+            self.args.clone()
+        }
+    }
+
+    fn call(&mut self, dst: Reg, idx: Index, frame: Frame) -> Result<(), Fault> {
         self.rets.push(dst);
-        self.stack.push((idx, new));
+        self.stack.push((idx, frame));
         Ok(())
     }
 
     fn ret(&mut self, src: Reg) -> Result<Option<Object>, Fault> {
-        let obj = self.active().1.load(src)?;
+        let obj = self.frame().load(src);
         if self.stack.pop().is_none() {
             return Ok(Some(obj));
         };
         let dst = self.rets.pop().unwrap();
-        self.active().1.store(dst, obj)?;
+        self.frame().store(dst, obj);
         Ok(None)
     }
 }
 
 struct Frame {
-    pc: usize,
-    registers: Box<[Object]>,
+    pc: Index,
+    registers: Box<[Option<Object>]>,
+    args: Box<[Reg]>,
 }
 
 impl Frame {
-    fn load(&self, reg: usize) -> Result<Object, Fault> {
-        if reg == 0 {
-            return Err(Fault::NotExist("register", reg));
-        }
-        self.registers
-            .get(reg - 1)
-            .cloned()
-            .ok_or(Fault::NotExist("register", reg))
+    fn load(&self, reg: Reg) -> Object {
+        self.registers.get(reg as usize).cloned().unwrap().unwrap()
     }
 
-    fn store(&mut self, reg: usize, obj: Object) -> Result<(), Fault> {
-        if reg == 0 {
-            return Ok(());
+    fn store(&mut self, reg: Reg, obj: Object) {
+        *self.registers.get_mut(reg as usize).unwrap() = Some(obj);
+    }
+
+    fn gather(&self, args: &[Reg]) -> Vec<Object> {
+        let mut objs = Vec::with_capacity(args.len());
+        for arg in args {
+            let obj = self.load(*arg);
+            objs.push(obj);
         }
-        *self
-            .registers
-            .get_mut(reg - 1)
-            .ok_or(Fault::NotExist("register", reg))? = obj;
-        Ok(())
+        objs
     }
 }
 
 impl Callable {
-    fn loc(&self, idx: usize) -> Result<&Bytecode, Fault> {
-        self.bytecodes
-            .get(idx)
-            .ok_or(Fault::NotExist("bytecode", idx))
+    fn loc(&self, idx: Index) -> &Bytecode {
+        self.bytecodes.get(idx as usize).unwrap()
     }
 
-    fn loader(&self) -> Vec<Object> {
-        Vec::with_capacity(self.registers)
-    }
-
-    fn frame(&self, mut args: Vec<Object>) -> Result<Frame, Fault> {
-        if args.len() != self.args {
-            return Err(Fault::NumArgsNotMatch(self.args, args));
+    fn frame(&self, args: Vec<Reg>) -> Result<Frame, Fault> {
+        if self.args as usize != args.len() {
+            return Err(Fault::NumArgsNotMatch(self.args as usize, args.len()));
         }
-        args.resize(self.registers, Object::Void);
         let frame = Frame {
             pc: 0,
-            registers: args.into_boxed_slice(),
+            registers: vec![None; self.registers as usize].into_boxed_slice(),
+            args: args.into_boxed_slice(),
         };
         Ok(frame)
     }
 }
 
 impl Bytecode {
-    fn exec(&self, elysia: &Elysia, rt: &mut Runtime) -> Result<Option<Object>, Fault> {
+    fn exec(
+        &self,
+        elysia: &Elysia,
+        rt: &mut Runtime,
+        so: &mut String,
+    ) -> Result<Option<Object>, Fault> {
         match self {
+            Bytecode::Arg(dst, idx) => {
+                let obj = rt.arg(*idx);
+                rt.frame().store(*dst, obj);
+            }
             Bytecode::Field(dst, src, id) => {
-                let (_, frame) = rt.active();
-                let tmp = frame.load(*src)?;
-                let (gid, group) = tmp.group()?;
+                let frame = rt.frame();
+                let tmp = frame.load(*src);
+                let (gp, group) = tmp.group()?;
                 let idx = elysia
                     .groups
-                    .get(gid)
-                    .ok_or(Fault::NotExist("group", gid))?
+                    .get(gp as usize)
+                    .unwrap()
                     .indices
                     .get(id)
-                    .ok_or(Fault::NotExist("indices", *id))?;
-                let obj = group.get(*idx).cloned().unwrap();
-                frame.store(*dst, obj)?;
+                    .unwrap();
+                let obj = group.get(*idx as usize).cloned().unwrap();
+                frame.store(*dst, obj);
             }
             Bytecode::Unpack(dst, src, idx) => {
-                let (_, frame) = rt.active();
-                let tmp = frame.load(*src)?;
+                let frame = rt.frame();
+                let tmp = frame.load(*src);
                 let objs = tmp.tuple()?;
                 let obj = objs
-                    .get(*idx)
+                    .get(*idx as usize)
                     .cloned()
                     .ok_or(Fault::NotEnoughToUnpack(tmp, *idx))?;
-                frame.store(*dst, obj)?;
+                frame.store(*dst, obj);
             }
-            Bytecode::Group(dst, idx) => {
-                let (_, frame) = rt.active();
-                let obj = Object::Pointer(Pointer::Group, *idx);
-                frame.store(*dst, obj)?;
-            }
-            Bytecode::Function(dst, idx) => {
-                let (_, frame) = rt.active();
-                let obj = Object::Pointer(Pointer::Function, *idx);
-                frame.store(*dst, obj)?;
-            }
+            Bytecode::Pointer(dst, pt, idx) => match pt {
+                Pointer::Function => {
+                    let obj = Object::Pointer(Pointer::Function, *idx);
+                    rt.frame().store(*dst, obj);
+                }
+                Pointer::Group => {
+                    let obj = Object::Pointer(Pointer::Group, *idx);
+                    rt.frame().store(*dst, obj);
+                }
+                Pointer::Rust => {
+                    let obj = Object::Pointer(Pointer::Rust, *idx);
+                    rt.frame().store(*dst, obj);
+                }
+            },
             Bytecode::Load(dst, idx) => {
-                let (_, frame) = rt.active();
-                let obj = elysia
-                    .data
-                    .get(*idx)
-                    .ok_or(Fault::NotExist("constant", *idx))?
-                    .into();
-                frame.store(*dst, obj)?;
+                let obj = elysia.data.get(*idx as usize).unwrap().into();
+                rt.frame().store(*dst, obj);
             }
             Bytecode::Binary(dst, lhs, op, rhs) => {
-                let (_, frame) = rt.active();
-                let l = frame.load(*lhs)?;
-                let r = frame.load(*rhs)?;
-                let obj = l.binary(op, r)?;
-                frame.store(*dst, obj)?;
+                let frame = rt.frame();
+                let l = frame.load(*lhs);
+                let r = frame.load(*rhs);
+                let obj = l.binary(*op, r)?;
+                frame.store(*dst, obj);
             }
             Bytecode::Unary(dst, op, src) => {
-                let (_, frame) = rt.active();
-                let s = frame.load(*src)?;
-                let obj = s.unary(op)?;
-                frame.store(*dst, obj)?;
+                let frame = rt.frame();
+                let s = frame.load(*src);
+                let obj = s.unary(*op)?;
+                frame.store(*dst, obj);
             }
             Bytecode::Call(dst, src, args) => {
-                let (_, frame) = rt.active();
-                let (ty, idx) = frame.load(*src)?.pointer()?;
+                let frame = rt.frame();
+                let (ty, idx) = frame.load(*src).pointer()?;
                 match ty {
                     Pointer::Function => {
-                        let callable = elysia.text.get(idx).ok_or(Fault::NotExist("group", idx))?;
-                        let mut objs = callable.loader();
-                        for arg in args {
-                            let obj = frame.load(*arg)?;
-                            objs.push(obj);
-                        }
-                        rt.call(*dst, idx, callable, objs)?
+                        let new = elysia.text.get(idx as usize).unwrap().frame(args.clone())?;
+                        rt.call(*dst, idx, new)?
                     }
                     Pointer::Group => {
-                        let group = elysia
-                            .groups
-                            .get(idx)
-                            .ok_or(Fault::NotExist("group", idx))?;
-                        let mut objs = Vec::with_capacity(args.len());
-                        for arg in args {
-                            let obj = frame.load(*arg)?;
-                            objs.push(obj);
-                        }
+                        let group = elysia.groups.get(idx as usize).unwrap();
+                        let objs = frame.gather(args);
                         let expected = group.indices.len();
                         if expected != args.len() {
-                            return Err(Fault::NumArgsNotMatch(expected, objs));
+                            return Err(Fault::NumArgsNotMatch(expected, args.len()));
                         }
-                        frame.store(*dst, Object::Group(idx, objs.into()))?;
+                        frame.store(*dst, Object::Group(idx, objs.into()));
+                    }
+                    Pointer::Rust => {
+                        let f = elysia.rust.get(idx as usize).unwrap();
+                        let objs = frame.gather(args);
+                        frame.store(*dst, f(objs, so));
                     }
                 };
             }
             Bytecode::List(dst, args) => {
-                let (_, frame) = rt.active();
-                let mut objs = Vec::with_capacity(args.len());
-                for arg in args {
-                    let obj = frame.load(*arg)?;
-                    objs.push(obj);
-                }
-                frame.store(*dst, Object::List(objs.into()))?;
+                let frame = rt.frame();
+                let objs = frame.gather(args);
+                frame.store(*dst, Object::List(objs.into()));
             }
             Bytecode::Tuple(dst, args) => {
-                let (_, frame) = rt.active();
-                let mut objs = Vec::with_capacity(args.len());
-                for arg in args {
-                    let obj = frame.load(*arg)?;
-                    objs.push(obj);
-                }
-                frame.store(*dst, Object::Tuple(objs.into()))?;
+                let frame = rt.frame();
+                let objs = frame.gather(args);
+                frame.store(*dst, Object::Tuple(objs.into()));
             }
             Bytecode::Index(dst, src, index) => {
-                let (_, frame) = rt.active();
-                let tmp = frame.load(*src)?;
+                let frame = rt.frame();
+                let tmp = frame.load(*src);
                 let list = tmp.list()?;
-                let int = frame.load(*index)?.int()?;
+                let int = frame.load(*index).int()?;
                 let idx = if int >= 0 {
                     int as usize
                 } else {
                     list.len()
-                        .checked_sub(int.unsigned_abs())
+                        .checked_sub(int.unsigned_abs() as usize)
                         .ok_or(Fault::IndexOutOfBounds(tmp.clone(), int))?
                 };
                 let obj = list
                     .get(idx)
                     .cloned()
                     .ok_or(Fault::IndexOutOfBounds(tmp, int))?;
-                frame.store(*dst, obj)?;
+                frame.store(*dst, obj);
             }
             Bytecode::Method(dst, src, id, args) => {
-                let (_, frame) = rt.active();
-                let obj = frame.load(*src)?;
-                let (gid, _) = obj.group()?;
+                let (gp, _) = rt.frame().load(*src).group()?;
                 let idx = elysia
                     .groups
-                    .get(gid)
-                    .ok_or(Fault::NotExist("group", gid))?
+                    .get(gp as usize)
+                    .unwrap()
                     .methods
                     .get(id)
-                    .ok_or(Fault::NotExist("method", *id))?;
-                let callable = elysia
-                    .text
-                    .get(*idx)
-                    .ok_or(Fault::NotExist("callable", *idx))?;
-                let mut objs = callable.loader();
-                objs.push(obj);
-                for arg in args {
-                    let obj = frame.load(*arg)?;
-                    objs.push(obj);
-                }
-                rt.call(*dst, *idx, callable, objs)?;
+                    .unwrap();
+                let mut args = args.clone();
+                args.push(*src);
+                let new = elysia.text.get(*idx as usize).unwrap().frame(args)?;
+                rt.call(*dst, *idx as Index, new)?;
             }
             Bytecode::Branch(cond, yes, no) => {
-                let (_, frame) = rt.active();
-                if frame.load(*cond)?.bool()? {
+                let frame = rt.frame();
+                if frame.load(*cond).bool()? {
                     frame.pc = *yes;
                 } else {
                     frame.pc = *no;
                 }
             }
-            Bytecode::Jump(target) => rt.active().1.pc = *target,
+            Bytecode::Jump(target) => rt.frame().pc = *target,
             Bytecode::Return(src) => return rt.ret(*src),
             Bytecode::Copy(dst, src) => {
-                let (_, frame) = rt.active();
-                let obj = frame.load(*src)?;
-                frame.store(*dst, obj)?;
+                let frame = rt.frame();
+                let obj = frame.load(*src);
+                frame.store(*dst, obj);
             }
         }
         Ok(None)
@@ -304,7 +289,7 @@ impl From<&Const> for Object {
     fn from(value: &Const) -> Self {
         match value {
             Const::Int(x) => Object::Int(*x),
-            Const::Float(x) => Object::Float(f64::from_bits(*x)),
+            Const::Float(x) => Object::Float(f32::from_bits(*x)),
             Const::Bool(x) => Object::Bool(*x),
             Const::Str(x) => Object::Str(x.clone()),
         }
