@@ -4,7 +4,14 @@ pub struct Stream {
     pub data: String,
     pub cursor: usize,
 }
-impl From<String> for Stream { fn from(value: String) -> Self { Self { data: value, cursor: 0 } } }
+impl From<String> for Stream {
+    fn from(value: String) -> Self {
+        Self {
+            data: value,
+            cursor: 0,
+        }
+    }
+}
 impl Iterator for Stream {
     type Item = char;
     fn next(&mut self) -> Option<Self::Item> {
@@ -16,7 +23,11 @@ impl Iterator for Stream {
 }
 #[allow(unused)]
 impl Stream {
-    pub fn dfa<const S: usize>(&mut self, transition: fn(usize, char) -> Option<usize>, acceptance: [bool; S]) -> Option<&str> {
+    pub fn dfa<const S: usize>(
+        &mut self,
+        transition: fn(usize, char) -> Option<usize>,
+        acceptance: [bool; S],
+    ) -> Option<&str> {
         let start = self.cursor;
         let mut end = start;
         let mut s = 0usize;
@@ -35,5 +46,7 @@ impl Stream {
             None
         }
     }
-    pub fn peek(&mut self) -> Option<char> { self.data[self.cursor..].chars().next() }
+    pub fn peek(&mut self) -> Option<char> {
+        self.data[self.cursor..].chars().next()
+    }
 }
