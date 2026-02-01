@@ -223,6 +223,20 @@ fn loops() -> Result<(), String> {
         Object::Int(10),
         "",
     )?;
+    exec(
+        args.clone(),
+        "",
+        "x = 0; for i in [0, 1, 2, 3] { x += i; } x",
+        Object::Int(6),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "x = 0; for (a, b) in [(0, 1), (2, 3)] { x += a + b; } x",
+        Object::Int(6),
+        "",
+    )?;
 
     Ok(())
 }
