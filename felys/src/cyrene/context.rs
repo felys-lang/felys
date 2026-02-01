@@ -146,6 +146,11 @@ impl Context {
 
         let predecessors = self.f.get(label).unwrap().predecessors.clone();
         let var = if !self.sealed.contains(&label) {
+            for pred in &predecessors {
+                if self.sealed.contains(pred) && self.lookup(*pred, id).is_none() {
+                    return None;
+                }
+            }
             let var = self.f.var();
             self.incompleted.entry(label).or_default().insert(id, var);
             var
