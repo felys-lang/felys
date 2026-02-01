@@ -1,31 +1,35 @@
-use felys::{BinOp, Object, PhiLia093};
+use felys::{BinOp, Elysia, Object, PhiLia093};
 
-pub fn eval(args: Object, body: &'static str) -> Result<(String, Object), String> {
+pub fn eval(
+    args: Object,
+    body: &'static str,
+    expect: Object,
+    stdout: &'static str,
+) -> Result<(), String> {
     let wrapped = format!("fn main(args) {{ {body} }}");
 
-    let (uo, ue) = pipeline(wrapped.clone(), args.clone(), 0)?;
-    let (oo, oe) = pipeline(wrapped, args, usize::MAX)?;
+    for o in [0, 1, 2, usize::MAX] {
+        for elysia in compile(wrapped.clone(), o)? {
+            let mut out = String::new();
+            let obj = elysia.exec(args.clone(), &mut out)?;
 
-    if uo != oo {
-        Err("inconsistent stdout".to_string())
-    } else if ue.clone().binary(BinOp::Ne, oe)?.bool()? {
-        Err("inconsistent exit".to_string())
-    } else {
-        Ok((uo, ue))
+            if obj.clone().binary(BinOp::Ne, expect.clone())?.bool()? {
+                return Err(format!("Expected {}, got {}", expect, obj));
+            } else if out != stdout {
+                return Err(format!("Expected {}, got {}", stdout, out));
+            }
+        }
     }
+
+    Ok(())
 }
 
-pub fn eq(lhs: Object, rhs: Object) -> Result<bool, String> {
-    lhs.binary(BinOp::Eq, rhs)?.bool().map_err(String::from)
-}
+fn compile(code: String, o: usize) -> Result<[Elysia; 2], String> {
+    let elysia = PhiLia093::from(code).parse()?.cfg()?.optimize(o)?.codegen();
 
-fn pipeline(code: String, args: Object, o: usize) -> Result<(String, Object), String> {
-    let mut stdout = String::new();
-    let exit = PhiLia093::from(code)
-        .parse()?
-        .cfg()?
-        .optimize(o)?
-        .codegen()
-        .exec(args, &mut stdout)?;
-    Ok((stdout, exit))
+    let mut binary = Vec::with_capacity(256);
+    elysia.dump(&mut binary).unwrap();
+    let loaded = Elysia::load(&mut binary.as_slice()).unwrap();
+
+    Ok([elysia, loaded])
 }
