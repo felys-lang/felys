@@ -73,7 +73,7 @@ impl Const {
             0x1 => Const::Float(src.u32()?),
             0x2 => Const::Bool(src.u8()? != 0),
             0x3 => {
-                let s = String::from_utf8(src.vec()?)
+                let s = String::from_utf8(src.str()?)
                     .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
                 Const::Str(s.into())
             }
@@ -199,10 +199,15 @@ pub trait Load: Read {
         Ok(i32::from_be_bytes(buf))
     }
 
+    fn str(&mut self) -> Result<Vec<u8>> {
+        let len = self.u32()?;
+        let mut vec = vec![0; len as usize];
+        self.read_exact(&mut vec)?;
+        Ok(vec)
+    }
+
     fn vec(&mut self) -> Result<Vec<u8>> {
-        let mut buf = [0; 4];
-        self.read_exact(&mut buf)?;
-        let len = u32::from_be_bytes(buf);
+        let len = self.u8()?;
         let mut vec = vec![0; len as usize];
         self.read_exact(&mut vec)?;
         Ok(vec)

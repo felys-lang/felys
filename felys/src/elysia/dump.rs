@@ -29,14 +29,14 @@ impl Elysia {
 
 impl Group {
     fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
-        buf.write_all(&Index::try_from(self.methods.len()).unwrap().to_be_bytes())?;
-        for (id, idx) in self.methods.iter() {
+        buf.write_all(&Index::try_from(self.indices.len()).unwrap().to_be_bytes())?;
+        for (id, idx) in self.indices.iter() {
             buf.write_all(&id.to_be_bytes())?;
             buf.write_all(&idx.to_be_bytes())?;
         }
 
-        buf.write_all(&Index::try_from(self.indices.len()).unwrap().to_be_bytes())?;
-        for (id, idx) in self.indices.iter() {
+        buf.write_all(&Index::try_from(self.methods.len()).unwrap().to_be_bytes())?;
+        for (id, idx) in self.methods.iter() {
             buf.write_all(&id.to_be_bytes())?;
             buf.write_all(&idx.to_be_bytes())?;
         }
