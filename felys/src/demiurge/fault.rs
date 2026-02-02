@@ -5,6 +5,7 @@ pub enum Fault {
     BinaryOperation(&'static str, Const, Const),
     UnaryOperation(&'static str, Const),
     ConstantType(Const, &'static str),
+    ExitBlockUnreachable,
 }
 
 impl Fault {
@@ -22,6 +23,9 @@ impl Fault {
             Fault::ConstantType(c, ty) => {
                 let s = format!("expecting `{c}` to be `{ty}`");
                 msg.push_str(&s);
+            }
+            Fault::ExitBlockUnreachable => {
+                msg.push_str("infinite loop detected");
             }
         }
         msg.push('\n');

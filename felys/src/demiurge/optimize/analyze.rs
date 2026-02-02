@@ -112,6 +112,9 @@ impl Function {
                 }
             }
         }
+        if !meta.visited.contains(&Label::Exit) {
+            return Err(Fault::ExitBlockUnreachable);
+        }
         Ok(meta)
     }
 }
