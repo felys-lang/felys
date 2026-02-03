@@ -10,7 +10,7 @@
 
 ## What is the Felys Programming Language?
 
-Felys is an interpreted programming language written in Rust that comes with a compiler and a runtime. Feel free to try it using the online [playground](https://exec.felys.dev/). Please note, however, that it is based on a legacy version of Felys. Once the ongoing reconstruction for the compilation framework is done, the websites will be updated.
+Felys is an interpreted programming language written in Rust that comes with a compiler and a runtime. Feel free to try it using the online [playground](https://exec.felys.dev/). Please note, however, the language after reconstruction is very unstable and missing some features, e.g., neutral network.
 
 ## Components
 
