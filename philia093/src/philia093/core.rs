@@ -6,7 +6,10 @@ use crate::utils::*;
 #[allow(non_snake_case, unused)]
 impl super::PhiLia093 {
     pub fn grammar(&mut self) -> Option<Grammar> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Grammar, 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Grammar, 1usize> = [|x| {
             let import = x.ACTION();
             x.__memo.clean();
             let callables = {
@@ -15,7 +18,9 @@ impl super::PhiLia093 {
                     let callable = x.callable()?;
                     x.__memo.clean();
                     Some((callable))
-                }]) { body.push(data) }
+                }]) {
+                    body.push(data)
+                }
                 body
             };
             let _ = match x.EOF() {
@@ -27,59 +32,76 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn callable(&mut self) -> Option<Callable> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Callable, 2usize> = [|x| {
-            let deco = x.deco();
-            let _ = x.PEG()?;
-            let name = match x.NAME() {
-                Some(value) => value,
-                None => return x.__error("<NAME>"),
-            };
-            let ty = x.__peg([|x| {
-                let _ = x.ARROW()?;
-                let ty = match x.ACTION() {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Callable, 2usize> = [
+            |x| {
+                let deco = x.deco();
+                let _ = x.PEG()?;
+                let name = match x.NAME() {
                     Some(value) => value,
-                    None => return x.__error("<ACTION>"),
+                    None => return x.__error("<NAME>"),
                 };
-                Some((ty))
-            }]);
-            let _ = match x.COLON() {
-                Some(value) => value,
-                None => return x.__error("<COLON>"),
-            };
-            let rule = match x.rule() {
-                Some(value) => value,
-                None => return x.__error("<rule>"),
-            };
-            let _ = match x.SEMI() {
-                Some(value) => value,
-                None => return x.__error("<SEMI>"),
-            };
-            Some(Callable { deco, name, hierarchy: Hierarchy::Peg(ty, rule) })
-        }, |x| {
-            let deco = x.deco();
-            let _ = x.REX()?;
-            let name = match x.NAME() {
-                Some(value) => value,
-                None => return x.__error("<NAME>"),
-            };
-            let _ = match x.COLON() {
-                Some(value) => value,
-                None => return x.__error("<COLON>"),
-            };
-            let regex = match x.union() {
-                Some(value) => value,
-                None => return x.__error("<union>"),
-            };
-            let _ = match x.SEMI() {
-                Some(value) => value,
-                None => return x.__error("<SEMI>"),
-            };
-            Some(Callable { deco, name, hierarchy: Hierarchy::Rex(regex) })
-        }];
+                let ty = x.__peg([|x| {
+                    let _ = x.ARROW()?;
+                    let ty = match x.ACTION() {
+                        Some(value) => value,
+                        None => return x.__error("<ACTION>"),
+                    };
+                    Some((ty))
+                }]);
+                let _ = match x.COLON() {
+                    Some(value) => value,
+                    None => return x.__error("<COLON>"),
+                };
+                let rule = match x.rule() {
+                    Some(value) => value,
+                    None => return x.__error("<rule>"),
+                };
+                let _ = match x.SEMI() {
+                    Some(value) => value,
+                    None => return x.__error("<SEMI>"),
+                };
+                Some(Callable {
+                    deco,
+                    name,
+                    hierarchy: Hierarchy::Peg(ty, rule),
+                })
+            },
+            |x| {
+                let deco = x.deco();
+                let _ = x.REX()?;
+                let name = match x.NAME() {
+                    Some(value) => value,
+                    None => return x.__error("<NAME>"),
+                };
+                let _ = match x.COLON() {
+                    Some(value) => value,
+                    None => return x.__error("<COLON>"),
+                };
+                let regex = match x.union() {
+                    Some(value) => value,
+                    None => return x.__error("<union>"),
+                };
+                let _ = match x.SEMI() {
+                    Some(value) => value,
+                    None => return x.__error("<SEMI>"),
+                };
+                Some(Callable {
+                    deco,
+                    name,
+                    hierarchy: Hierarchy::Rex(regex),
+                })
+            },
+        ];
         self.__peg(RULES)
     }
     pub fn deco(&mut self) -> Option<BufVec<Tag, 1>> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<BufVec<Tag, 1>, 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<BufVec<Tag, 1>, 1usize> = [|x| {
             let _ = x.AT()?;
             let _ = match x.LPAR() {
                 Some(value) => value,
@@ -98,7 +120,9 @@ impl super::PhiLia093 {
                         None => return x.__error("<TAG>"),
                     };
                     Some((tag))
-                }]) { body.push(data) }
+                }]) {
+                    body.push(data)
+                }
                 body
             };
             let _ = match x.RPAR() {
@@ -110,7 +134,10 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn rule(&mut self) -> Option<Rule> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Rule, 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Rule, 1usize> = [|x| {
             let _ = x.SLASH();
             let first = match x.alter() {
                 Some(value) => value,
@@ -125,7 +152,9 @@ impl super::PhiLia093 {
                         None => return x.__error("<alter>"),
                     };
                     Some((alter))
-                }]) { body.push(data) }
+                }]) {
+                    body.push(data)
+                }
                 body
             };
             Some(Rule(BufVec::new([first], more)))
@@ -133,124 +162,168 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn alter(&mut self) -> Option<Alter> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Alter, 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Alter, 1usize> = [|x| {
             let first = match x.assignment() {
                 Some(value) => value,
                 None => return x.__error("<assignment>"),
             };
             let more = {
                 let mut body = Vec::new();
-                while let Some(data) = x.assignment() { body.push(data) }
+                while let Some(data) = x.assignment() {
+                    body.push(data)
+                }
                 body
             };
             let action = x.ACTION();
-            Some(Alter { assignments: BufVec::new([first], more), action })
+            Some(Alter {
+                assignments: BufVec::new([first], more),
+                action,
+            })
         }];
         self.__peg(RULES)
     }
     pub fn assignment(&mut self) -> Option<Assignment> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Assignment, 5usize> = [|x| {
-            let name = x.NAME()?;
-            let _ = x.EQ()?;
-            let item = match x.item() {
-                Some(value) => value,
-                None => return x.__error("<item>"),
-            };
-            Some(Assignment::Named(name, item))
-        }, |x| {
-            let lookahead = x.lookahead()?;
-            Some(Assignment::Lookahead(lookahead))
-        }, |x| {
-            let item = x.item()?;
-            Some(Assignment::Anonymous(item))
-        }, |x| {
-            let _ = x.DOLLAR()?;
-            Some(Assignment::Clean)
-        }, |x| {
-            let _ = x.HASH()?;
-            Some(Assignment::Eof)
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Assignment, 5usize> = [
+            |x| {
+                let name = x.NAME()?;
+                let _ = x.EQ()?;
+                let item = match x.item() {
+                    Some(value) => value,
+                    None => return x.__error("<item>"),
+                };
+                Some(Assignment::Named(name, item))
+            },
+            |x| {
+                let lookahead = x.lookahead()?;
+                Some(Assignment::Lookahead(lookahead))
+            },
+            |x| {
+                let item = x.item()?;
+                Some(Assignment::Anonymous(item))
+            },
+            |x| {
+                let _ = x.DOLLAR()?;
+                Some(Assignment::Clean)
+            },
+            |x| {
+                let _ = x.HASH()?;
+                Some(Assignment::Eof)
+            },
+        ];
         self.__peg(RULES)
     }
     pub fn lookahead(&mut self) -> Option<Lookahead> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Lookahead, 2usize> = [|x| {
-            let _ = x.AMPERSAND()?;
-            let atom = match x.atom() {
-                Some(value) => value,
-                None => return x.__error("<atom>"),
-            };
-            Some(Lookahead::Positive(atom))
-        }, |x| {
-            let _ = x.EXCLAMATION()?;
-            let atom = match x.atom() {
-                Some(value) => value,
-                None => return x.__error("<atom>"),
-            };
-            Some(Lookahead::Negative(atom))
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Lookahead, 2usize> = [
+            |x| {
+                let _ = x.AMPERSAND()?;
+                let atom = match x.atom() {
+                    Some(value) => value,
+                    None => return x.__error("<atom>"),
+                };
+                Some(Lookahead::Positive(atom))
+            },
+            |x| {
+                let _ = x.EXCLAMATION()?;
+                let atom = match x.atom() {
+                    Some(value) => value,
+                    None => return x.__error("<atom>"),
+                };
+                Some(Lookahead::Negative(atom))
+            },
+        ];
         self.__peg(RULES)
     }
     pub fn item(&mut self) -> Option<Item> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Item, 4usize> = [|x| {
-            let _ = x.LBRA()?;
-            let atom = match x.atom() {
-                Some(value) => value,
-                None => return x.__error("<atom>"),
-            };
-            let _ = match x.RBRA() {
-                Some(value) => value,
-                None => return x.__error("<RBRA>"),
-            };
-            let msg = x.MESSAGE();
-            Some(Item::Eager(atom, msg))
-        }, |x| {
-            let atom = x.atom()?;
-            let _ = x.QUESTION()?;
-            Some(Item::Optional(atom))
-        }, |x| {
-            let atom = x.atom()?;
-            let _ = x.STAR()?;
-            Some(Item::Repetition(atom))
-        }, |x| {
-            let atom = x.atom()?;
-            Some(Item::Name(atom))
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Item, 4usize> = [
+            |x| {
+                let _ = x.LBRA()?;
+                let atom = match x.atom() {
+                    Some(value) => value,
+                    None => return x.__error("<atom>"),
+                };
+                let _ = match x.RBRA() {
+                    Some(value) => value,
+                    None => return x.__error("<RBRA>"),
+                };
+                let msg = x.MESSAGE();
+                Some(Item::Eager(atom, msg))
+            },
+            |x| {
+                let atom = x.atom()?;
+                let _ = x.QUESTION()?;
+                Some(Item::Optional(atom))
+            },
+            |x| {
+                let atom = x.atom()?;
+                let _ = x.STAR()?;
+                Some(Item::Repetition(atom))
+            },
+            |x| {
+                let atom = x.atom()?;
+                Some(Item::Name(atom))
+            },
+        ];
         self.__peg(RULES)
     }
     pub fn atom(&mut self) -> Option<Atom> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Atom, 3usize> = [|x| {
-            let _ = x.LPAR()?;
-            let rule = match x.rule() {
-                Some(value) => value,
-                None => return x.__error("<rule>"),
-            };
-            let _ = match x.RPAR() {
-                Some(value) => value,
-                None => return x.__error("<RPAR>"),
-            };
-            Some(Atom::Nested(rule))
-        }, |x| {
-            let name = x.NAME()?;
-            Some(Atom::Name(name))
-        }, |x| {
-            let expect = x.EXPECT()?;
-            Some(Atom::Expect(expect))
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Atom, 3usize> = [
+            |x| {
+                let _ = x.LPAR()?;
+                let rule = match x.rule() {
+                    Some(value) => value,
+                    None => return x.__error("<rule>"),
+                };
+                let _ = match x.RPAR() {
+                    Some(value) => value,
+                    None => return x.__error("<RPAR>"),
+                };
+                Some(Atom::Nested(rule))
+            },
+            |x| {
+                let name = x.NAME()?;
+                Some(Atom::Name(name))
+            },
+            |x| {
+                let expect = x.EXPECT()?;
+                Some(Atom::Expect(expect))
+            },
+        ];
         self.__peg(RULES)
     }
     pub fn union(&mut self) -> Option<Regex> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Regex, 2usize> = [|x| {
-            let lhs = x.union()?;
-            let _ = x.PIPE()?;
-            let rhs = match x.concat() {
-                Some(value) => value,
-                None => return x.__error("<concat>"),
-            };
-            Some(Regex::Union(lhs.into(), rhs.into()))
-        }, |x| {
-            let concat = x.concat()?;
-            Some(concat)
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Regex, 2usize> = [
+            |x| {
+                let lhs = x.union()?;
+                let _ = x.PIPE()?;
+                let rhs = match x.concat() {
+                    Some(value) => value,
+                    None => return x.__error("<concat>"),
+                };
+                Some(Regex::Union(lhs.into(), rhs.into()))
+            },
+            |x| {
+                let concat = x.concat()?;
+                Some(concat)
+            },
+        ];
         let start = self.__stream.cursor;
         if let Some((end, cache)) = self.__memo.union.get(&start) {
             self.__stream.cursor = end.to_owned();
@@ -276,14 +349,20 @@ impl super::PhiLia093 {
         result
     }
     pub fn concat(&mut self) -> Option<Regex> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Regex, 2usize> = [|x| {
-            let lhs = x.concat()?;
-            let rhs = x.repeat()?;
-            Some(Regex::Concat(lhs.into(), rhs.into()))
-        }, |x| {
-            let repeat = x.repeat()?;
-            Some(repeat)
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Regex, 2usize> = [
+            |x| {
+                let lhs = x.concat()?;
+                let rhs = x.repeat()?;
+                Some(Regex::Concat(lhs.into(), rhs.into()))
+            },
+            |x| {
+                let repeat = x.repeat()?;
+                Some(repeat)
+            },
+        ];
         let start = self.__stream.cursor;
         if let Some((end, cache)) = self.__memo.concat.get(&start) {
             self.__stream.cursor = end.to_owned();
@@ -309,18 +388,25 @@ impl super::PhiLia093 {
         result
     }
     pub fn repeat(&mut self) -> Option<Regex> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Regex, 3usize> = [|x| {
-            let inner = x.repeat()?;
-            let _ = x.PLUS()?;
-            Some(Regex::OnceOrMore(inner.into()))
-        }, |x| {
-            let inner = x.repeat()?;
-            let _ = x.STAR()?;
-            Some(Regex::ZeroOrMore(inner.into()))
-        }, |x| {
-            let primary = x.primary()?;
-            Some(Regex::Primary(primary))
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Regex, 3usize> = [
+            |x| {
+                let inner = x.repeat()?;
+                let _ = x.PLUS()?;
+                Some(Regex::OnceOrMore(inner.into()))
+            },
+            |x| {
+                let inner = x.repeat()?;
+                let _ = x.STAR()?;
+                Some(Regex::ZeroOrMore(inner.into()))
+            },
+            |x| {
+                let primary = x.primary()?;
+                Some(Regex::Primary(primary))
+            },
+        ];
         let start = self.__stream.cursor;
         if let Some((end, cache)) = self.__memo.repeat.get(&start) {
             self.__stream.cursor = end.to_owned();
@@ -346,127 +432,168 @@ impl super::PhiLia093 {
         result
     }
     pub fn primary(&mut self) -> Option<Primary> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Primary, 4usize> = [|x| {
-            let _ = x.LPAR()?;
-            let regex = match x.union() {
-                Some(value) => value,
-                None => return x.__error("<union>"),
-            };
-            let _ = match x.RPAR() {
-                Some(value) => value,
-                None => return x.__error("<RPAR>"),
-            };
-            Some(Primary::Parentheses(regex.into()))
-        }, |x| {
-            let string = x.STRING()?;
-            Some(Primary::Literal(string))
-        }, |x| {
-            let name = x.NAME()?;
-            Some(Primary::Name(name))
-        }, |x| {
-            let set = x.SET()?;
-            Some(set)
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Primary, 4usize> = [
+            |x| {
+                let _ = x.LPAR()?;
+                let regex = match x.union() {
+                    Some(value) => value,
+                    None => return x.__error("<union>"),
+                };
+                let _ = match x.RPAR() {
+                    Some(value) => value,
+                    None => return x.__error("<RPAR>"),
+                };
+                Some(Primary::Parentheses(regex.into()))
+            },
+            |x| {
+                let string = x.STRING()?;
+                Some(Primary::Literal(string))
+            },
+            |x| {
+                let name = x.NAME()?;
+                Some(Primary::Name(name))
+            },
+            |x| {
+                let set = x.SET()?;
+                Some(set)
+            },
+        ];
         self.__peg(RULES)
     }
     pub fn SET(&mut self) -> Option<Primary> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Primary, 2usize> = [|x| {
-            let _ = {
-                let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
-                body
-            };
-            let _ = x.__expect("[")?;
-            let _ = x.__expect("^")?;
-            let first = match x.RANGE() {
-                Some(value) => value,
-                None => return x.__error("<RANGE>"),
-            };
-            let more = {
-                let mut body = Vec::new();
-                while let Some(data) = x.RANGE() { body.push(data) }
-                body
-            };
-            let _ = match x.__expect("]") {
-                Some(value) => value,
-                None => return x.__error("']'"),
-            };
-            Some(Primary::Exclude(BufVec::new([first], more)))
-        }, |x| {
-            let _ = {
-                let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
-                body
-            };
-            let _ = x.__expect("[")?;
-            let first = match x.RANGE() {
-                Some(value) => value,
-                None => return x.__error("<RANGE>"),
-            };
-            let more = {
-                let mut body = Vec::new();
-                while let Some(data) = x.RANGE() { body.push(data) }
-                body
-            };
-            let _ = match x.__expect("]") {
-                Some(value) => value,
-                None => return x.__error("']'"),
-            };
-            Some(Primary::Include(BufVec::new([first], more)))
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Primary, 2usize> = [
+            |x| {
+                let _ = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.T() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = x.__expect("[")?;
+                let _ = x.__expect("^")?;
+                let first = match x.RANGE() {
+                    Some(value) => value,
+                    None => return x.__error("<RANGE>"),
+                };
+                let more = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.RANGE() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = match x.__expect("]") {
+                    Some(value) => value,
+                    None => return x.__error("']'"),
+                };
+                Some(Primary::Exclude(BufVec::new([first], more)))
+            },
+            |x| {
+                let _ = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.T() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = x.__expect("[")?;
+                let first = match x.RANGE() {
+                    Some(value) => value,
+                    None => return x.__error("<RANGE>"),
+                };
+                let more = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.RANGE() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = match x.__expect("]") {
+                    Some(value) => value,
+                    None => return x.__error("']'"),
+                };
+                Some(Primary::Include(BufVec::new([first], more)))
+            },
+        ];
         self.__peg(RULES)
     }
     pub fn EXPECT(&mut self) -> Option<Expect> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Expect, 2usize> = [|x| {
-            let _ = {
-                let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
-                body
-            };
-            let _ = x.__expect("'")?;
-            let first = match x.SQC() {
-                Some(value) => value,
-                None => return x.__error("<SQC>"),
-            };
-            let more = {
-                let mut body = Vec::new();
-                while let Some(data) = x.SQC() { body.push(data) }
-                body
-            };
-            let _ = match x.__expect("'") {
-                Some(value) => value,
-                None => return x.__error("'''"),
-            };
-            Some(Expect::Once(BufVec::new([first], more)))
-        }, |x| {
-            let _ = {
-                let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
-                body
-            };
-            let _ = x.__expect("\"")?;
-            let first = match x.DQC() {
-                Some(value) => value,
-                None => return x.__error("<DQC>"),
-            };
-            let more = {
-                let mut body = Vec::new();
-                while let Some(data) = x.DQC() { body.push(data) }
-                body
-            };
-            let _ = match x.__expect("\"") {
-                Some(value) => value,
-                None => return x.__error("'\"'"),
-            };
-            Some(Expect::Keyword(BufVec::new([first], more)))
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Expect, 2usize> = [
+            |x| {
+                let _ = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.T() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = x.__expect("'")?;
+                let first = match x.SQC() {
+                    Some(value) => value,
+                    None => return x.__error("<SQC>"),
+                };
+                let more = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.SQC() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = match x.__expect("'") {
+                    Some(value) => value,
+                    None => return x.__error("'''"),
+                };
+                Some(Expect::Once(BufVec::new([first], more)))
+            },
+            |x| {
+                let _ = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.T() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = x.__expect("\"")?;
+                let first = match x.DQC() {
+                    Some(value) => value,
+                    None => return x.__error("<DQC>"),
+                };
+                let more = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.DQC() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = match x.__expect("\"") {
+                    Some(value) => value,
+                    None => return x.__error("'\"'"),
+                };
+                Some(Expect::Keyword(BufVec::new([first], more)))
+            },
+        ];
         self.__peg(RULES)
     }
     pub fn STRING(&mut self) -> Option<BufVec<usize, 1>> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<BufVec<usize, 1>, 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<BufVec<usize, 1>, 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("'")?;
@@ -476,7 +603,9 @@ impl super::PhiLia093 {
             };
             let more = {
                 let mut body = Vec::new();
-                while let Some(data) = x.SQC() { body.push(data) }
+                while let Some(data) = x.SQC() {
+                    body.push(data)
+                }
                 body
             };
             let _ = match x.__expect("'") {
@@ -488,16 +617,23 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn MESSAGE(&mut self) -> Option<Message> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Message, 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Message, 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("(")?;
             let msg = {
                 let mut body = Vec::new();
-                while let Some(data) = x.MSG() { body.push(data) }
+                while let Some(data) = x.MSG() {
+                    body.push(data)
+                }
                 body
             };
             let _ = match x.__expect(")") {
@@ -509,16 +645,23 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn ACTION(&mut self) -> Option<Action> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Action, 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Action, 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("{")?;
             let act = {
                 let mut body = Vec::new();
-                while let Some(data) = x.ACT() { body.push(data) }
+                while let Some(data) = x.ACT() {
+                    body.push(data)
+                }
                 body
             };
             let _ = match x.__expect("}") {
@@ -530,10 +673,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn NAME(&mut self) -> Option<usize> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<usize, 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<usize, 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let ident = x.IDENT()?;
@@ -542,10 +690,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn PEG(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("peg")?;
@@ -555,10 +708,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn REX(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("rex")?;
@@ -568,41 +726,59 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn TAG(&mut self) -> Option<Tag> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Tag, 3usize> = [|x| {
-            let _ = {
-                let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
-                body
-            };
-            let _ = x.__expect("memo")?;
-            let _ = x.__lookahead(|x| x.TAIL(), false)?;
-            Some(Tag::Memo)
-        }, |x| {
-            let _ = {
-                let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
-                body
-            };
-            let _ = x.__expect("left")?;
-            let _ = x.__lookahead(|x| x.TAIL(), false)?;
-            Some(Tag::Left)
-        }, |x| {
-            let _ = {
-                let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
-                body
-            };
-            let _ = x.__expect("fast")?;
-            let _ = x.__lookahead(|x| x.TAIL(), false)?;
-            Some(Tag::Fast)
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Tag, 3usize> = [
+            |x| {
+                let _ = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.T() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = x.__expect("memo")?;
+                let _ = x.__lookahead(|x| x.TAIL(), false)?;
+                Some(Tag::Memo)
+            },
+            |x| {
+                let _ = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.T() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = x.__expect("left")?;
+                let _ = x.__lookahead(|x| x.TAIL(), false)?;
+                Some(Tag::Left)
+            },
+            |x| {
+                let _ = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.T() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = x.__expect("fast")?;
+                let _ = x.__lookahead(|x| x.TAIL(), false)?;
+                Some(Tag::Fast)
+            },
+        ];
         self.__peg(RULES)
     }
     pub fn EXCLAMATION(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("!")?;
@@ -611,10 +787,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn AMPERSAND(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("&")?;
@@ -623,10 +804,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn QUESTION(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("?")?;
@@ -635,10 +821,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn ARROW(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("->")?;
@@ -647,10 +838,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn DOLLAR(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("$")?;
@@ -659,10 +855,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn LPAR(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("(")?;
@@ -671,10 +872,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn RPAR(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect(")")?;
@@ -683,10 +889,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn LBRA(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("[")?;
@@ -695,10 +906,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn RBRA(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("]")?;
@@ -707,10 +923,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn SLASH(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("/")?;
@@ -719,10 +940,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn COLON(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect(":")?;
@@ -731,10 +957,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn COMMA(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect(",")?;
@@ -743,10 +974,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn PLUS(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("+")?;
@@ -755,10 +991,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn STAR(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("*")?;
@@ -767,10 +1008,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn PIPE(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("|")?;
@@ -779,10 +1025,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn SEMI(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect(";")?;
@@ -791,10 +1042,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn HASH(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("#")?;
@@ -803,10 +1059,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn EQ(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("=")?;
@@ -815,10 +1076,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn AT(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             let _ = x.__expect("@")?;
@@ -827,10 +1093,15 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn EOF(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(), 1usize> = [|x| {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(), 1usize> = [|x| {
             let _ = {
                 let mut body = Vec::new();
-                while let Some(data) = x.T() { body.push(data) }
+                while let Some(data) = x.T() {
+                    body.push(data)
+                }
                 body
             };
             x.__eof()?;
@@ -839,60 +1110,85 @@ impl super::PhiLia093 {
         self.__peg(RULES)
     }
     pub fn RANGE(&mut self) -> Option<(usize, usize)> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<(usize, usize), 2usize> = [|x| {
-            let start = x.BC()?;
-            let _ = x.__expect("-")?;
-            let end = match x.BC() {
-                Some(value) => value,
-                None => return x.__error("<BC>"),
-            };
-            Some((start, end))
-        }, |x| {
-            let ch = x.BC()?;
-            Some((ch, ch))
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<(usize, usize), 2usize> = [
+            |x| {
+                let start = x.BC()?;
+                let _ = x.__expect("-")?;
+                let end = match x.BC() {
+                    Some(value) => value,
+                    None => return x.__error("<BC>"),
+                };
+                Some((start, end))
+            },
+            |x| {
+                let ch = x.BC()?;
+                Some((ch, ch))
+            },
+        ];
         self.__peg(RULES)
     }
     pub fn MSG(&mut self) -> Option<Nested> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Nested, 2usize> = [|x| {
-            let _ = x.__expect("(")?;
-            let msg = {
-                let mut body = Vec::new();
-                while let Some(data) = x.MSG() { body.push(data) }
-                body
-            };
-            let _ = match x.__expect(")") {
-                Some(value) => value,
-                None => return x.__error("')'"),
-            };
-            Some(Nested::Inner(msg))
-        }, |x| {
-            let msg = x.PS()?;
-            Some(Nested::Segment(msg))
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Nested, 2usize> = [
+            |x| {
+                let _ = x.__expect("(")?;
+                let msg = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.MSG() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = match x.__expect(")") {
+                    Some(value) => value,
+                    None => return x.__error("')'"),
+                };
+                Some(Nested::Inner(msg))
+            },
+            |x| {
+                let msg = x.PS()?;
+                Some(Nested::Segment(msg))
+            },
+        ];
         self.__peg(RULES)
     }
     pub fn ACT(&mut self) -> Option<Nested> {
-        if self.__snapshot.is_some() { return None; } const RULES: super::R<Nested, 2usize> = [|x| {
-            let _ = x.__expect("{")?;
-            let act = {
-                let mut body = Vec::new();
-                while let Some(data) = x.ACT() { body.push(data) }
-                body
-            };
-            let _ = match x.__expect("}") {
-                Some(value) => value,
-                None => return x.__error("'}'"),
-            };
-            Some(Nested::Inner(act))
-        }, |x| {
-            let act = x.BS()?;
-            Some(Nested::Segment(act))
-        }];
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        const RULES: super::R<Nested, 2usize> = [
+            |x| {
+                let _ = x.__expect("{")?;
+                let act = {
+                    let mut body = Vec::new();
+                    while let Some(data) = x.ACT() {
+                        body.push(data)
+                    }
+                    body
+                };
+                let _ = match x.__expect("}") {
+                    Some(value) => value,
+                    None => return x.__error("'}'"),
+                };
+                Some(Nested::Inner(act))
+            },
+            |x| {
+                let act = x.BS()?;
+                Some(Nested::Segment(act))
+            },
+        ];
         self.__peg(RULES)
     }
     pub fn IDENT(&mut self) -> Option<usize> {
-        if self.__snapshot.is_some() { return None; } fn transition(s: usize, c: char) -> Option<usize> {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
                 (0usize, 65usize..=90usize) => 1usize,
                 (0usize, 95usize..=95usize) => 1usize,
@@ -906,10 +1202,15 @@ impl super::PhiLia093 {
             Some(s)
         }
         const ACCEPTANCE: [bool; 2usize] = [false, true];
-        self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
+        self.__stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.__intern.id(s))
     }
     pub fn TAIL(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } fn transition(s: usize, c: char) -> Option<usize> {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
                 (0usize, 48usize..=57usize) => 1usize,
                 (0usize, 65usize..=90usize) => 1usize,
@@ -923,7 +1224,10 @@ impl super::PhiLia093 {
         self.__stream.dfa(transition, ACCEPTANCE).map(|_| ())
     }
     pub fn DQC(&mut self) -> Option<usize> {
-        if self.__snapshot.is_some() { return None; } fn transition(s: usize, c: char) -> Option<usize> {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
                 (0usize, 0usize..=33usize) => 1usize,
                 (0usize, 35usize..=91usize) => 1usize,
@@ -947,10 +1251,15 @@ impl super::PhiLia093 {
             Some(s)
         }
         const ACCEPTANCE: [bool; 5usize] = [false, true, false, false, false];
-        self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
+        self.__stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.__intern.id(s))
     }
     pub fn SQC(&mut self) -> Option<usize> {
-        if self.__snapshot.is_some() { return None; } fn transition(s: usize, c: char) -> Option<usize> {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
                 (0usize, 0usize..=38usize) => 1usize,
                 (0usize, 40usize..=91usize) => 1usize,
@@ -974,10 +1283,15 @@ impl super::PhiLia093 {
             Some(s)
         }
         const ACCEPTANCE: [bool; 5usize] = [false, true, false, false, false];
-        self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
+        self.__stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.__intern.id(s))
     }
     pub fn BC(&mut self) -> Option<usize> {
-        if self.__snapshot.is_some() { return None; } fn transition(s: usize, c: char) -> Option<usize> {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
                 (0usize, 0usize..=91usize) => 1usize,
                 (0usize, 92usize..=92usize) => 2usize,
@@ -1000,10 +1314,15 @@ impl super::PhiLia093 {
             Some(s)
         }
         const ACCEPTANCE: [bool; 5usize] = [false, true, false, false, false];
-        self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
+        self.__stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.__intern.id(s))
     }
     pub fn UNICODE(&mut self) -> Option<usize> {
-        if self.__snapshot.is_some() { return None; } fn transition(s: usize, c: char) -> Option<usize> {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
                 (0usize, 92usize..=92usize) => 1usize,
                 (1usize, 117usize..=117usize) => 2usize,
@@ -1016,10 +1335,15 @@ impl super::PhiLia093 {
             Some(s)
         }
         const ACCEPTANCE: [bool; 5usize] = [false, false, false, false, true];
-        self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
+        self.__stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.__intern.id(s))
     }
     pub fn ESCAPE(&mut self) -> Option<usize> {
-        if self.__snapshot.is_some() { return None; } fn transition(s: usize, c: char) -> Option<usize> {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
                 (0usize, 92usize..=92usize) => 1usize,
                 (1usize, 34usize..=34usize) => 2usize,
@@ -1035,10 +1359,15 @@ impl super::PhiLia093 {
             Some(s)
         }
         const ACCEPTANCE: [bool; 3usize] = [false, false, true];
-        self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
+        self.__stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.__intern.id(s))
     }
     pub fn PS(&mut self) -> Option<usize> {
-        if self.__snapshot.is_some() { return None; } fn transition(s: usize, c: char) -> Option<usize> {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
                 (0usize, 0usize..=39usize) => 1usize,
                 (0usize, 42usize..=18446744073709551615usize) => 1usize,
@@ -1049,10 +1378,15 @@ impl super::PhiLia093 {
             Some(s)
         }
         const ACCEPTANCE: [bool; 2usize] = [false, true];
-        self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
+        self.__stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.__intern.id(s))
     }
     pub fn BS(&mut self) -> Option<usize> {
-        if self.__snapshot.is_some() { return None; } fn transition(s: usize, c: char) -> Option<usize> {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
                 (0usize, 0usize..=122usize) => 1usize,
                 (0usize, 124usize..=124usize) => 1usize,
@@ -1065,10 +1399,15 @@ impl super::PhiLia093 {
             Some(s)
         }
         const ACCEPTANCE: [bool; 2usize] = [false, true];
-        self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
+        self.__stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.__intern.id(s))
     }
     pub fn T(&mut self) -> Option<()> {
-        if self.__snapshot.is_some() { return None; } fn transition(s: usize, c: char) -> Option<usize> {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
                 (0usize, 9usize..=9usize) => 1usize,
                 (0usize, 10usize..=10usize) => 1usize,
@@ -1090,7 +1429,10 @@ impl super::PhiLia093 {
         self.__stream.dfa(transition, ACCEPTANCE).map(|_| ())
     }
     pub fn WS(&mut self) -> Option<usize> {
-        if self.__snapshot.is_some() { return None; } fn transition(s: usize, c: char) -> Option<usize> {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
                 (0usize, 9usize..=9usize) => 1usize,
                 (0usize, 10usize..=10usize) => 1usize,
@@ -1105,10 +1447,15 @@ impl super::PhiLia093 {
             Some(s)
         }
         const ACCEPTANCE: [bool; 2usize] = [false, true];
-        self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
+        self.__stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.__intern.id(s))
     }
     pub fn COMMENT(&mut self) -> Option<usize> {
-        if self.__snapshot.is_some() { return None; } fn transition(s: usize, c: char) -> Option<usize> {
+        if self.__snapshot.is_some() {
+            return None;
+        }
+        fn transition(s: usize, c: char) -> Option<usize> {
             let s = match (s, c as usize) {
                 (0usize, 47usize..=47usize) => 1usize,
                 (1usize, 47usize..=47usize) => 2usize,
@@ -1119,6 +1466,8 @@ impl super::PhiLia093 {
             Some(s)
         }
         const ACCEPTANCE: [bool; 3usize] = [false, false, true];
-        self.__stream.dfa(transition, ACCEPTANCE).map(|s| self.__intern.id(s))
+        self.__stream
+            .dfa(transition, ACCEPTANCE)
+            .map(|s| self.__intern.id(s))
     }
 }

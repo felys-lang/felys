@@ -213,3 +213,5 @@ pub trait Load: Read {
         Ok(vec)
     }
 }
+
+impl<R: Read> Load for R {}

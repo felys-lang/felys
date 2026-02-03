@@ -125,10 +125,7 @@ impl Context {
             for (key, var) in phis {
                 let mut operands = Vec::new();
                 for pred in preds.clone() {
-                    let v = self.lookup(pred, key).ok_or(match key {
-                        Id::Interned(x) => Fault::ValueNotDefined(x),
-                        _ => panic!(),
-                    })?;
+                    let v = self.lookup(pred, key).unwrap();
                     operands.push((pred, v));
                 }
                 self.phi(label, var, operands);
@@ -149,6 +146,11 @@ impl Context {
 
         let predecessors = self.f.get(label).unwrap().predecessors.clone();
         let var = if !self.sealed.contains(&label) {
+            for pred in &predecessors {
+                if self.sealed.contains(pred) && self.lookup(*pred, id).is_none() {
+                    return None;
+                }
+            }
             let var = self.f.var();
             self.incompleted.entry(label).or_default().insert(id, var);
             var

@@ -10,41 +10,76 @@ pub struct PhiLia093 {
 }
 impl From<String> for PhiLia093 {
     fn from(value: String) -> Self {
-        fn __keywords(_: &str) -> bool { false }
+        fn __keywords(_: &str) -> bool {
+            false
+        }
         let capacity = min(value.len() / 20, 512);
-        Self { __intern: super::Intern::new(capacity), __memo: super::Memo::default(), __stream: super::Stream::from(value), __keywords, __snapshot: None }
+        Self {
+            __intern: super::Intern::new(capacity),
+            __memo: super::Memo::default(),
+            __stream: super::Stream::from(value),
+            __keywords,
+            __snapshot: None,
+        }
     }
 }
 pub type R<T, const S: usize> = [fn(&mut PhiLia093) -> Option<T>; S];
 #[allow(unused)]
 impl PhiLia093 {
     pub fn __expect(&mut self, s: &'static str) -> Option<&'static str> {
-        if self.__snapshot.is_some() { return None; }
+        if self.__snapshot.is_some() {
+            return None;
+        }
         let start = self.__stream.cursor;
-        let result = s.chars().all(|c| self.__stream.next() == Some(c)).then_some(s);
-        if result.is_none() { self.__stream.cursor = start; }
+        let result = s
+            .chars()
+            .all(|c| self.__stream.next() == Some(c))
+            .then_some(s);
+        if result.is_none() {
+            self.__stream.cursor = start;
+        }
         result
     }
     pub fn __attempt<T>(&mut self, f: fn(&mut PhiLia093) -> Option<T>) -> Option<T> {
         let start = self.__stream.cursor;
         let result = f(self);
-        if result.is_none() { self.__stream.cursor = start; }
+        if result.is_none() {
+            self.__stream.cursor = start;
+        }
         result
     }
-    pub fn __peg<T, const S: usize>(&mut self, rules: R<T, S>) -> Option<T> { rules.iter().filter_map(|rule| self.__attempt(*rule)).next() }
+    pub fn __peg<T, const S: usize>(&mut self, rules: R<T, S>) -> Option<T> {
+        rules.iter().filter_map(|rule| self.__attempt(*rule)).next()
+    }
     pub fn __error<T>(&mut self, msg: &'static str) -> Option<T> {
-        if self.__snapshot.is_some() { return None; }
+        if self.__snapshot.is_some() {
+            return None;
+        }
         let cursor = self.__stream.cursor;
         self.__snapshot = Some((cursor, msg));
         None
     }
-    pub fn __lookahead<T>(&mut self, f: fn(&mut PhiLia093) -> Option<T>, behavior: bool) -> Option<()> {
+    pub fn __lookahead<T>(
+        &mut self,
+        f: fn(&mut PhiLia093) -> Option<T>,
+        behavior: bool,
+    ) -> Option<()> {
         let start = self.__stream.cursor;
         let snapshot = self.__snapshot;
         let result = f(self);
         self.__stream.cursor = start;
         self.__snapshot = snapshot;
-        if result.is_some() == behavior { Some(()) } else { None }
+        if result.is_some() == behavior {
+            Some(())
+        } else {
+            None
+        }
     }
-    pub fn __eof(&mut self) -> Option<()> { if self.__stream.peek().is_none() { Some(()) } else { None } }
+    pub fn __eof(&mut self) -> Option<()> {
+        if self.__stream.peek().is_none() {
+            Some(())
+        } else {
+            None
+        }
+    }
 }

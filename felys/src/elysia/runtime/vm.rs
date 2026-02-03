@@ -161,11 +161,16 @@ impl Bytecode {
             Bytecode::Unpack(dst, src, idx) => {
                 let frame = rt.frame();
                 let tmp = frame.load(*src);
-                let objs = tmp.tuple()?;
-                let obj = objs
-                    .get(*idx as usize)
-                    .cloned()
-                    .ok_or(Fault::NotEnoughToUnpack(tmp, *idx))?;
+                let obj = if *idx == 0
+                    && let Ok(list) = tmp.list()
+                {
+                    Object::Int(list.len() as i32)
+                } else {
+                    tmp.tuple()?
+                        .get(*idx as usize)
+                        .cloned()
+                        .ok_or(Fault::NotEnoughToUnpack(tmp, *idx))?
+                };
                 frame.store(*dst, obj);
             }
             Bytecode::Pointer(dst, pt, idx) => match pt {

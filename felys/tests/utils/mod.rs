@@ -1,31 +1,39 @@
-use felys::{BinOp, Object, PhiLia093};
+use felys::{BinOp, Elysia, Object, PhiLia093};
 
-pub fn eval(args: Object, body: &'static str) -> Result<(String, Object), String> {
-    let wrapped = format!("fn main(args) {{ {body} }}");
+pub fn exec(
+    args: Object,
+    defs: &str,
+    body: &str,
+    expect: Object,
+    stdout: &str,
+) -> Result<(), String> {
+    let wrapped = format!("{defs} fn main(args) {{ {body} }}");
+    for o in [0, 1, 2, usize::MAX] {
+        for elysia in compile(wrapped.as_str(), o)? {
+            let mut out = String::new();
+            let obj = elysia.exec(args.clone(), &mut out)?;
 
-    let (uo, ue) = pipeline(wrapped.clone(), args.clone(), 0)?;
-    let (oo, oe) = pipeline(wrapped, args, usize::MAX)?;
-
-    if uo != oo {
-        Err("inconsistent stdout".to_string())
-    } else if ue.clone().binary(BinOp::Ne, oe)?.bool()? {
-        Err("inconsistent exit".to_string())
-    } else {
-        Ok((uo, ue))
+            if obj.clone().binary(BinOp::Ne, expect.clone())?.bool()? {
+                return Err(format!("Expected {}, got {}", expect, obj));
+            } else if out != stdout {
+                return Err(format!("Expected {}, got {}", stdout, out));
+            }
+        }
     }
+
+    Ok(())
 }
 
-pub fn eq(lhs: Object, rhs: Object) -> Result<bool, String> {
-    lhs.binary(BinOp::Eq, rhs)?.bool().map_err(String::from)
-}
-
-fn pipeline(code: String, args: Object, o: usize) -> Result<(String, Object), String> {
-    let mut stdout = String::new();
-    let exit = PhiLia093::from(code)
+fn compile(code: &str, o: usize) -> Result<[Elysia; 2], String> {
+    let elysia = PhiLia093::from(code.to_string())
         .parse()?
         .cfg()?
         .optimize(o)?
-        .codegen()
-        .exec(args, &mut stdout)?;
-    Ok((stdout, exit))
+        .codegen();
+
+    let mut binary = Vec::with_capacity(256);
+    elysia.dump(&mut binary).unwrap();
+    let loaded = Elysia::load(&mut binary.as_slice()).unwrap();
+
+    Ok([elysia, loaded])
 }

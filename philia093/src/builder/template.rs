@@ -139,7 +139,7 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
     };
     quote! {
         use std::cmp::min;
-        
+
         #[allow(unused)]
         pub struct PhiLia093 {
             pub __intern: super::Intern,

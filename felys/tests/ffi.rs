@@ -1,4 +1,4 @@
-use crate::utils::{eq, eval};
+use crate::utils::exec;
 use felys::Object;
 
 mod utils;
@@ -7,9 +7,13 @@ mod utils;
 fn io() -> Result<(), String> {
     let args = Object::List([].into());
 
-    let (stdout, exit) = eval(args.clone(), "std::io::print(42)")?;
-    assert_eq!(stdout, "42\n");
-    assert!(eq(exit, Object::Int(1))?);
+    exec(
+        args.clone(),
+        "",
+        "std::io::print(42)",
+        Object::Int(1),
+        "42\n",
+    )?;
 
     Ok(())
 }
@@ -18,14 +22,27 @@ fn io() -> Result<(), String> {
 fn pink() -> Result<(), String> {
     let args = Object::List([].into());
 
-    let (_, exit) = eval(args.clone(), "std::pink::cyrene()")?;
-    assert!(eq(exit, Object::Str("往昔的涟漪♪".into()))?);
-
-    let (_, exit) = eval(args.clone(), "std::pink::elysia()")?;
-    assert!(eq(exit, Object::Str("粉色妖精小姐♪".into()))?);
-
-    let (_, exit) = eval(args.clone(), "std::pink::felysneko()")?;
-    assert!(eq(exit, Object::Str("银河猫猫侠♪".into()))?);
+    exec(
+        args.clone(),
+        "",
+        "std::pink::cyrene()",
+        Object::Str("往昔的涟漪♪".into()),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "std::pink::elysia()",
+        Object::Str("粉色妖精小姐♪".into()),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "std::pink::felysneko()",
+        Object::Str("银河猫猫侠♪".into()),
+        "",
+    )?;
 
     Ok(())
 }

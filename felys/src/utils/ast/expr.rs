@@ -28,7 +28,6 @@ pub enum Expr {
 #[derive(Clone, Debug)]
 pub struct Path(pub BufVec<usize, 1>);
 
-#[repr(u8)]
 #[derive(Clone, Copy, Debug)]
 pub enum BinOp {
     Or,
@@ -47,7 +46,6 @@ pub enum BinOp {
     Dot,
 }
 
-#[repr(u8)]
 #[derive(Clone, Copy, Debug)]
 pub enum UnaOp {
     Not,

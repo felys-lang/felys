@@ -1,4 +1,4 @@
-use crate::utils::{eq, eval};
+use crate::utils::exec;
 use felys::Object;
 
 mod utils;
@@ -7,44 +7,49 @@ mod utils;
 fn object() -> Result<(), String> {
     let args = Object::List([].into());
 
-    let (_, exit) = eval(args.clone(), "42")?;
-    assert!(eq(exit, Object::Int(42))?);
-
-    let (_, exit) = eval(args.clone(), "9.8")?;
-    assert!(eq(exit, Object::Float(9.8))?);
-
-    let (_, exit) = eval(args.clone(), "true")?;
-    assert!(eq(exit, Object::Bool(true))?);
-
-    let (_, exit) = eval(args.clone(), "\"你好，世界！\"")?;
-    assert!(eq(exit, Object::Str("你好，世界！".into()))?);
-
-    let (_, exit) = eval(args.clone(), "\"hello, world!\"")?;
-    assert!(eq(exit, Object::Str("hello, world!".into()))?);
-
-    let (_, exit) = eval(args.clone(), "[0, [0, 0]]")?;
-    assert!(eq(
-        exit,
+    exec(args.clone(), "", "42", Object::Int(42), "")?;
+    exec(args.clone(), "", "9.8", Object::Float(9.8), "")?;
+    exec(args.clone(), "", "true", Object::Bool(true), "")?;
+    exec(
+        args.clone(),
+        "",
+        "\"你好，世界！\"",
+        Object::Str("你好，世界！".into()),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "\"hello, world!\"",
+        Object::Str("hello, world!".into()),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "[0, [0, 0]]",
         Object::List(
             [
                 Object::Int(0),
-                Object::List([Object::Int(0), Object::Int(0)].into())
+                Object::List([Object::Int(0), Object::Int(0)].into()),
             ]
-                .into()
-        )
-    )?);
-
-    let (_, exit) = eval(args.clone(), "(1, (1, 1))")?;
-    assert!(eq(
-        exit,
+            .into(),
+        ),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "(1, (1, 1))",
         Object::Tuple(
             [
                 Object::Int(1),
-                Object::Tuple([Object::Int(1), Object::Int(1)].into())
+                Object::Tuple([Object::Int(1), Object::Int(1)].into()),
             ]
-                .into()
-        )
-    )?);
+            .into(),
+        ),
+        "",
+    )?;
 
     Ok(())
 }
@@ -53,44 +58,19 @@ fn object() -> Result<(), String> {
 fn arithmetic() -> Result<(), String> {
     let args = Object::List([].into());
 
-    let (_, exit) = eval(args.clone(), "2 + 3")?;
-    assert!(eq(exit, Object::Int(5))?);
-
-    let (_, exit) = eval(args.clone(), "2 - 3")?;
-    assert!(eq(exit, Object::Int(-1))?);
-
-    let (_, exit) = eval(args.clone(), "2 * 3")?;
-    assert!(eq(exit, Object::Int(6))?);
-
-    let (_, exit) = eval(args.clone(), "2 / 3")?;
-    assert!(eq(exit, Object::Int(0))?);
-
-    let (_, exit) = eval(args.clone(), "2 % 3")?;
-    assert!(eq(exit, Object::Int(2))?);
-
-    let (_, exit) = eval(args.clone(), "2.0 + 3.0")?;
-    assert!(eq(exit, Object::Float(5.0))?);
-
-    let (_, exit) = eval(args.clone(), "2.0 - 3.0")?;
-    assert!(eq(exit, Object::Float(-1.0))?);
-
-    let (_, exit) = eval(args.clone(), "2.0 * 3.0")?;
-    assert!(eq(exit, Object::Float(6.0))?);
-
-    let (_, exit) = eval(args.clone(), "3.0 / 2.0")?;
-    assert!(eq(exit, Object::Float(1.5))?);
-
-    let (_, exit) = eval(args.clone(), "+2")?;
-    assert!(eq(exit, Object::Int(2))?);
-
-    let (_, exit) = eval(args.clone(), "-2")?;
-    assert!(eq(exit, Object::Int(-2))?);
-
-    let (_, exit) = eval(args.clone(), "+2.0")?;
-    assert!(eq(exit, Object::Float(2.0))?);
-
-    let (_, exit) = eval(args.clone(), "-2.0")?;
-    assert!(eq(exit, Object::Float(-2.0))?);
+    exec(args.clone(), "", "2 + 3", Object::Int(5), "")?;
+    exec(args.clone(), "", "2 - 3", Object::Int(-1), "")?;
+    exec(args.clone(), "", "2 * 3", Object::Int(6), "")?;
+    exec(args.clone(), "", "2 / 3", Object::Int(0), "")?;
+    exec(args.clone(), "", "2 % 3", Object::Int(2), "")?;
+    exec(args.clone(), "", "2.0 + 3.0", Object::Float(5.0), "")?;
+    exec(args.clone(), "", "2.0 - 3.0", Object::Float(-1.0), "")?;
+    exec(args.clone(), "", "2.0 * 3.0", Object::Float(6.0), "")?;
+    exec(args.clone(), "", "3.0 / 2.0", Object::Float(1.5), "")?;
+    exec(args.clone(), "", "+2", Object::Int(2), "")?;
+    exec(args.clone(), "", "-2", Object::Int(-2), "")?;
+    exec(args.clone(), "", "+2.0", Object::Float(2.0), "")?;
+    exec(args.clone(), "", "-2.0", Object::Float(-2.0), "")?;
 
     Ok(())
 }
@@ -99,35 +79,16 @@ fn arithmetic() -> Result<(), String> {
 fn logical() -> Result<(), String> {
     let args = Object::List([].into());
 
-    let (_, exit) = eval(args.clone(), "true and true")?;
-    assert!(eq(exit, Object::Bool(true))?);
-
-    let (_, exit) = eval(args.clone(), "true and false")?;
-    assert!(eq(exit, Object::Bool(false))?);
-
-    let (_, exit) = eval(args.clone(), "false and true")?;
-    assert!(eq(exit, Object::Bool(false))?);
-
-    let (_, exit) = eval(args.clone(), "false and false")?;
-    assert!(eq(exit, Object::Bool(false))?);
-
-    let (_, exit) = eval(args.clone(), "true or true")?;
-    assert!(eq(exit, Object::Bool(true))?);
-
-    let (_, exit) = eval(args.clone(), "true or false")?;
-    assert!(eq(exit, Object::Bool(true))?);
-
-    let (_, exit) = eval(args.clone(), "false or true")?;
-    assert!(eq(exit, Object::Bool(true))?);
-
-    let (_, exit) = eval(args.clone(), "false or false")?;
-    assert!(eq(exit, Object::Bool(false))?);
-
-    let (_, exit) = eval(args.clone(), "not true")?;
-    assert!(eq(exit, Object::Bool(false))?);
-
-    let (_, exit) = eval(args.clone(), "not false")?;
-    assert!(eq(exit, Object::Bool(true))?);
+    exec(args.clone(), "", "true and true", Object::Bool(true), "")?;
+    exec(args.clone(), "", "true and false", Object::Bool(false), "")?;
+    exec(args.clone(), "", "false and true", Object::Bool(false), "")?;
+    exec(args.clone(), "", "false and false", Object::Bool(false), "")?;
+    exec(args.clone(), "", "true or true", Object::Bool(true), "")?;
+    exec(args.clone(), "", "true or false", Object::Bool(true), "")?;
+    exec(args.clone(), "", "false or true", Object::Bool(true), "")?;
+    exec(args.clone(), "", "false or false", Object::Bool(false), "")?;
+    exec(args.clone(), "", "not true", Object::Bool(false), "")?;
+    exec(args.clone(), "", "not false", Object::Bool(true), "")?;
 
     Ok(())
 }
@@ -136,35 +97,16 @@ fn logical() -> Result<(), String> {
 fn comparison() -> Result<(), String> {
     let args = Object::List([].into());
 
-    let (_, exit) = eval(args.clone(), "1 > 1")?;
-    assert!(eq(exit, Object::Bool(false))?);
-
-    let (_, exit) = eval(args.clone(), "2 > 1")?;
-    assert!(eq(exit, Object::Bool(true))?);
-
-    let (_, exit) = eval(args.clone(), "1 >= 1")?;
-    assert!(eq(exit, Object::Bool(true))?);
-
-    let (_, exit) = eval(args.clone(), "1 < 1")?;
-    assert!(eq(exit, Object::Bool(false))?);
-
-    let (_, exit) = eval(args.clone(), "1 < 2")?;
-    assert!(eq(exit, Object::Bool(true))?);
-
-    let (_, exit) = eval(args.clone(), "1 <= 1")?;
-    assert!(eq(exit, Object::Bool(true))?);
-
-    let (_, exit) = eval(args.clone(), "1 == 1")?;
-    assert!(eq(exit, Object::Bool(true))?);
-
-    let (_, exit) = eval(args.clone(), "1 == 2")?;
-    assert!(eq(exit, Object::Bool(false))?);
-
-    let (_, exit) = eval(args.clone(), "1 != 1")?;
-    assert!(eq(exit, Object::Bool(false))?);
-
-    let (_, exit) = eval(args.clone(), "1 != 2")?;
-    assert!(eq(exit, Object::Bool(true))?);
+    exec(args.clone(), "", "1 > 1", Object::Bool(false), "")?;
+    exec(args.clone(), "", "2 > 1", Object::Bool(true), "")?;
+    exec(args.clone(), "", "1 >= 1", Object::Bool(true), "")?;
+    exec(args.clone(), "", "1 < 1", Object::Bool(false), "")?;
+    exec(args.clone(), "", "1 < 2", Object::Bool(true), "")?;
+    exec(args.clone(), "", "1 <= 1", Object::Bool(true), "")?;
+    exec(args.clone(), "", "1 == 1", Object::Bool(true), "")?;
+    exec(args.clone(), "", "1 == 2", Object::Bool(false), "")?;
+    exec(args.clone(), "", "1 != 1", Object::Bool(false), "")?;
+    exec(args.clone(), "", "1 != 2", Object::Bool(true), "")?;
 
     Ok(())
 }
@@ -173,59 +115,83 @@ fn comparison() -> Result<(), String> {
 fn condition() -> Result<(), String> {
     let args = Object::List([].into());
 
-    let (_, exit) = eval(args.clone(), "if true { 1 } else { 0 }")?;
-    assert!(eq(exit, Object::Int(1))?);
-
-    let (_, exit) = eval(args.clone(), "if true { 1 } else { return 0; }")?;
-    assert!(eq(exit, Object::Int(1))?);
-
-    let (_, exit) = eval(args.clone(), "if true { return 1; } else { 0 }")?;
-    assert!(eq(exit, Object::Int(1))?);
-
-    let (_, exit) = eval(
+    exec(
         args.clone(),
+        "",
+        "if true { 1 } else { 0 }",
+        Object::Int(1),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "if true { 1 } else { return 0; }",
+        Object::Int(1),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "if true { return 1; } else { 0 }",
+        Object::Int(1),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
         "x = false; if true { x = 1; } else { return 0; } x",
+        Object::Int(1),
+        "",
     )?;
-    assert!(eq(exit, Object::Int(1))?);
-
-    let (_, exit) = eval(
+    exec(
         args.clone(),
+        "",
         "x = false; if true { return 1; } else { x = 0; } x",
+        Object::Int(1),
+        "",
     )?;
-    assert!(eq(exit, Object::Int(1))?);
-
-    let (_, exit) = eval(args.clone(), "if true { return 1; } else { return 0; }")?;
-    assert!(eq(exit, Object::Int(1))?);
-
-    let (_, exit) = eval(
+    exec(
         args.clone(),
+        "",
+        "if true { return 1; } else { return 0; }",
+        Object::Int(1),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
         "while true { if true { return 1; } else { return 0; } } 0",
+        Object::Int(1),
+        "",
     )?;
-    assert!(eq(exit, Object::Int(1))?);
-
-    let (_, exit) = eval(
+    exec(
         Object::Bool(true),
+        "",
         "while args { if true { break; } else { break; } } 1",
+        Object::Int(1),
+        "",
     )?;
-    assert!(eq(exit, Object::Int(1))?);
-
-    let (_, exit) = eval(
+    exec(
         args.clone(),
+        "",
         "if true { if true { if true { return 1; } } } args",
+        Object::Int(1),
+        "",
     )?;
-    assert!(eq(exit, Object::Int(1))?);
-
-    let (_, exit) = eval(
+    exec(
         args.clone(),
+        "",
         "if true { if true { if true { return args; } } } 0",
-    )?;
-    assert!(eq(exit, args.clone())?);
-
-    let (_, exit) = eval(
         args.clone(),
-        "if true { if true { if false { return args; } } } 1",
+        "",
     )?;
-    assert!(eq(exit, Object::Int(1))?);
+    exec(
+        args.clone(),
+        "",
+        "if true { if true { if false { return args; } } } 1",
+        Object::Int(1),
+        "",
+    )?;
 
     Ok(())
 }
@@ -234,23 +200,80 @@ fn condition() -> Result<(), String> {
 fn loops() -> Result<(), String> {
     let args = Object::List([].into());
 
-    let (_, exit) = eval(args.clone(), "loop { break 1; }")?;
-    assert!(eq(exit, Object::Int(1))?);
-
-    let (_, exit) = eval(args.clone(), "loop { return 1; }")?;
-    assert!(eq(exit, Object::Int(1))?);
-
-    let (_, exit) = eval(
+    exec(args.clone(), "", "loop { break 1; }", Object::Int(1), "")?;
+    exec(args.clone(), "", "loop { return 1; }", Object::Int(1), "")?;
+    exec(
         args.clone(),
+        "",
         "x = true; loop { if x { x = false; continue; } else { break 1; } }",
+        Object::Int(1),
+        "",
     )?;
-    assert!(eq(exit, Object::Int(1))?);
-
-    let (_, exit) = eval(
+    exec(
         args.clone(),
+        "",
         "loop { break loop { break loop { break 1; } } }",
+        Object::Int(1),
+        "",
     )?;
-    assert!(eq(exit, Object::Int(1))?);
+    exec(
+        args.clone(),
+        "",
+        "x = 0; while x < 10 { x += 1; } x",
+        Object::Int(10),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "x = 0; for i in [0, 1, 2, 3] { x += i; } x",
+        Object::Int(6),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "x = 0; for (a, b) in [(0, 1), (2, 3)] { x += a + b; } x",
+        Object::Int(6),
+        "",
+    )?;
+
+    Ok(())
+}
+
+#[test]
+fn functions() -> Result<(), String> {
+    let args = Object::List([].into());
+
+    exec(args.clone(), "fn one() { 1 }", "one()", Object::Int(1), "")?;
+    exec(
+        args.clone(),
+        "fn a(a, b, c) { a }",
+        "a(1, 2, 3)",
+        Object::Int(1),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "fn b(a, b, c) { b }",
+        "b(1, 2, 3)",
+        Object::Int(2),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "fn c(a, b, c) { c }",
+        "c(1, 2, 3)",
+        Object::Int(3),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "fn fib(n) { if n <= 1 { n } else { fib(n - 1) + fib(n - 2) } }",
+        "fib(10)",
+        Object::Int(55),
+        "",
+    )?;
 
     Ok(())
 }

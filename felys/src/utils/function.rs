@@ -50,7 +50,7 @@ impl Function {
         }
     }
 
-    pub fn safe(&self) -> impl Iterator<Item=(Label, &Fragment)> {
+    pub fn safe(&self) -> impl Iterator<Item = (Label, &Fragment)> {
         let fragments = self
             .fragments
             .iter()
@@ -61,7 +61,7 @@ impl Function {
             .chain([(Label::Exit, &self.exit)])
     }
 
-    pub fn cautious(&mut self) -> impl Iterator<Item=(Label, &mut Fragment)> {
+    pub fn cautious(&mut self) -> impl Iterator<Item = (Label, &mut Fragment)> {
         let fragments = self
             .fragments
             .iter_mut()

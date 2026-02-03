@@ -133,7 +133,66 @@ impl Expr {
                 ctx.jump(*start);
                 Ok(None)
             }
-            Expr::For(_, _, _) => Ok(None),
+            Expr::For(pat, expr, block) => {
+                let header = ctx.label();
+                let body = ctx.label();
+                let end = ctx.label();
+
+                let iterable = expr
+                    .ir(ctx, stk, meta)?
+                    .ok_or(Fault::NoReturnValue(expr.clone()))?;
+
+                let length = ctx.var();
+                ctx.push(Instruction::Unpack(length, iterable, 0));
+
+                let i = {
+                    let var = ctx.var();
+                    ctx.push(Instruction::Load(var, Const::Int(0)));
+                    let id = ctx.id();
+                    ctx.define(ctx.cursor, id, var);
+                    id
+                };
+
+                let one = ctx.var();
+                ctx.push(Instruction::Load(one, Const::Int(1)));
+
+                ctx.jump(header);
+
+                ctx.cursor = header;
+                let cond = ctx.var();
+                let instruction = Instruction::Binary(
+                    cond,
+                    ctx.lookup(ctx.cursor, i).unwrap(),
+                    BinOp::Lt,
+                    length,
+                );
+                ctx.push(instruction);
+                ctx.branch(cond, body, end);
+                ctx.seal(body)?;
+
+                ctx.cursor = body;
+                stk.push((header, end, None));
+
+                let element = ctx.var();
+                let index = ctx.lookup(ctx.cursor, i).unwrap();
+                let instruction = Instruction::Index(element, iterable, index);
+                ctx.push(instruction);
+
+                let var = ctx.var();
+                ctx.push(Instruction::Binary(var, index, BinOp::Add, one));
+                ctx.define(ctx.cursor, i, var);
+
+                pat.ir(ctx, &None, element)?;
+                block.ir(ctx, stk, meta)?;
+
+                stk.pop();
+                ctx.jump(header);
+                ctx.seal(header)?;
+                ctx.seal(end)?;
+
+                ctx.cursor = end;
+                Ok(None)
+            }
             Expr::If(expr, block, alter) => {
                 let then = ctx.label();
                 let otherwise = ctx.label();
