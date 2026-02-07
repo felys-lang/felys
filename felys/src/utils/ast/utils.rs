@@ -6,7 +6,7 @@ pub struct BufVec<T, const N: usize> {
     vec: Vec<T>,
 }
 
-impl<T, const N: usize> BufVec<T, N> {
+impl<T: Clone, const N: usize> BufVec<T, N> {
     pub fn new(buf: [T; N], vec: Vec<T>) -> Self {
         Self {
             buf: Rc::new(buf),
@@ -16,6 +16,10 @@ impl<T, const N: usize> BufVec<T, N> {
 
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.buf.iter().chain(self.vec.iter())
+    }
+
+    pub fn into_iter(self) -> impl Iterator<Item = T> {
+        self.buf.to_vec().into_iter().chain(self.vec.into_iter())
     }
 
     pub fn len(&self) -> usize {

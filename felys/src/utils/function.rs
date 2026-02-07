@@ -132,8 +132,9 @@ pub enum Terminator {
 
 pub type Var = usize;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
 pub enum Label {
+    #[default]
     Entry,
     Id(usize),
     Exit,

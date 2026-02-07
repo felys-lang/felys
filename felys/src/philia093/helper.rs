@@ -1,9 +1,9 @@
 use crate::philia093::PhiLia093;
-use crate::utils::stages::Cyrene;
+use crate::utils::stages::I;
 use std::fmt::{Display, Formatter};
 
 impl PhiLia093 {
-    pub fn parse(mut self) -> Result<Cyrene, String> {
+    pub fn parse(mut self) -> Result<I, String> {
         let root = self.root();
         if let Some((cursor, msg)) = self.__snapshot {
             let data = self.__stream.data;
@@ -35,7 +35,7 @@ impl PhiLia093 {
             };
             Err(error.to_string())
         } else {
-            let cyrene = Cyrene {
+            let cyrene = I {
                 root: root.unwrap(),
                 intern: self.__intern,
             };
