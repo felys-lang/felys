@@ -24,11 +24,11 @@ pub fn exec(
     Ok(())
 }
 
-fn compile(code: &str, _: usize) -> Result<[III; 2], String> {
+fn compile(code: &str, o: usize) -> Result<[III; 2], String> {
     let iii = PhiLia093::from(code.to_string())
         .parse()?
         .desugar()?
-        .codegen()?;
+        .codegen(o)?;
 
     let mut binary = Vec::with_capacity(256);
     iii.dump(&mut binary).unwrap();

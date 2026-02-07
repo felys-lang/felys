@@ -6,7 +6,7 @@ use std::rc::Rc;
 pub struct Function {
     pub vars: usize,
     pub entry: Fragment,
-    pub fragment: HashMap<usize, Fragment>,
+    pub fragments: HashMap<usize, Fragment>,
     pub exit: Fragment,
 }
 
@@ -18,15 +18,15 @@ impl Function {
     }
 
     pub fn label(&mut self) -> Label {
-        let id = self.fragment.len();
-        self.fragment.insert(id, Fragment::default());
+        let id = self.fragments.len();
+        self.fragments.insert(id, Fragment::default());
         Label::Id(id)
     }
 
     pub fn get(&self, label: Label) -> Option<&Fragment> {
         match label {
             Label::Entry => Some(&self.entry),
-            Label::Id(id) => self.fragment.get(&id),
+            Label::Id(id) => self.fragments.get(&id),
             Label::Exit => Some(&self.exit),
         }
     }
@@ -34,14 +34,14 @@ impl Function {
     pub fn get_mut(&mut self, label: Label) -> Option<&mut Fragment> {
         match label {
             Label::Entry => Some(&mut self.entry),
-            Label::Id(id) => self.fragment.get_mut(&id),
+            Label::Id(id) => self.fragments.get_mut(&id),
             Label::Exit => Some(&mut self.exit),
         }
     }
 
     pub fn iter(&self) -> impl Iterator<Item=(Label, &Fragment)> {
         let fragments = self
-            .fragment
+            .fragments
             .iter()
             .map(|(id, frag)| (Label::Id(*id), frag));
         [(Label::Entry, &self.entry)]
@@ -52,7 +52,7 @@ impl Function {
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item=(Label, &mut Fragment)> {
         let fragments = self
-            .fragment
+            .fragments
             .iter_mut()
             .map(|(id, frag)| (Label::Id(*id), frag));
         [(Label::Entry, &mut self.entry)]

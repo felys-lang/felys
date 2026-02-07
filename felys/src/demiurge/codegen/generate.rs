@@ -80,7 +80,7 @@ impl<T> Worker<T> {
 }
 
 impl II {
-    pub fn codegen(self) -> Result<III, String> {
+    pub fn codegen(self, limit: usize) -> Result<III, String> {
         let mut context = Context::new(self.groups, self.functions);
         let mut groups = HashMap::new();
         let mut callables = HashMap::new();
@@ -88,6 +88,7 @@ impl II {
         let main = compile(
             vec![self.main.0],
             self.main.1,
+            limit,
             &self.intern,
             &self.namespace,
             &mut context,
@@ -102,7 +103,14 @@ impl II {
             }
 
             while let Some((index, (args, block))) = context.functions.pop() {
-                let callable = compile(args, block, &self.intern, &self.namespace, &mut context)?;
+                let callable = compile(
+                    args,
+                    block,
+                    limit,
+                    &self.intern,
+                    &self.namespace,
+                    &mut context,
+                )?;
                 callables.insert(index, callable);
             }
         }
@@ -119,6 +127,7 @@ impl II {
 fn compile(
     args: Vec<usize>,
     block: Block,
+    limit: usize,
     intern: &Intern,
     namespace: &Namespace,
     ctx: &mut Context,
@@ -128,6 +137,7 @@ fn compile(
     let mut function = block
         .function(&map, intern, args)
         .map_err(|e| e.recover(intern))?;
+    function.optimize(limit)?;
     let copies = function.copies();
     let rpo = function.rpo();
     let (allocation, used) = function.allocate(&rpo, &copies);
