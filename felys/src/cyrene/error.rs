@@ -1,6 +1,5 @@
 use crate::philia093::Intern;
 use crate::utils::ast::{Block, Chunk, Expr, Lit};
-use std::rc::Rc;
 
 pub enum Error {
     MainNotFound,
@@ -10,7 +9,7 @@ pub enum Error {
     InvalidInt(Lit),
     InvalidFloat(Lit),
     InvalidStrChunk(Chunk),
-    NoReturnValue(Rc<Expr>),
+    NoReturnValue(Expr),
 }
 
 impl Error {
