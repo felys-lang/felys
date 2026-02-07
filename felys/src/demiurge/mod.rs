@@ -1,4 +1,4 @@
 mod codegen;
-mod optimization;
 mod error;
 mod eval;
+mod optimization;

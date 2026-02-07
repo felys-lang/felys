@@ -41,7 +41,7 @@ impl Resolver {
 impl Block {
     pub fn semantic<'a>(
         &self,
-        args: impl Iterator<Item=&'a usize>,
+        args: impl Iterator<Item = &'a usize>,
         namespace: &Namespace,
     ) -> Result<Map, &'static str> {
         let mut resolver = Resolver::default();

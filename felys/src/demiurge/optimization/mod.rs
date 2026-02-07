@@ -1,6 +1,6 @@
 mod analyze;
-mod rewrite;
-mod rename;
-mod sweep;
 mod compact;
 mod pipeline;
+mod rename;
+mod rewrite;
+mod sweep;

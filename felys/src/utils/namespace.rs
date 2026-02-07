@@ -1,7 +1,8 @@
+use crate::philia093::Intern;
+use crate::stdlib::STDLIB;
 use crate::utils::function::Pointer;
 use std::collections::HashMap;
 
-#[derive(Default)]
 pub struct Namespace {
     ids: usize,
     tree: HashMap<usize, Node>,
@@ -15,6 +16,22 @@ enum Node {
 }
 
 impl Namespace {
+    pub fn init(intern: &mut Intern) -> Self {
+        let mut base = HashMap::new();
+        for (i, (sub, inner, _)) in STDLIB.iter().enumerate() {
+            if let Node::Redirect(x) = base
+                .entry(intern.id(sub))
+                .or_insert(Node::Redirect(HashMap::new()))
+            {
+                x.insert(intern.id(inner), Node::Rust(i));
+            }
+        }
+        Self {
+            ids: 0,
+            tree: HashMap::from([(intern.id("std"), Node::Redirect(base))]),
+        }
+    }
+
     pub fn allocate(&mut self, path: &[usize], name: usize) -> Option<usize> {
         let id = self.id();
         let mut cursor = &mut self.tree;
@@ -64,7 +81,7 @@ impl Namespace {
         }
     }
 
-    pub fn get<'a>(&self, mut path: impl Iterator<Item=&'a usize>) -> Option<(Pointer, usize)> {
+    pub fn get<'a>(&self, mut path: impl Iterator<Item = &'a usize>) -> Option<(Pointer, usize)> {
         let mut cursor = &self.tree;
         let mut tmp = None;
 

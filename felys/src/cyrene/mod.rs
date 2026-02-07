@@ -1,4 +1,4 @@
-mod resolver;
-mod desugar;
 mod cfg;
+mod desugar;
 mod error;
+mod resolver;

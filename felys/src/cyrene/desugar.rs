@@ -8,7 +8,8 @@ use std::collections::HashMap;
 
 impl I {
     pub fn desugar(self) -> Result<II, String> {
-        let mut namespace = Namespace::default();
+        let mut intern = self.intern;
+        let mut namespace = Namespace::init(&mut intern);
         let mut functions = HashMap::new();
         let mut groups = HashMap::new();
 
@@ -16,7 +17,6 @@ impl I {
             item.allocate(&mut namespace, &mut groups)?;
         }
 
-        let mut intern = self.intern;
         let mut main = Err(Error::MainNotFound);
         for item in self.root.0.into_iter() {
             item.attach(&mut intern, &mut namespace, &mut functions, &mut main)?;

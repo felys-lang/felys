@@ -8,7 +8,7 @@ pub struct Group {
 }
 
 impl Group {
-    pub fn new<'a>(fields: impl Iterator<Item=&'a usize>) -> Self {
+    pub fn new<'a>(fields: impl Iterator<Item = &'a usize>) -> Self {
         let mut indices = HashMap::new();
         for (i, field) in fields.enumerate() {
             indices.insert(Id::try_from(*field).unwrap(), Index::try_from(i).unwrap());

@@ -1,5 +1,6 @@
 use crate::elysia::error::Error;
 use crate::elysia::runtime::object::Object;
+use crate::stdlib::STDLIB;
 use crate::utils::bytecode::{Bytecode, Index, Reg};
 use crate::utils::function::{Const, Pointer};
 use crate::utils::stages::{Callable, III};
@@ -133,7 +134,7 @@ impl Bytecode {
         &self,
         program: &III,
         rt: &mut Runtime,
-        _: &mut String,
+        stdout: &mut String,
     ) -> Result<Option<Object>, Error> {
         match self {
             Bytecode::Arg(dst, idx) => {
@@ -222,9 +223,9 @@ impl Bytecode {
                         frame.store(*dst, Object::Group(idx, objs.into()));
                     }
                     Pointer::Rust => {
-                        // let f = program.rust.get(idx as usize).unwrap();
-                        // let objs = frame.gather(args);
-                        // frame.store(*dst, f(objs, so));
+                        let (_, _, f) = STDLIB.get(idx as usize).unwrap();
+                        let objs = frame.gather(args);
+                        frame.store(*dst, f(objs, stdout));
                     }
                 };
             }
