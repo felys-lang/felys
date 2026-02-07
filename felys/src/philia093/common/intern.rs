@@ -8,16 +8,9 @@ pub struct Intern {
 }
 #[allow(unused)]
 impl Intern {
-    pub fn new(capacity: usize) -> Self {
-        Self {
-            data: HashMap::with_capacity(capacity),
-            fast: Vec::with_capacity(capacity),
-        }
-    }
+    pub fn new(capacity: usize) -> Self { Self { data: HashMap::with_capacity(capacity), fast: Vec::with_capacity(capacity) } }
     pub fn id(&mut self, s: &str) -> usize {
-        if let Some(&id) = self.data.get(s) {
-            id
-        } else {
+        if let Some(&id) = self.data.get(s) { id } else {
             let key = Rc::<str>::from(s);
             let id = self.fast.len();
             self.fast.push(key.clone());

@@ -152,7 +152,7 @@ peg args -> { BufVec<Expr, 1> }:
 
 peg primary -> { Expr }:
     / lit=lit { Expr::Lit(lit) }
-    / path=path { Expr::Path(path) }
+    / path=path { Expr::Path(x.__stream.cursor, path) }
     / LPAR expr=[expr] RPAR { Expr::Paren(expr.into()) }
     / LPAR first=[expr] [COMMA] second=[expr] more=(COMMA expr=expr)* COMMA? [RPAR] {
         Expr::Tuple(BufVec::new([first, second], more))
@@ -169,8 +169,8 @@ peg params -> { BufVec<usize, 1> }:
     / first=IDENT more=(COMMA ident=IDENT)* COMMA? { BufVec::new([first], more) }
     ;
 
-peg path -> { Path }:
-    / first=IDENT more=(COLON2 ident=[IDENT])* { Path(BufVec::new([first], more)) }
+peg path -> { BufVec<usize, 1> }:
+    / first=IDENT more=(COLON2 ident=[IDENT])* { BufVec::new([first], more) }
     ;
 
 peg lit -> { Lit }:

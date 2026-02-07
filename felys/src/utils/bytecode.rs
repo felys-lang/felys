@@ -1,5 +1,5 @@
 use crate::utils::ast::{BinOp, UnaOp};
-use crate::utils::ir::Pointer;
+use crate::utils::function::Pointer;
 
 #[derive(Debug)]
 pub enum Bytecode {
