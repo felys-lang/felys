@@ -1,3 +1,4 @@
+use crate::cyrene::error::Error;
 use crate::philia093::Intern;
 use crate::utils::ast::{Block, Impl, Item};
 use crate::utils::group::Group;
@@ -6,7 +7,7 @@ use crate::utils::stages::{I, II};
 use std::collections::HashMap;
 
 impl I {
-    pub fn desugar(self) -> Result<II, &'static str> {
+    pub fn desugar(self) -> Result<II, String> {
         let mut namespace = Namespace::default();
         let mut functions = HashMap::new();
         let mut groups = HashMap::new();
@@ -16,7 +17,7 @@ impl I {
         }
 
         let mut intern = self.intern;
-        let mut main = Err("main not found");
+        let mut main = Err(Error::MainNotFound);
         for item in self.root.0.into_iter() {
             item.attach(&mut intern, &mut namespace, &mut functions, &mut main)?;
         }
@@ -25,7 +26,7 @@ impl I {
             namespace,
             groups,
             functions,
-            main: main?,
+            main: main.map_err(|e| e.recover(&intern))?,
             intern,
         })
     }
@@ -50,7 +51,7 @@ impl Item {
         intern: &mut Intern,
         namespace: &mut Namespace,
         functions: &mut HashMap<usize, (Vec<usize>, Block)>,
-        main: &mut Result<(usize, Block), &'static str>,
+        main: &mut Result<(usize, Block), Error>,
     ) -> Result<(), &'static str> {
         match self {
             Item::Impl(id, impls) => {

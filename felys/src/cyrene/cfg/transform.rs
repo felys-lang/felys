@@ -1,4 +1,5 @@
 use crate::cyrene::cfg::context::{Context, Id};
+use crate::cyrene::error::Error;
 use crate::cyrene::resolver::Map;
 use crate::philia093::Intern;
 use crate::utils::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Stmt};
@@ -12,7 +13,7 @@ impl Block {
         map: &Map,
         intern: &Intern,
         args: Vec<usize>,
-    ) -> Result<Function, &'static str> {
+    ) -> Result<Function, Error> {
         let mut stk = Vec::new();
         let mut ctx = Context::default();
         ctx.seal(Label::Entry);
@@ -29,7 +30,9 @@ impl Block {
         ctx.seal(Label::Exit);
 
         ctx.cursor = Label::Exit;
-        let var = ctx.lookup(ctx.cursor, Id::Ret).ok_or("no return value")?;
+        let var = ctx
+            .lookup(ctx.cursor, Id::Ret)
+            .ok_or(Error::FunctionNoReturn(self.clone()))?;
         ctx.ret(var);
         Ok(ctx.into())
     }
@@ -40,19 +43,21 @@ impl Block {
         intern: &Intern,
         ctx: &mut Context,
         stk: &mut Stack,
-    ) -> Result<Option<Var>, &'static str> {
+    ) -> Result<Option<Var>, Error> {
         let mut iter = self.0.iter().peekable();
         let mut result = Ok(None);
+        let mut i = 1;
         while let Some(stmt) = iter.next() {
             let ret = stmt.transform(map, intern, ctx, stk)?;
             if ret.is_some() {
                 if iter.peek().is_none() {
                     result = Ok(ret);
                 } else {
-                    result = Err("block early return");
+                    result = Err(Error::BlockEarlyReturn(self.clone(), i));
                 };
                 break;
             }
+            i += 1;
         }
         result
     }
@@ -65,7 +70,7 @@ impl Stmt {
         intern: &Intern,
         ctx: &mut Context,
         stk: &mut Stack,
-    ) -> Result<Option<Var>, &'static str> {
+    ) -> Result<Option<Var>, Error> {
         match self {
             Stmt::Empty => Ok(None),
             Stmt::Expr(expr) => expr.transform(map, intern, ctx, stk),
@@ -81,7 +86,7 @@ impl Stmt {
                 };
                 let var = expr
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(expr.clone().into()))?;
                 pat.transform(ctx, &op, var)?;
                 Ok(None)
             }
@@ -90,12 +95,7 @@ impl Stmt {
 }
 
 impl Pat {
-    fn transform(
-        &self,
-        ctx: &mut Context,
-        op: &Option<BinOp>,
-        mut rhs: Var,
-    ) -> Result<(), &'static str> {
+    fn transform(&self, ctx: &mut Context, op: &Option<BinOp>, mut rhs: Var) -> Result<(), Error> {
         match self {
             Pat::Any => {}
             Pat::Tuple(pats) => {
@@ -127,11 +127,14 @@ impl Expr {
         intern: &Intern,
         ctx: &mut Context,
         stk: &mut Stack,
-    ) -> Result<Option<Var>, &'static str> {
+    ) -> Result<Option<Var>, Error> {
         match self {
             Expr::Block(block) => block.transform(map, intern, ctx, stk),
             Expr::Break(expr) => {
-                let (_, end, wb) = stk.last().cloned().ok_or("outside loop")?;
+                let (_, end, wb) = stk
+                    .last()
+                    .cloned()
+                    .ok_or(Error::OutsideLoop(self.clone()))?;
                 if let Some((id, action)) = wb
                     && action.unwrap_or(true)
                 {
@@ -148,7 +151,7 @@ impl Expr {
                 Ok(None)
             }
             Expr::Continue => {
-                let (start, _, _) = stk.last().ok_or("outside loop")?;
+                let (start, _, _) = stk.last().ok_or(Error::OutsideLoop(self.clone()))?;
                 ctx.jump(*start);
                 Ok(None)
             }
@@ -159,7 +162,7 @@ impl Expr {
 
                 let iterable = expr
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(expr.clone()))?;
 
                 let length = ctx.var();
                 ctx.push(Instruction::Unpack(length, iterable, 0));
@@ -220,7 +223,7 @@ impl Expr {
 
                 let cond = expr
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(expr.clone()))?;
                 ctx.branch(cond, then, otherwise);
                 ctx.seal(then);
                 ctx.seal(otherwise);
@@ -281,7 +284,7 @@ impl Expr {
             Expr::Return(expr) => {
                 let var = expr
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(expr.clone()))?;
                 ctx.define(ctx.cursor, Id::Ret, var);
                 ctx.jump(Label::Exit);
                 Ok(None)
@@ -296,7 +299,7 @@ impl Expr {
                 ctx.cursor = header;
                 let cond = expr
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(expr.clone()))?;
                 ctx.branch(cond, body, end);
                 ctx.seal(body);
 
@@ -314,10 +317,10 @@ impl Expr {
             Expr::Binary(lhs, op, rhs) => {
                 let l = lhs
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(lhs.clone()))?;
                 let r = rhs
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(rhs.clone()))?;
                 let var = ctx.var();
                 ctx.push(Instruction::Binary(var, l, *op, r));
                 Ok(var.into())
@@ -325,13 +328,13 @@ impl Expr {
             Expr::Call(expr, args) => {
                 let callable = expr
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(expr.clone()))?;
                 let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
                         let param = arg
                             .transform(map, intern, ctx, stk)?
-                            .ok_or("no return value")?;
+                            .ok_or(Error::NoReturnValue(arg.clone().into()))?;
                         params.push(param);
                     }
                 }
@@ -342,7 +345,7 @@ impl Expr {
             Expr::Field(expr, id) => {
                 let src = expr
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(expr.clone()))?;
                 let var = ctx.var();
                 ctx.push(Instruction::Field(var, src, *id));
                 Ok(var.into())
@@ -350,13 +353,13 @@ impl Expr {
             Expr::Method(expr, id, args) => {
                 let src = expr
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(expr.clone()))?;
                 let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
                         let param = arg
                             .transform(map, intern, ctx, stk)?
-                            .ok_or("no return value")?;
+                            .ok_or(Error::NoReturnValue(arg.clone().into()))?;
                         params.push(param);
                     }
                 }
@@ -367,10 +370,10 @@ impl Expr {
             Expr::Index(expr, index) => {
                 let src = expr
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(expr.clone()))?;
                 let idx = index
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(index.clone()))?;
                 let var = ctx.var();
                 ctx.push(Instruction::Index(var, src, idx));
                 Ok(var.into())
@@ -380,7 +383,7 @@ impl Expr {
                 for arg in args.iter() {
                     let param = arg
                         .transform(map, intern, ctx, stk)?
-                        .ok_or("no return value")?;
+                        .ok_or(Error::NoReturnValue(arg.clone().into()))?;
                     params.push(param);
                 }
                 let var = ctx.var();
@@ -393,7 +396,7 @@ impl Expr {
                     for arg in args.iter() {
                         let param = arg
                             .transform(map, intern, ctx, stk)?
-                            .ok_or("no return value")?;
+                            .ok_or(Error::NoReturnValue(arg.clone().into()))?;
                         params.push(param);
                     }
                 }
@@ -403,10 +406,10 @@ impl Expr {
             }
             Expr::Lit(lit) => lit.transform(intern, ctx),
             Expr::Paren(expr) => expr.transform(map, intern, ctx, stk),
-            Expr::Unary(op, inner) => {
-                let i = inner
+            Expr::Unary(op, expr) => {
+                let i = expr
                     .transform(map, intern, ctx, stk)?
-                    .ok_or("no return value")?;
+                    .ok_or(Error::NoReturnValue(expr.clone()))?;
                 let var = ctx.var();
                 ctx.push(Instruction::Unary(var, *op, i));
                 Ok(var.into())
@@ -427,7 +430,7 @@ impl Expr {
 }
 
 impl Lit {
-    fn transform(&self, intern: &Intern, ctx: &mut Context) -> Result<Option<Var>, &'static str> {
+    fn transform(&self, intern: &Intern, ctx: &mut Context) -> Result<Option<Var>, Error> {
         let var = ctx.var();
         if let Some(c) = ctx.consts.get(self) {
             ctx.push(Instruction::Load(var, c.clone()));
@@ -435,7 +438,11 @@ impl Lit {
         }
         let c = match self {
             Lit::Int(x) => {
-                let value = intern.get(x).unwrap().parse().map_err(|_| "invalid int")?;
+                let value = intern
+                    .get(x)
+                    .unwrap()
+                    .parse()
+                    .map_err(|_| Error::InvalidInt(self.clone()))?;
                 Const::Int(value)
             }
             Lit::Float(x) => {
@@ -443,7 +450,7 @@ impl Lit {
                     .get(x)
                     .unwrap()
                     .parse::<f32>()
-                    .map_err(|_| "invalid float")?
+                    .map_err(|_| Error::InvalidFloat(self.clone()))?
                     .to_bits();
                 Const::Float(value)
             }
@@ -464,7 +471,7 @@ impl Lit {
                             let c = u32::from_str_radix(hex, 16)
                                 .ok()
                                 .and_then(char::from_u32)
-                                .ok_or("invalid str chunk")?;
+                                .ok_or(Error::InvalidStrChunk(chunk.clone()))?;
                             value.push(c)
                         }
                         Chunk::Escape(x) => {
@@ -476,7 +483,7 @@ impl Lit {
                                 "t" => '\t',
                                 "r" => '\r',
                                 "\\" => '\\',
-                                _ => return Err("invalid str chunk"),
+                                _ => return Err(Error::InvalidStrChunk(chunk.clone())),
                             };
                             value.push(c)
                         }

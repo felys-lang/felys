@@ -80,7 +80,7 @@ impl<T> Worker<T> {
 }
 
 impl II {
-    pub fn codegen(self) -> III {
+    pub fn codegen(self) -> Result<III, String> {
         let mut context = Context::new(self.groups, self.functions);
         let mut groups = HashMap::new();
         let mut callables = HashMap::new();
@@ -91,7 +91,7 @@ impl II {
             &self.intern,
             &self.namespace,
             &mut context,
-        );
+        )?;
 
         while !context.done() {
             while let Some((index, mut group)) = context.groups.pop() {
@@ -102,17 +102,17 @@ impl II {
             }
 
             while let Some((index, (args, block))) = context.functions.pop() {
-                let callable = compile(args, block, &self.intern, &self.namespace, &mut context);
+                let callable = compile(args, block, &self.intern, &self.namespace, &mut context)?;
                 callables.insert(index, callable);
             }
         }
 
-        III {
+        Ok(III {
             main,
             text: linearize(callables),
             data: context.data.pool,
             groups: linearize(groups),
-        }
+        })
     }
 }
 
@@ -122,18 +122,20 @@ fn compile(
     intern: &Intern,
     namespace: &Namespace,
     ctx: &mut Context,
-) -> Callable {
+) -> Result<Callable, String> {
     let length = Reg::try_from(args.len()).unwrap();
-    let map = block.semantic(args.iter(), namespace).unwrap();
-    let mut function = block.function(&map, intern, args).unwrap();
+    let map = block.semantic(args.iter(), namespace)?;
+    let mut function = block
+        .function(&map, intern, args)
+        .map_err(|e| e.recover(intern))?;
     let copies = function.copies();
     let rpo = function.rpo();
     let (allocation, used) = function.allocate(&rpo, &copies);
-    Callable {
+    Ok(Callable {
         args: length,
         registers: used,
         bytecodes: function.codegen(&rpo, &allocation, ctx, copies),
-    }
+    })
 }
 
 fn linearize<T>(mut map: HashMap<usize, T>) -> Vec<T> {

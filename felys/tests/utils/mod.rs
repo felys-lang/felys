@@ -25,14 +25,14 @@ pub fn exec(
 }
 
 fn compile(code: &str, _: usize) -> Result<[III; 2], String> {
-    let elysia = PhiLia093::from(code.to_string())
+    let iii = PhiLia093::from(code.to_string())
         .parse()?
         .desugar()?
-        .codegen();
+        .codegen()?;
 
     let mut binary = Vec::with_capacity(256);
-    elysia.dump(&mut binary).unwrap();
+    iii.dump(&mut binary).unwrap();
     let loaded = III::load(&mut binary.as_slice()).unwrap();
 
-    Ok([elysia, loaded])
+    Ok([iii, loaded])
 }
