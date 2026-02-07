@@ -123,12 +123,14 @@ fn compile(
     namespace: &Namespace,
     ctx: &mut Context,
 ) -> Callable {
+    let length = Reg::try_from(args.len()).unwrap();
     let map = block.semantic(args.iter(), namespace).unwrap();
     let mut function = block.function(&map, intern, args).unwrap();
     let copies = function.copies();
     let rpo = function.rpo();
     let (allocation, used) = function.allocate(&rpo, &copies);
     Callable {
+        args: length,
         registers: used,
         bytecodes: function.codegen(&rpo, &allocation, ctx, copies),
     }

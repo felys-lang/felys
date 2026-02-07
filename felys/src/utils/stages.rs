@@ -28,6 +28,7 @@ pub struct III {
 
 #[derive(Debug)]
 pub struct Callable {
+    pub args: Reg,
     pub registers: Reg,
     pub bytecodes: Vec<Bytecode>,
 }
