@@ -177,7 +177,7 @@ impl Expr {
             }
             Expr::Lit(_) => {}
             Expr::Path(i, path) => {
-                if path.len() == 1 && resolver.contains(*i) {
+                if path.len() == 1 && resolver.contains(path.buffer()[0]) {
                     resolver.link(*i, None)
                 } else if let Some(ptr) = namespace.get(path.iter()) {
                     resolver.link(*i, Some(ptr))
