@@ -1,4 +1,4 @@
 mod dump;
-mod load;
-mod runtime;
 mod error;
+mod load;
+pub mod runtime;

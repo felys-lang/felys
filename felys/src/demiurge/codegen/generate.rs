@@ -80,7 +80,7 @@ impl<T> Worker<T> {
 }
 
 impl II {
-    pub fn compile(self) -> III {
+    pub fn codegen(self) -> III {
         let mut context = Context::new(self.groups, self.functions);
         let mut groups = HashMap::new();
         let mut callables = HashMap::new();
