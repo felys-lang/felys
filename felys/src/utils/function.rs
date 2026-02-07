@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 #[derive(Debug, Default)]
 pub struct Function {
-    vars: usize,
+    pub vars: usize,
     pub entry: Fragment,
     pub fragment: HashMap<usize, Fragment>,
     pub exit: Fragment,
