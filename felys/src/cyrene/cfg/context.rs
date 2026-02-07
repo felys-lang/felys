@@ -97,9 +97,16 @@ impl Context {
         fragment.terminator = Some(Terminator::Return(var));
     }
 
-    fn phi(&mut self, label: Label, var: Var, inputs: Vec<(Label, Var)>) {
-        let phi = Phi { var, inputs };
-        self.f.get_mut(label).unwrap().phis.push(phi);
+    fn phi(&mut self, var: Var, id: Id, predecessors: Vec<Label>) -> Phi {
+        let mut phi = Phi {
+            var,
+            inputs: Vec::new(),
+        };
+        for pred in predecessors {
+            let v = self.lookup(pred, id).unwrap();
+            phi.inputs.push((pred, v))
+        }
+        phi
     }
 
     pub fn seal(&mut self, label: Label) {
@@ -107,14 +114,10 @@ impl Context {
             return;
         }
         if let Some(phis) = self.incompleted.remove(&label) {
-            let preds = self.f.get(label).unwrap().predecessors.clone();
+            let predecessors = self.f.get(label).unwrap().predecessors.clone();
             for (key, var) in phis {
-                let mut operands = Vec::new();
-                for pred in preds.clone() {
-                    let v = self.lookup(pred, key).unwrap();
-                    operands.push((pred, v));
-                }
-                self.phi(label, var, operands);
+                let phi = self.phi(var, key, predecessors.clone());
+                self.f.get_mut(label).unwrap().phis.push(phi);
             }
         }
         self.sealed.insert(label);
@@ -141,13 +144,8 @@ impl Context {
         } else {
             let var = self.f.var();
             self.define(label, id, var);
-
-            let mut operands = Vec::new();
-            for pred in predecessors {
-                let v = self.lookup(pred, id).unwrap();
-                operands.push((pred, v));
-            }
-            self.phi(label, var, operands);
+            let phi = self.phi(var, id, predecessors);
+            self.f.get_mut(label).unwrap().phis.push(phi);
             var
         };
         self.define(label, id, var);

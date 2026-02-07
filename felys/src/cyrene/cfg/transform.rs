@@ -22,7 +22,7 @@ impl Block {
             ctx.define(ctx.cursor, Id::Interned(*id), var);
         }
 
-        if let Some(var) = self.ir(map, intern, &mut ctx, &mut stk)? {
+        if let Some(var) = self.transform(map, intern, &mut ctx, &mut stk)? {
             ctx.define(ctx.cursor, Id::Ret, var);
         }
         ctx.jump(Label::Exit);
@@ -34,7 +34,7 @@ impl Block {
         Ok(ctx.into())
     }
 
-    fn ir(
+    fn transform(
         &self,
         map: &Map,
         intern: &Intern,
@@ -44,7 +44,7 @@ impl Block {
         let mut iter = self.0.iter().peekable();
         let mut result = Ok(None);
         while let Some(stmt) = iter.next() {
-            let ret = stmt.ir(map, intern, ctx, stk)?;
+            let ret = stmt.transform(map, intern, ctx, stk)?;
             if ret.is_some() {
                 if iter.peek().is_none() {
                     result = Ok(ret);
@@ -59,7 +59,7 @@ impl Block {
 }
 
 impl Stmt {
-    fn ir(
+    fn transform(
         &self,
         map: &Map,
         intern: &Intern,
@@ -68,8 +68,8 @@ impl Stmt {
     ) -> Result<Option<Var>, &'static str> {
         match self {
             Stmt::Empty => Ok(None),
-            Stmt::Expr(expr) => expr.ir(map, intern, ctx, stk),
-            Stmt::Semi(expr) => expr.ir(map, intern, ctx, stk).and(Ok(None)),
+            Stmt::Expr(expr) => expr.transform(map, intern, ctx, stk),
+            Stmt::Semi(expr) => expr.transform(map, intern, ctx, stk).and(Ok(None)),
             Stmt::Assign(pat, op, expr) => {
                 let op = match op {
                     AssOp::AddEq => Some(BinOp::Add),
@@ -79,8 +79,10 @@ impl Stmt {
                     AssOp::ModEq => Some(BinOp::Mod),
                     AssOp::Eq => None,
                 };
-                let var = expr.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
-                pat.ir(ctx, &op, var)?;
+                let var = expr
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
+                pat.transform(ctx, &op, var)?;
                 Ok(None)
             }
         }
@@ -88,14 +90,19 @@ impl Stmt {
 }
 
 impl Pat {
-    fn ir(&self, ctx: &mut Context, op: &Option<BinOp>, mut rhs: Var) -> Result<(), &'static str> {
+    fn transform(
+        &self,
+        ctx: &mut Context,
+        op: &Option<BinOp>,
+        mut rhs: Var,
+    ) -> Result<(), &'static str> {
         match self {
             Pat::Any => {}
             Pat::Tuple(pats) => {
                 for (i, pat) in pats.iter().enumerate() {
                     let field = ctx.var();
                     ctx.push(Instruction::Unpack(field, rhs, i));
-                    pat.ir(ctx, op, field)?
+                    pat.transform(ctx, op, field)?
                 }
             }
             Pat::Ident(x) => {
@@ -114,7 +121,7 @@ impl Pat {
 }
 
 impl Expr {
-    fn ir(
+    fn transform(
         &self,
         map: &Map,
         intern: &Intern,
@@ -122,14 +129,14 @@ impl Expr {
         stk: &mut Stack,
     ) -> Result<Option<Var>, &'static str> {
         match self {
-            Expr::Block(block) => block.ir(map, intern, ctx, stk),
+            Expr::Block(block) => block.transform(map, intern, ctx, stk),
             Expr::Break(expr) => {
                 let (_, end, wb) = stk.last().cloned().ok_or("outside loop")?;
                 if let Some((id, action)) = wb
                     && action.unwrap_or(true)
                 {
                     if let Some(x) = expr
-                        && let Some(var) = x.ir(map, intern, ctx, stk)?
+                        && let Some(var) = x.transform(map, intern, ctx, stk)?
                     {
                         stk.last_mut().unwrap().2.as_mut().unwrap().1 = Some(true);
                         ctx.define(ctx.cursor, id, var)
@@ -150,7 +157,9 @@ impl Expr {
                 let body = ctx.label();
                 let end = ctx.label();
 
-                let iterable = expr.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                let iterable = expr
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
 
                 let length = ctx.var();
                 ctx.push(Instruction::Unpack(length, iterable, 0));
@@ -192,8 +201,8 @@ impl Expr {
                 ctx.push(Instruction::Binary(var, index, BinOp::Add, one));
                 ctx.define(ctx.cursor, i, var);
 
-                pat.ir(ctx, &None, element)?;
-                block.ir(map, intern, ctx, stk)?;
+                pat.transform(ctx, &None, element)?;
+                block.transform(map, intern, ctx, stk)?;
 
                 stk.pop();
                 ctx.jump(header);
@@ -209,7 +218,9 @@ impl Expr {
                 let join = ctx.label();
                 let ret = ctx.id();
 
-                let cond = expr.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                let cond = expr
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
                 ctx.branch(cond, then, otherwise);
                 ctx.seal(then);
                 ctx.seal(otherwise);
@@ -218,7 +229,7 @@ impl Expr {
                 let mut joined = [false, false];
 
                 ctx.cursor = then;
-                if let Some(var) = block.ir(map, intern, ctx, stk)? {
+                if let Some(var) = block.transform(map, intern, ctx, stk)? {
                     ctx.define(ctx.cursor, ret, var);
                     returned[0] = true;
                 }
@@ -226,7 +237,7 @@ impl Expr {
 
                 ctx.cursor = otherwise;
                 if let Some(alt) = alter
-                    && let Some(var) = alt.ir(map, intern, ctx, stk)?
+                    && let Some(var) = alt.transform(map, intern, ctx, stk)?
                 {
                     ctx.define(ctx.cursor, ret, var);
                     returned[1] = true;
@@ -252,7 +263,7 @@ impl Expr {
 
                 ctx.cursor = body;
                 stk.push((body, end, Some((ret, None))));
-                block.ir(map, intern, ctx, stk)?;
+                block.transform(map, intern, ctx, stk)?;
                 let action = stk.pop().unwrap().2.unwrap().1;
 
                 ctx.jump(body);
@@ -268,7 +279,9 @@ impl Expr {
                 }
             }
             Expr::Return(expr) => {
-                let var = expr.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                let var = expr
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
                 ctx.define(ctx.cursor, Id::Ret, var);
                 ctx.jump(Label::Exit);
                 Ok(None)
@@ -281,13 +294,15 @@ impl Expr {
                 ctx.jump(header);
 
                 ctx.cursor = header;
-                let cond = expr.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                let cond = expr
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
                 ctx.branch(cond, body, end);
                 ctx.seal(body);
 
                 ctx.cursor = body;
                 stk.push((header, end, None));
-                block.ir(map, intern, ctx, stk)?;
+                block.transform(map, intern, ctx, stk)?;
                 stk.pop();
                 ctx.jump(header);
                 ctx.seal(header);
@@ -297,18 +312,26 @@ impl Expr {
                 Ok(None)
             }
             Expr::Binary(lhs, op, rhs) => {
-                let l = lhs.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
-                let r = rhs.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                let l = lhs
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
+                let r = rhs
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
                 let var = ctx.var();
                 ctx.push(Instruction::Binary(var, l, *op, r));
                 Ok(var.into())
             }
             Expr::Call(expr, args) => {
-                let callable = expr.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                let callable = expr
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
                 let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let param = arg.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                        let param = arg
+                            .transform(map, intern, ctx, stk)?
+                            .ok_or("no return value")?;
                         params.push(param);
                     }
                 }
@@ -317,17 +340,23 @@ impl Expr {
                 Ok(var.into())
             }
             Expr::Field(expr, id) => {
-                let src = expr.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                let src = expr
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
                 let var = ctx.var();
                 ctx.push(Instruction::Field(var, src, *id));
                 Ok(var.into())
             }
             Expr::Method(expr, id, args) => {
-                let src = expr.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                let src = expr
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
                 let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let param = arg.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                        let param = arg
+                            .transform(map, intern, ctx, stk)?
+                            .ok_or("no return value")?;
                         params.push(param);
                     }
                 }
@@ -336,8 +365,12 @@ impl Expr {
                 Ok(var.into())
             }
             Expr::Index(expr, index) => {
-                let src = expr.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
-                let idx = index.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                let src = expr
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
+                let idx = index
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
                 let var = ctx.var();
                 ctx.push(Instruction::Index(var, src, idx));
                 Ok(var.into())
@@ -345,7 +378,9 @@ impl Expr {
             Expr::Tuple(args) => {
                 let mut params = Vec::new();
                 for arg in args.iter() {
-                    let param = arg.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                    let param = arg
+                        .transform(map, intern, ctx, stk)?
+                        .ok_or("no return value")?;
                     params.push(param);
                 }
                 let var = ctx.var();
@@ -356,7 +391,9 @@ impl Expr {
                 let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let param = arg.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                        let param = arg
+                            .transform(map, intern, ctx, stk)?
+                            .ok_or("no return value")?;
                         params.push(param);
                     }
                 }
@@ -364,10 +401,12 @@ impl Expr {
                 ctx.push(Instruction::List(var, params));
                 Ok(var.into())
             }
-            Expr::Lit(lit) => lit.ir(intern, ctx),
-            Expr::Paren(expr) => expr.ir(map, intern, ctx, stk),
+            Expr::Lit(lit) => lit.transform(intern, ctx),
+            Expr::Paren(expr) => expr.transform(map, intern, ctx, stk),
             Expr::Unary(op, inner) => {
-                let i = inner.ir(map, intern, ctx, stk)?.ok_or("no return value")?;
+                let i = inner
+                    .transform(map, intern, ctx, stk)?
+                    .ok_or("no return value")?;
                 let var = ctx.var();
                 ctx.push(Instruction::Unary(var, *op, i));
                 Ok(var.into())
@@ -388,7 +427,7 @@ impl Expr {
 }
 
 impl Lit {
-    fn ir(&self, intern: &Intern, ctx: &mut Context) -> Result<Option<Var>, &'static str> {
+    fn transform(&self, intern: &Intern, ctx: &mut Context) -> Result<Option<Var>, &'static str> {
         let var = ctx.var();
         if let Some(c) = ctx.consts.get(self) {
             ctx.push(Instruction::Load(var, c.clone()));
