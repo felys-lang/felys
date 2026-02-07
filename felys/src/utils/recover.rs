@@ -1,6 +1,6 @@
 use crate::philia093::Intern;
 use crate::utils::ast::{
-    AssOp, BinOp, Block, Bool, Chunk, Expr, Item, Lit, Pat, Root, Stmt, UnaOp,
+    AssOp, BinOp, Block, Bool, Chunk, Expr, Impl, Item, Lit, Pat, Root, Stmt, UnaOp,
 };
 use std::fmt::{Display, Formatter, Write};
 
@@ -28,10 +28,82 @@ impl Item {
         intern: &Intern,
     ) -> std::fmt::Result {
         match self {
-            Item::Group(_, _) => Ok(()),
-            Item::Impl(_, _) => Ok(()),
-            Item::Fn(_, _, block) => block.recover(f, start, indent, None, intern),
-            Item::Main(_, block) => block.recover(f, start, indent, None, intern),
+            Item::Group(id, fields) => {
+                write!(f, "group {}(", intern.get(id).unwrap())?;
+                let mut iter = fields.iter();
+                if let Some(field) = iter.next() {
+                    write!(f, "{}", intern.get(field).unwrap())?;
+                }
+                for field in iter {
+                    write!(f, ", {}", intern.get(field).unwrap())?;
+                }
+                write!(f, ")")
+            }
+            Item::Impl(id, impls) => {
+                write!(f, "impl {} {{", intern.get(id).unwrap())?;
+                let mut iter = impls.iter();
+                if let Some(first) = iter.next() {
+                    first.recover(f, start, indent + 1, intern)?;
+                }
+                for implementation in iter {
+                    writeln!(f)?;
+                    implementation.recover(f, start, indent + 1, intern)?;
+                }
+                write!(f, "}}")
+            }
+            Item::Fn(id, args, block) => {
+                write!(f, "fn {}(", intern.get(id).unwrap())?;
+                if let Some(args) = args {
+                    let mut iter = args.iter();
+                    if let Some(first) = iter.next() {
+                        write!(f, "{}", intern.get(first).unwrap())?;
+                    }
+                    for arg in iter {
+                        write!(f, ", {}", intern.get(arg).unwrap())?;
+                    }
+                }
+                write!(f, ") ")?;
+                block.recover(f, start, indent, None, intern)
+            }
+            Item::Main(args, block) => {
+                write!(f, "fn main({}) ", intern.get(args).unwrap())?;
+                block.recover(f, start, indent, None, intern)
+            }
+        }
+    }
+}
+
+impl Impl {
+    pub fn recover<W: Write>(
+        &self,
+        f: &mut W,
+        start: &'static str,
+        indent: usize,
+        intern: &Intern,
+    ) -> std::fmt::Result {
+        match self {
+            Impl::Associated(id, args, block) => {
+                write!(f, "fn {}(", intern.get(id).unwrap())?;
+                if let Some(args) = args {
+                    let mut iter = args.iter();
+                    if let Some(first) = iter.next() {
+                        write!(f, "{}", intern.get(first).unwrap())?;
+                    }
+                    for arg in iter {
+                        write!(f, ", {}", intern.get(arg).unwrap())?;
+                    }
+                }
+                write!(f, ") ")?;
+                block.recover(f, start, indent, None, intern)
+            }
+            Impl::Method(id, args, block) => {
+                write!(f, "fn {}(self", intern.get(id).unwrap())?;
+                for arg in args {
+                    write!(f, ", {}", intern.get(arg).unwrap())?;
+                }
+                write!(f, ") ")?;
+                block.recover(f, start, indent, None, intern)
+            }
         }
     }
 }

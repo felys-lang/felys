@@ -170,6 +170,7 @@ people = [
     )
 }
 
+#[test]
 fn beloved() -> Result<(), String> {
     exec(
         Object::List([].into()),

@@ -14,7 +14,8 @@ impl I {
         let mut groups = HashMap::new();
 
         for item in self.root.0.iter() {
-            item.allocate(&mut namespace, &mut groups)?;
+            item.allocate(&mut namespace, &mut groups)
+                .map_err(|e| e.recover(&intern))?;
         }
 
         let mut main = Err(Error::MainNotFound);
@@ -25,7 +26,8 @@ impl I {
                 &mut functions,
                 &mut groups,
                 &mut main,
-            )?;
+            )
+            .map_err(|e| e.recover(&intern))?;
         }
 
         Ok(II {
@@ -43,9 +45,11 @@ impl Item {
         &self,
         namespace: &mut Namespace,
         groups: &mut HashMap<usize, Group>,
-    ) -> Result<(), &'static str> {
+    ) -> Result<(), Error> {
         if let Item::Group(id, fields) = self {
-            let gp = namespace.allocate(&[], *id).ok_or("duplicated path")?;
+            let gp = namespace
+                .allocate(&[], *id)
+                .ok_or(Error::RedeclaredItem(self.clone()))?;
             let group = Group::new(fields.iter());
             groups.insert(gp, group);
         }
@@ -59,22 +63,43 @@ impl Item {
         functions: &mut HashMap<usize, (Vec<usize>, Block)>,
         groups: &mut HashMap<usize, Group>,
         main: &mut Result<(usize, Block), Error>,
-    ) -> Result<(), &'static str> {
+    ) -> Result<(), Error> {
+        let ptr = self.ptr(namespace, main)?;
         match self {
+            Item::Group(_, _) => {}
             Item::Impl(id, impls) => {
                 for implementation in impls.into_iter() {
                     implementation.attach(id, intern, namespace, functions, groups)?;
                 }
             }
-            Item::Fn(id, args, block) => {
-                let ptr = namespace.attach(&[], id).ok_or("duplicated path")?;
+            Item::Fn(_, args, block) => {
                 let args = args.map(|x| x.vec()).unwrap_or_default();
-                functions.insert(ptr, (args, block));
+                functions.insert(ptr.unwrap(), (args, block));
             }
             Item::Main(args, block) => *main = Ok((args, block)),
-            _ => {}
         }
         Ok(())
+    }
+
+    fn ptr(
+        &self,
+        namespace: &mut Namespace,
+        main: &mut Result<(usize, Block), Error>,
+    ) -> Result<Option<usize>, Error> {
+        match self {
+            Item::Group(_, _) | Item::Impl(_, _) => Ok(None),
+            Item::Fn(id, _, _) => namespace
+                .attach(&[], *id)
+                .ok_or(Error::RedeclaredItem(self.clone()))
+                .map(Some),
+            Item::Main(_, _) => {
+                if main.is_ok() {
+                    Err(Error::RedeclaredItem(self.clone()))
+                } else {
+                    Ok(None)
+                }
+            }
+        }
     }
 }
 
@@ -86,19 +111,14 @@ impl Impl {
         namespace: &mut Namespace,
         functions: &mut HashMap<usize, (Vec<usize>, Block)>,
         groups: &mut HashMap<usize, Group>,
-    ) -> Result<(), &'static str> {
+    ) -> Result<(), Error> {
+        let ptr = self.ptr(id, namespace)?;
         match self {
-            Impl::Associated(secondary, args, block) => {
-                let ptr = namespace
-                    .attach(&[id], secondary)
-                    .ok_or("duplicated path")?;
+            Impl::Associated(_, args, block) => {
                 let args = args.map(|x| x.vec()).unwrap_or_default();
                 functions.insert(ptr, (args, block));
             }
             Impl::Method(secondary, mut args, block) => {
-                let ptr = namespace
-                    .attach(&[id], secondary)
-                    .ok_or("duplicated path")?;
                 args.push(intern.id("self"));
                 functions.insert(ptr, (args, block));
                 let (_, gp) = namespace.get([id].iter()).unwrap();
@@ -106,5 +126,13 @@ impl Impl {
             }
         }
         Ok(())
+    }
+
+    fn ptr(&self, id: usize, namespace: &mut Namespace) -> Result<usize, Error> {
+        match self {
+            Impl::Associated(x, _, _) | Impl::Method(x, _, _) => namespace
+                .attach(&[id], *x)
+                .ok_or(Error::RedeclaredImpl(self.clone())),
+        }
     }
 }

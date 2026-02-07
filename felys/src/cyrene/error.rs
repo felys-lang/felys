@@ -1,5 +1,5 @@
 use crate::philia093::Intern;
-use crate::utils::ast::{Block, Chunk, Expr, Lit};
+use crate::utils::ast::{Block, Chunk, Expr, Impl, Item, Lit};
 
 pub enum Error {
     MainNotFound,
@@ -10,6 +10,8 @@ pub enum Error {
     InvalidFloat(Lit),
     InvalidStrChunk(Chunk),
     NoReturnValue(Expr),
+    RedeclaredItem(Item),
+    RedeclaredImpl(Impl),
 }
 
 impl Error {
@@ -60,6 +62,16 @@ impl Error {
                 msg.push_str("this expression does not have a return value\n");
                 msg.push_str(ERROR);
                 expr.recover(&mut msg, ERROR, 0, intern).unwrap();
+            }
+            Error::RedeclaredItem(item) => {
+                msg.push_str("this item is redeclared\n");
+                msg.push_str(ERROR);
+                item.recover(&mut msg, ERROR, 0, intern).unwrap();
+            }
+            Error::RedeclaredImpl(implementation) => {
+                msg.push_str("this function is redeclared\n");
+                msg.push_str(ERROR);
+                implementation.recover(&mut msg, ERROR, 0, intern).unwrap();
             }
         }
         if tailing {
