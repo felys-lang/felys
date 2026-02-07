@@ -19,7 +19,13 @@ impl I {
 
         let mut main = Err(Error::MainNotFound);
         for item in self.root.0.into_iter() {
-            item.attach(&mut intern, &mut namespace, &mut functions, &mut main)?;
+            item.attach(
+                &mut intern,
+                &mut namespace,
+                &mut functions,
+                &mut groups,
+                &mut main,
+            )?;
         }
 
         Ok(II {
@@ -51,12 +57,13 @@ impl Item {
         intern: &mut Intern,
         namespace: &mut Namespace,
         functions: &mut HashMap<usize, (Vec<usize>, Block)>,
+        groups: &mut HashMap<usize, Group>,
         main: &mut Result<(usize, Block), Error>,
     ) -> Result<(), &'static str> {
         match self {
             Item::Impl(id, impls) => {
                 for implementation in impls.into_iter() {
-                    implementation.attach(id, intern, namespace, functions)?;
+                    implementation.attach(id, intern, namespace, functions, groups)?;
                 }
             }
             Item::Fn(id, args, block) => {
@@ -78,6 +85,7 @@ impl Impl {
         intern: &mut Intern,
         namespace: &mut Namespace,
         functions: &mut HashMap<usize, (Vec<usize>, Block)>,
+        groups: &mut HashMap<usize, Group>,
     ) -> Result<(), &'static str> {
         match self {
             Impl::Associated(secondary, args, block) => {
@@ -93,6 +101,8 @@ impl Impl {
                     .ok_or("duplicated path")?;
                 args.push(intern.id("self"));
                 functions.insert(ptr, (args, block));
+                let (_, gp) = namespace.get([id].iter()).unwrap();
+                groups.get_mut(&gp).unwrap().attach(secondary, ptr);
             }
         }
         Ok(())
