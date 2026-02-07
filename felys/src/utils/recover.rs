@@ -311,9 +311,11 @@ impl Lit {
                 Bool::False => write!(f, "false"),
             },
             Lit::Str(chunks) => {
+                write!(f, "\"")?;
                 for chunks in chunks {
                     chunks.recover(f, intern)?;
                 }
+                write!(f, "\"")?;
                 Ok(())
             }
         }
