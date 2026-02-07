@@ -1,3 +1,4 @@
+use crate::cyrene::error::Error;
 use crate::utils::ast::{AssOp, Block, Expr, Pat, Stmt};
 use crate::utils::function::Pointer;
 use crate::utils::namespace::Namespace;
@@ -43,7 +44,7 @@ impl Block {
         &self,
         args: impl Iterator<Item = &'a usize>,
         namespace: &Namespace,
-    ) -> Result<Map, &'static str> {
+    ) -> Result<Map, Error> {
         let mut resolver = Resolver::default();
         resolver.stack();
         for arg in args {
@@ -54,7 +55,7 @@ impl Block {
         Ok(resolver.map)
     }
 
-    fn resolve(&self, namespace: &Namespace, resolver: &mut Resolver) -> Result<(), &'static str> {
+    fn resolve(&self, namespace: &Namespace, resolver: &mut Resolver) -> Result<(), Error> {
         for stmt in self.0.iter() {
             stmt.resolve(namespace, resolver)?;
         }
@@ -63,7 +64,7 @@ impl Block {
 }
 
 impl Pat {
-    fn resolve(&self, namespace: &Namespace, resolver: &mut Resolver) -> Result<(), &'static str> {
+    fn resolve(&self, namespace: &Namespace, resolver: &mut Resolver) -> Result<(), Error> {
         match self {
             Pat::Any => {}
             Pat::Tuple(tuple) => {
@@ -76,7 +77,7 @@ impl Pat {
         Ok(())
     }
 
-    fn unpack(&self, resolver: &mut Resolver) -> Result<(), &'static str> {
+    fn unpack(&self, resolver: &mut Resolver) -> Result<(), Error> {
         match self {
             Pat::Any => {}
             Pat::Tuple(tuple) => {
@@ -86,7 +87,7 @@ impl Pat {
             }
             Pat::Ident(id) => {
                 if !resolver.contains(*id) {
-                    return Err("variable not defined");
+                    return Err(Error::VariableNotDefined(*id));
                 }
             }
         }
@@ -95,7 +96,7 @@ impl Pat {
 }
 
 impl Stmt {
-    fn resolve(&self, namespace: &Namespace, resolver: &mut Resolver) -> Result<(), &'static str> {
+    fn resolve(&self, namespace: &Namespace, resolver: &mut Resolver) -> Result<(), Error> {
         match self {
             Stmt::Empty => {}
             Stmt::Expr(expr) | Stmt::Semi(expr) => expr.resolve(namespace, resolver)?,
@@ -112,7 +113,7 @@ impl Stmt {
 }
 
 impl Expr {
-    fn resolve(&self, namespace: &Namespace, resolver: &mut Resolver) -> Result<(), &'static str> {
+    fn resolve(&self, namespace: &Namespace, resolver: &mut Resolver) -> Result<(), Error> {
         match self {
             Expr::Block(block) | Expr::Loop(block) => {
                 resolver.stack();
@@ -182,7 +183,7 @@ impl Expr {
                 } else if let Some(ptr) = namespace.get(path.iter()) {
                     resolver.link(*i, Some(ptr))
                 } else {
-                    return Err("not defined nor is a function");
+                    return Err(Error::InvalidPath(self.clone()));
                 }
             }
         }

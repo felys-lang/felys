@@ -133,7 +133,9 @@ fn compile(
     ctx: &mut Context,
 ) -> Result<Callable, String> {
     let length = Reg::try_from(args.len()).unwrap();
-    let map = block.semantic(args.iter(), namespace)?;
+    let map = block
+        .semantic(args.iter(), namespace)
+        .map_err(|e| e.recover(intern))?;
     let mut function = block
         .function(&map, intern, args)
         .map_err(|e| e.recover(intern))?;

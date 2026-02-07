@@ -12,6 +12,8 @@ pub enum Error {
     NoReturnValue(Expr),
     RedeclaredItem(Item),
     RedeclaredImpl(Impl),
+    VariableNotDefined(usize),
+    InvalidPath(Expr),
 }
 
 impl Error {
@@ -72,6 +74,16 @@ impl Error {
                 msg.push_str("this function is redeclared\n");
                 msg.push_str(ERROR);
                 implementation.recover(&mut msg, ERROR, 0, intern).unwrap();
+            }
+            Error::VariableNotDefined(id) => {
+                msg.push_str("this variable is not defined\n");
+                msg.push_str(ERROR);
+                msg.push_str(intern.get(&id).unwrap())
+            }
+            Error::InvalidPath(path) => {
+                msg.push_str("this path does not lead to anywhere\n");
+                msg.push_str(ERROR);
+                path.recover(&mut msg, ERROR, 0, intern).unwrap();
             }
         }
         if tailing {
