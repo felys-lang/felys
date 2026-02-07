@@ -1,6 +1,6 @@
-use crate::cyrene::namespace::Namespace;
 use crate::utils::ast::{AssOp, Block, Expr, Pat, Stmt};
 use crate::utils::function::Pointer;
+use crate::utils::namespace::Namespace;
 use std::collections::{HashMap, HashSet};
 
 pub type Map = HashMap<usize, Option<(Pointer, usize)>>;
@@ -41,7 +41,7 @@ impl Resolver {
 impl Block {
     pub fn semantic<'a>(
         &self,
-        args: impl Iterator<Item = &'a usize>,
+        args: impl Iterator<Item=&'a usize>,
         namespace: &Namespace,
     ) -> Result<Map, &'static str> {
         let mut resolver = Resolver::default();

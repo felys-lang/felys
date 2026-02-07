@@ -14,11 +14,11 @@ impl<T: Clone, const N: usize> BufVec<T, N> {
         }
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &T> {
+    pub fn iter(&self) -> impl Iterator<Item=&T> {
         self.buf.iter().chain(self.vec.iter())
     }
 
-    pub fn into_iter(self) -> impl Iterator<Item = T> {
+    pub fn into_iter(self) -> impl Iterator<Item=T> {
         self.buf.to_vec().into_iter().chain(self.vec.into_iter())
     }
 

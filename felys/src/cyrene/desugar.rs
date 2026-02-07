@@ -1,9 +1,9 @@
 use crate::philia093::Intern;
 use crate::utils::ast::{Block, Impl, Item};
 use crate::utils::group::Group;
+use crate::utils::namespace::Namespace;
 use crate::utils::stages::{I, II};
 use std::collections::HashMap;
-use crate::cyrene::namespace::Namespace;
 
 impl I {
     pub fn desugar(self) -> Result<II, &'static str> {
@@ -22,6 +22,7 @@ impl I {
         }
 
         Ok(II {
+            namespace,
             groups,
             functions,
             main: main?,
