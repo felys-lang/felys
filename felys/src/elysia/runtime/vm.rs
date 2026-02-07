@@ -133,7 +133,7 @@ impl Bytecode {
         &self,
         program: &III,
         rt: &mut Runtime,
-        so: &mut String,
+        _: &mut String,
     ) -> Result<Option<Object>, Error> {
         match self {
             Bytecode::Arg(dst, idx) => {

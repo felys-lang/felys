@@ -35,7 +35,7 @@ impl Context {
     }
 
     fn done(&self) -> bool {
-        self.data.pool.is_empty() && self.data.fast.is_empty()
+        self.groups.worklist.is_empty() && self.functions.worklist.is_empty()
     }
 }
 
