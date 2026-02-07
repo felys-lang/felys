@@ -1,4 +1,5 @@
 use crate::elysia::runtime::object::Object;
+use crate::elysia::runtime::vm::DEPTH;
 
 pub enum Error {
     DataType(Object, &'static str),
@@ -7,6 +8,7 @@ pub enum Error {
     NumArgsNotMatch(usize, usize),
     IndexOutOfBounds(Object, i32),
     NotEnoughToUnpack(Object, u32),
+    StackOverflow,
 }
 
 impl From<Error> for String {
@@ -35,6 +37,10 @@ impl From<Error> for String {
             }
             Error::NotEnoughToUnpack(obj, index) => {
                 let s = format!("cannot unpack element at index {index} for `{obj}`");
+                msg.push_str(&s);
+            }
+            Error::StackOverflow => {
+                let s = format!("stack overflow, max depth set to {DEPTH}");
                 msg.push_str(&s);
             }
         }

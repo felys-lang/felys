@@ -1,2 +1,2 @@
 pub mod object;
-mod vm;
+pub mod vm;

@@ -5,6 +5,8 @@ use crate::utils::bytecode::{Bytecode, Index, Reg};
 use crate::utils::function::{Const, Pointer};
 use crate::utils::stages::{Callable, III};
 
+pub const DEPTH: usize = 1024;
+
 impl III {
     pub fn exec(&self, args: Object, stdout: &mut String) -> Result<Object, String> {
         let mut runtime = self.init(args)?;
@@ -70,6 +72,9 @@ impl Runtime {
     }
 
     fn call(&mut self, dst: Reg, idx: Index, frame: Frame) -> Result<(), Error> {
+        if self.stack.len() >= DEPTH {
+            return Err(Error::StackOverflow);
+        }
         self.rets.push(dst);
         self.stack.push((idx, frame));
         Ok(())
