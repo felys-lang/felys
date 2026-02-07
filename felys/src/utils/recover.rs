@@ -1,23 +1,8 @@
 use crate::philia093::Intern;
 use crate::utils::ast::{
-    AssOp, BinOp, Block, Bool, Chunk, Expr, Impl, Item, Lit, Pat, Root, Stmt, UnaOp,
+    AssOp, BinOp, Block, Bool, Chunk, Expr, Impl, Item, Lit, Pat, Stmt, UnaOp,
 };
 use std::fmt::{Display, Formatter, Write};
-
-impl Root {
-    pub fn recover<W: Write>(
-        &self,
-        f: &mut W,
-        start: &'static str,
-        indent: usize,
-        intern: &Intern,
-    ) -> std::fmt::Result {
-        for item in self.0.iter() {
-            item.recover(f, start, indent, intern)?;
-        }
-        Ok(())
-    }
-}
 
 impl Item {
     pub fn recover<W: Write>(
@@ -37,20 +22,9 @@ impl Item {
                 for field in iter {
                     write!(f, ", {}", intern.get(field).unwrap())?;
                 }
-                write!(f, ")")
+                write!(f, ");")
             }
-            Item::Impl(id, impls) => {
-                write!(f, "impl {} {{", intern.get(id).unwrap())?;
-                let mut iter = impls.iter();
-                if let Some(first) = iter.next() {
-                    first.recover(f, start, indent + 1, intern)?;
-                }
-                for implementation in iter {
-                    writeln!(f)?;
-                    implementation.recover(f, start, indent + 1, intern)?;
-                }
-                write!(f, "}}")
-            }
+            Item::Impl(_, _) => Ok(()),
             Item::Fn(id, args, block) => {
                 write!(f, "fn {}(", intern.get(id).unwrap())?;
                 if let Some(args) = args {
