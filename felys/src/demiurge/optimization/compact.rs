@@ -1,12 +1,11 @@
-use crate::utils::function::{Fragment, Function};
-use crate::utils::ir::{Label, Terminator};
+use crate::utils::function::{Fragment, Function, Label, Terminator};
 use std::collections::VecDeque;
 
 impl Function {
     pub fn compact(&mut self) -> bool {
         let mut changed = false;
         let mut worklist = VecDeque::new();
-        for (label, _) in self.safe() {
+        for (label, _) in self.iter() {
             worklist.push_back(label);
         }
 
@@ -17,14 +16,14 @@ impl Function {
             };
 
             let pred = fragment.predecessors[0];
-            let predecessor = self.modify(pred).unwrap();
+            let predecessor = self.get_mut(pred).unwrap();
             match predecessor.terminator.as_mut().unwrap() {
                 Terminator::Jump(x) => *x = target,
                 _ => continue,
             }
 
             changed = true;
-            let successor = self.modify(target).unwrap();
+            let successor = self.get_mut(target).unwrap();
             successor.predecessors.iter_mut().for_each(|label| {
                 if label == &empty {
                     *label = pred

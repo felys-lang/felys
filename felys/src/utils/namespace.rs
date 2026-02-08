@@ -1,29 +1,7 @@
 use crate::philia093::Intern;
-use crate::utils::function::Function;
-use crate::utils::group::Group;
-use crate::utils::ir::Pointer;
-use crate::utils::stdlib::utils::stdlib;
+use crate::stdlib::STDLIB;
+use crate::utils::function::Pointer;
 use std::collections::HashMap;
-
-pub struct Meta {
-    pub namespace: Namespace,
-    pub intern: Intern,
-    pub groups: HashMap<usize, Group>,
-    pub functions: HashMap<usize, Function>,
-    pub main: Option<Function>,
-}
-
-impl Meta {
-    pub fn new(mut intern: Intern) -> Self {
-        Self {
-            namespace: Namespace::init(&mut intern),
-            intern,
-            groups: Default::default(),
-            functions: Default::default(),
-            main: None,
-        }
-    }
-}
 
 pub struct Namespace {
     ids: usize,
@@ -38,9 +16,9 @@ enum Node {
 }
 
 impl Namespace {
-    fn init(intern: &mut Intern) -> Self {
+    pub fn init(intern: &mut Intern) -> Self {
         let mut base = HashMap::new();
-        for (i, sub, inner, _) in stdlib() {
+        for (i, (sub, inner, _)) in STDLIB.iter().enumerate() {
             if let Node::Redirect(x) = base
                 .entry(intern.id(sub))
                 .or_insert(Node::Redirect(HashMap::new()))
@@ -48,7 +26,6 @@ impl Namespace {
                 x.insert(intern.id(inner), Node::Rust(i));
             }
         }
-
         Self {
             ids: 0,
             tree: HashMap::from([(intern.id("std"), Node::Redirect(base))]),

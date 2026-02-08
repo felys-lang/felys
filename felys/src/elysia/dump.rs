@@ -1,11 +1,11 @@
+use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::bytecode::{Bytecode, Index, Reg};
+use crate::utils::function::{Const, Pointer};
 use crate::utils::group::Group;
-use crate::utils::ir::{Const, Pointer};
-use crate::utils::stages::{Callable, Elysia};
-use crate::{BinOp, UnaOp};
+use crate::utils::stages::{Callable, III};
 use std::io::Write;
 
-impl Elysia {
+impl III {
     pub fn dump<W: Write>(&self, buf: &mut W) -> std::io::Result<()> {
         self.main.dump(buf)?;
 

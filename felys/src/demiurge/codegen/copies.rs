@@ -1,5 +1,4 @@
-use crate::utils::function::Function;
-use crate::utils::ir::{Label, Terminator, Var};
+use crate::utils::function::{Function, Label, Terminator, Var};
 use std::collections::HashMap;
 
 pub struct Copy(pub Var, pub Var);
@@ -9,7 +8,7 @@ impl Function {
         self.split();
 
         let mut copies = HashMap::new();
-        for (_, fragment) in self.safe() {
+        for (_, fragment) in self.iter() {
             for phi in fragment.phis.iter() {
                 for (from, src) in phi.inputs.iter() {
                     copies
@@ -58,7 +57,7 @@ impl Function {
 
     fn split(&mut self) {
         let mut edges = Vec::new();
-        for (label, fragment) in self.safe() {
+        for (label, fragment) in self.iter() {
             let Some(Terminator::Branch(_, yes, no)) = fragment.terminator.as_ref() else {
                 continue;
             };
@@ -73,7 +72,7 @@ impl Function {
         for (label, target) in edges {
             let trampoline = self.label();
 
-            let fragment = self.modify(label).unwrap();
+            let fragment = self.get_mut(label).unwrap();
             match fragment.terminator.as_mut().unwrap() {
                 Terminator::Branch(_, yes, no) => {
                     if *yes == target {
@@ -87,11 +86,11 @@ impl Function {
                 _ => continue,
             }
 
-            let fragment = self.modify(trampoline).unwrap();
+            let fragment = self.get_mut(trampoline).unwrap();
             fragment.predecessors.push(label);
             fragment.terminator = Some(Terminator::Jump(target));
 
-            let fragment = self.modify(target).unwrap();
+            let fragment = self.get_mut(target).unwrap();
             *fragment
                 .predecessors
                 .iter_mut()

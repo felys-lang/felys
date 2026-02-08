@@ -1,5 +1,4 @@
-use crate::utils::function::{Fragment, Function, Phi};
-use crate::utils::ir::{Instruction, Terminator, Var};
+use crate::utils::function::{Fragment, Function, Instruction, Phi, Terminator, Var};
 use std::collections::HashMap;
 
 struct Renamer {
@@ -33,7 +32,7 @@ impl Function {
         let mut again = true;
         while again {
             again = false;
-            for (_, fragment) in self.cautious() {
+            for (_, fragment) in self.iter_mut() {
                 fragment.phis.retain(|phi| {
                     let mut trivial = true;
                     let mut candidate = None;
@@ -67,7 +66,7 @@ impl Function {
             return false;
         }
 
-        for (_, fragment) in self.cautious() {
+        for (_, fragment) in self.iter_mut() {
             fragment.rename(&renamer);
         }
         true

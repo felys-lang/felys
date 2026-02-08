@@ -1,5 +1,4 @@
-mod builder;
 mod cfg;
-mod context;
-mod fault;
-mod meta;
+mod desugar;
+mod error;
+mod resolver;

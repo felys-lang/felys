@@ -1,6 +1,5 @@
-use crate::demiurge::optimize::analyze::{Lattice, Meta};
-use crate::utils::function::{Fragment, Function};
-use crate::utils::ir::{Instruction, Label, Terminator};
+use crate::demiurge::optimization::analyze::{Lattice, Meta};
+use crate::utils::function::{Fragment, Function, Instruction, Label, Terminator};
 use std::collections::HashSet;
 
 enum Writeback {
@@ -14,7 +13,7 @@ impl Function {
         let mut changed = self.prune(meta);
 
         let mut writebacks = Vec::new();
-        for (label, fragment) in self.cautious() {
+        for (label, fragment) in self.iter_mut() {
             let mut wb = Writeback::None;
             if fragment.rewrite(meta, &mut wb) {
                 changed = true;
@@ -25,7 +24,7 @@ impl Function {
         for (wb, delete) in writebacks {
             match wb {
                 Writeback::All(from) => {
-                    let Some(frag) = self.modify(from) else {
+                    let Some(frag) = self.get_mut(from) else {
                         continue;
                     };
                     frag.predecessors.retain(|x| *x != delete);
@@ -34,7 +33,7 @@ impl Function {
                     }
                 }
                 Writeback::Once(from) => {
-                    let Some(frag) = self.modify(from) else {
+                    let Some(frag) = self.get_mut(from) else {
                         continue;
                     };
                     if let Some(idx) = frag.predecessors.iter().position(|x| *x == delete) {
@@ -68,7 +67,7 @@ impl Function {
             return false;
         }
 
-        for (_, fragment) in self.cautious() {
+        for (_, fragment) in self.iter_mut() {
             fragment
                 .predecessors
                 .retain(|label| !eliminated.contains(label));

@@ -1,4 +1,4 @@
-use felys::{BinOp, Elysia, Object, PhiLia093};
+use felys::{BinOp, Object, PhiLia093, III};
 
 pub fn exec(
     args: Object,
@@ -9,9 +9,9 @@ pub fn exec(
 ) -> Result<(), String> {
     let wrapped = format!("{defs} fn main(args) {{ {body} }}");
     for o in [0, 1, 2, usize::MAX] {
-        for elysia in compile(wrapped.as_str(), o)? {
+        for iii in compile(wrapped.as_str(), o)? {
             let mut out = String::new();
-            let obj = elysia.exec(args.clone(), &mut out)?;
+            let obj = iii.exec(args.clone(), &mut out)?;
 
             if obj.clone().binary(BinOp::Ne, expect.clone())?.bool()? {
                 return Err(format!("Expected {}, got {}", expect, obj));
@@ -24,16 +24,15 @@ pub fn exec(
     Ok(())
 }
 
-fn compile(code: &str, o: usize) -> Result<[Elysia; 2], String> {
-    let elysia = PhiLia093::from(code.to_string())
+fn compile(code: &str, o: usize) -> Result<[III; 2], String> {
+    let iii = PhiLia093::from(code.to_string())
         .parse()?
-        .cfg()?
-        .optimize(o)?
-        .codegen();
+        .desugar()?
+        .codegen(o)?;
 
     let mut binary = Vec::with_capacity(256);
-    elysia.dump(&mut binary).unwrap();
-    let loaded = Elysia::load(&mut binary.as_slice()).unwrap();
+    iii.dump(&mut binary).unwrap();
+    let loaded = III::load(&mut binary.as_slice()).unwrap();
 
-    Ok([elysia, loaded])
+    Ok([iii, loaded])
 }

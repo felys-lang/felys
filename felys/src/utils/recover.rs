@@ -1,25 +1,8 @@
-use crate::elysia::Object;
 use crate::philia093::Intern;
 use crate::utils::ast::{
-    AssOp, BinOp, Block, Bool, Chunk, Expr, Item, Lit, Pat, Path, Root, Stmt, UnaOp,
+    AssOp, BinOp, Block, Bool, Chunk, Expr, Impl, Item, Lit, Pat, Stmt, UnaOp,
 };
-use crate::utils::ir::Pointer;
 use std::fmt::{Display, Formatter, Write};
-
-impl Root {
-    pub fn recover<W: Write>(
-        &self,
-        f: &mut W,
-        start: &'static str,
-        indent: usize,
-        intern: &Intern,
-    ) -> std::fmt::Result {
-        for item in self.0.iter() {
-            item.recover(f, start, indent, intern)?;
-        }
-        Ok(())
-    }
-}
 
 impl Item {
     pub fn recover<W: Write>(
@@ -30,10 +13,71 @@ impl Item {
         intern: &Intern,
     ) -> std::fmt::Result {
         match self {
-            Item::Group(_, _) => Ok(()),
+            Item::Group(id, fields) => {
+                write!(f, "group {}(", intern.get(id).unwrap())?;
+                let mut iter = fields.iter();
+                if let Some(field) = iter.next() {
+                    write!(f, "{}", intern.get(field).unwrap())?;
+                }
+                for field in iter {
+                    write!(f, ", {}", intern.get(field).unwrap())?;
+                }
+                write!(f, ");")
+            }
             Item::Impl(_, _) => Ok(()),
-            Item::Fn(_, _, block) => block.recover(f, start, indent, None, intern),
-            Item::Main(_, block) => block.recover(f, start, indent, None, intern),
+            Item::Fn(id, args, block) => {
+                write!(f, "fn {}(", intern.get(id).unwrap())?;
+                if let Some(args) = args {
+                    let mut iter = args.iter();
+                    if let Some(first) = iter.next() {
+                        write!(f, "{}", intern.get(first).unwrap())?;
+                    }
+                    for arg in iter {
+                        write!(f, ", {}", intern.get(arg).unwrap())?;
+                    }
+                }
+                write!(f, ") ")?;
+                block.recover(f, start, indent, None, intern)
+            }
+            Item::Main(args, block) => {
+                write!(f, "fn main({}) ", intern.get(args).unwrap())?;
+                block.recover(f, start, indent, None, intern)
+            }
+        }
+    }
+}
+
+impl Impl {
+    pub fn recover<W: Write>(
+        &self,
+        f: &mut W,
+        start: &'static str,
+        indent: usize,
+        intern: &Intern,
+    ) -> std::fmt::Result {
+        match self {
+            Impl::Associated(id, args, block) => {
+                write!(f, "fn {}(", intern.get(id).unwrap())?;
+                if let Some(args) = args {
+                    let mut iter = args.iter();
+                    if let Some(first) = iter.next() {
+                        write!(f, "{}", intern.get(first).unwrap())?;
+                    }
+                    for arg in iter {
+                        write!(f, ", {}", intern.get(arg).unwrap())?;
+                    }
+                }
+                write!(f, ") ")?;
+                block.recover(f, start, indent, None, intern)
+            }
+            Impl::Method(id, args, block) => {
+                write!(f, "fn {}(self", intern.get(id).unwrap())?;
+                for arg in args {
+                    write!(f, ", {}", intern.get(arg).unwrap())?;
+                }
+                write!(f, ") ")?;
+                block.recover(f, start, indent, None, intern)
+            }
         }
     }
 }
@@ -244,21 +288,17 @@ impl Expr {
                 write!(f, "{op}")?;
                 expr.recover(f, start, indent, intern)
             }
-            Expr::Path(path) => path.recover(f, intern),
+            Expr::Path(_, path) => {
+                let mut iter = path.iter();
+                if let Some(first) = iter.next() {
+                    write!(f, "{}", intern.get(first).unwrap())?;
+                }
+                for arg in iter {
+                    write!(f, "::{}", intern.get(arg).unwrap())?;
+                }
+                Ok(())
+            }
         }
-    }
-}
-
-impl Path {
-    pub fn recover<W: Write>(&self, f: &mut W, intern: &Intern) -> std::fmt::Result {
-        let mut iter = self.0.iter();
-        if let Some(first) = iter.next() {
-            write!(f, "{}", intern.get(first).unwrap())?;
-        }
-        for arg in iter {
-            write!(f, "::{}", intern.get(arg).unwrap())?;
-        }
-        Ok(())
     }
 }
 
@@ -271,9 +311,11 @@ impl Lit {
                 Bool::False => write!(f, "false"),
             },
             Lit::Str(chunks) => {
+                write!(f, "\"")?;
                 for chunks in chunks {
                     chunks.recover(f, intern)?;
                 }
+                write!(f, "\"")?;
                 Ok(())
             }
         }
@@ -286,58 +328,6 @@ impl Chunk {
             Chunk::Slice(x) => write!(f, "{}", intern.get(x).unwrap()),
             Chunk::Unicode(x) => write!(f, "\\u{{{}}}", intern.get(x).unwrap()),
             Chunk::Escape(x) => write!(f, "\\{}", intern.get(x).unwrap()),
-        }
-    }
-}
-
-impl Object {
-    pub fn recover<W: Write>(&self, f: &mut W) -> std::fmt::Result {
-        match self {
-            Object::Pointer(pt, ptr) => match pt {
-                Pointer::Function => write!(f, "<{ptr}>"),
-                Pointer::Group => write!(f, "<{ptr}>"),
-                Pointer::Rust => write!(f, "<{ptr}>"),
-            },
-            Object::List(objs) => {
-                write!(f, "[")?;
-                let mut iter = objs.iter();
-                if let Some(first) = iter.next() {
-                    first.recover(f)?
-                }
-                for obj in iter {
-                    write!(f, ", ")?;
-                    obj.recover(f)?
-                }
-                write!(f, "]")
-            }
-            Object::Tuple(objs) => {
-                write!(f, "(")?;
-                let mut iter = objs.iter();
-                if let Some(first) = iter.next() {
-                    first.recover(f)?
-                }
-                for obj in iter {
-                    write!(f, ", ")?;
-                    obj.recover(f)?
-                }
-                write!(f, ")")
-            }
-            Object::Group(id, objs) => {
-                write!(f, "<")?;
-                let mut iter = objs.iter();
-                if let Some(first) = iter.next() {
-                    first.recover(f)?
-                }
-                for obj in iter {
-                    write!(f, ", ")?;
-                    obj.recover(f)?
-                }
-                write!(f, "> as {:#010x}", id)
-            }
-            Object::Str(x) => write!(f, "\"{}\"", x),
-            Object::Int(x) => write!(f, "{}", x),
-            Object::Float(x) => write!(f, "{}", x),
-            Object::Bool(x) => write!(f, "{}", x),
         }
     }
 }

@@ -1,5 +1,4 @@
-use crate::utils::function::{Fragment, Function, Phi};
-use crate::utils::ir::{Instruction, Label, Terminator, Var};
+use crate::utils::function::{Fragment, Function, Instruction, Label, Phi, Terminator, Var};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Default)]
@@ -27,7 +26,7 @@ impl Function {
     pub fn sweep(&mut self) -> bool {
         let mut ctx = Context::default();
 
-        for (label, fragment) in self.safe() {
+        for (label, fragment) in self.iter() {
             fragment.initialize(label, &mut ctx);
         }
 
@@ -50,7 +49,7 @@ impl Function {
         }
 
         let mut changed = false;
-        for (label, fragment) in self.cautious() {
+        for (label, fragment) in self.iter_mut() {
             if fragment.sweep(label, &ctx) {
                 changed = true;
             }

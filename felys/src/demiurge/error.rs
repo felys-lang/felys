@@ -1,30 +1,30 @@
-use crate::utils::ir::Const;
+use crate::utils::function::Const;
 use std::fmt::{Display, Formatter};
 
-pub enum Fault {
+pub enum Error {
     BinaryOperation(&'static str, Const, Const),
     UnaryOperation(&'static str, Const),
     ConstantType(Const, &'static str),
     ExitBlockUnreachable,
 }
 
-impl Fault {
-    pub fn recover(self) -> String {
+impl From<Error> for String {
+    fn from(value: Error) -> Self {
         let mut msg = "Demiurge: ".to_string();
-        match self {
-            Fault::BinaryOperation(op, lhs, rhs) => {
+        match value {
+            Error::BinaryOperation(op, lhs, rhs) => {
                 let s = format!("cannot apply `{op}` to `{lhs}` and `{rhs}`");
                 msg.push_str(&s);
             }
-            Fault::UnaryOperation(op, src) => {
+            Error::UnaryOperation(op, src) => {
                 let s = format!("cannot apply `{op}` to `{src}`");
                 msg.push_str(&s);
             }
-            Fault::ConstantType(c, ty) => {
+            Error::ConstantType(c, ty) => {
                 let s = format!("expecting `{c}` to be `{ty}`");
                 msg.push_str(&s);
             }
-            Fault::ExitBlockUnreachable => {
+            Error::ExitBlockUnreachable => {
                 msg.push_str("infinite loop detected");
             }
         }

@@ -1,27 +1,27 @@
 use crate::philia093::Intern;
-use crate::utils::ast::Root;
+use crate::utils::ast::{Block, Root};
 use crate::utils::bytecode::{Bytecode, Reg};
-use crate::utils::function::Function;
+use crate::utils::function::Const;
 use crate::utils::group::Group;
-use crate::utils::ir::Const;
-use crate::utils::stdlib::utils::Signature;
+use crate::utils::namespace::Namespace;
 use std::collections::HashMap;
 
-pub struct Cyrene {
+pub struct I {
     pub root: Root,
     pub intern: Intern,
 }
 
-pub struct Demiurge {
-    pub gps: HashMap<usize, Group>,
-    pub fns: HashMap<usize, Function>,
-    pub main: Function,
+pub struct II {
+    pub namespace: Namespace,
+    pub groups: HashMap<usize, Group>,
+    pub functions: HashMap<usize, (Vec<usize>, Block)>,
+    pub main: (usize, Block),
+    pub intern: Intern,
 }
 
-pub struct Elysia {
+pub struct III {
     pub main: Callable,
     pub text: Vec<Callable>,
-    pub rust: Vec<Signature>,
     pub data: Vec<Const>,
     pub groups: Vec<Group>,
 }

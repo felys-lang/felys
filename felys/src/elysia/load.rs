@@ -1,15 +1,14 @@
+use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::bytecode::Bytecode;
+use crate::utils::function::{Const, Pointer};
 use crate::utils::group::Group;
-use crate::utils::ir::{Const, Pointer};
-use crate::utils::stages::{Callable, Elysia};
-use crate::utils::stdlib::utils::stdlib;
-use crate::{BinOp, UnaOp};
+use crate::utils::stages::{Callable, III};
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Read, Result};
 
-impl Elysia {
-    pub fn load<L: Load>(src: &mut L) -> Result<Elysia> {
-        let elysia = Elysia {
+impl III {
+    pub fn load<T: Load>(src: &mut T) -> Result<III> {
+        Ok(III {
             main: Callable::load(src)?,
             text: {
                 let len = src.u32()?;
@@ -19,7 +18,6 @@ impl Elysia {
                 }
                 text
             },
-            rust: stdlib().map(|(_, _, _, x)| x).collect(),
             data: {
                 let len = src.u32()?;
                 let mut data = Vec::with_capacity(len as usize);
@@ -36,13 +34,12 @@ impl Elysia {
                 }
                 groups
             },
-        };
-        Ok(elysia)
+        })
     }
 }
 
 impl Group {
-    fn load<L: Load>(src: &mut L) -> Result<Group> {
+    fn load<T: Load>(src: &mut T) -> Result<Group> {
         let group = Group {
             indices: {
                 let len = src.u32()?;
@@ -66,7 +63,7 @@ impl Group {
 }
 
 impl Const {
-    fn load<L: Load>(src: &mut L) -> Result<Const> {
+    fn load<T: Load>(src: &mut T) -> Result<Const> {
         let tag = src.u8()?;
         let constant = match tag {
             0x0 => Const::Int(src.i32()?),
@@ -84,7 +81,7 @@ impl Const {
 }
 
 impl Callable {
-    fn load<L: Load>(src: &mut L) -> Result<Callable> {
+    fn load<T: Load>(src: &mut T) -> Result<Callable> {
         let callable = Callable {
             args: src.u8()?,
             registers: src.u8()?,
@@ -102,7 +99,7 @@ impl Callable {
 }
 
 impl Bytecode {
-    fn load<L: Load>(src: &mut L) -> Result<Bytecode> {
+    fn load<T: Load>(src: &mut T) -> Result<Bytecode> {
         let tag = src.u8()?;
         let bytecode = match tag {
             0x0 => Bytecode::Arg(src.u8()?, src.u32()?),
@@ -129,7 +126,7 @@ impl Bytecode {
 }
 
 impl Pointer {
-    fn load<L: Load>(src: &mut L) -> Result<Pointer> {
+    fn load<T: Load>(src: &mut T) -> Result<Pointer> {
         let x = src.u8()?;
         let pt = match x {
             0x0 => Pointer::Group,
@@ -142,7 +139,7 @@ impl Pointer {
 }
 
 impl BinOp {
-    fn load<L: Load>(src: &mut L) -> Result<BinOp> {
+    fn load<T: Load>(src: &mut T) -> Result<BinOp> {
         let x = src.u8()?;
         let op = match x {
             0x0 => BinOp::Or,
@@ -168,7 +165,7 @@ impl BinOp {
 }
 
 impl UnaOp {
-    fn load<L: Load>(src: &mut L) -> Result<UnaOp> {
+    fn load<T: Load>(src: &mut T) -> Result<UnaOp> {
         let x = src.u8()?;
         let op = match x {
             0x0 => UnaOp::Not,
@@ -214,4 +211,4 @@ pub trait Load: Read {
     }
 }
 
-impl<R: Read> Load for R {}
+impl<T: Read> Load for T {}

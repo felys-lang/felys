@@ -1,26 +1,51 @@
 use crate::demiurge::codegen::copies::Copy;
+use crate::philia093::Intern;
+use crate::utils::ast::Block;
 use crate::utils::bytecode::{Bytecode, Id, Index, Reg};
-use crate::utils::function::Function;
+use crate::utils::function::{Const, Function, Instruction, Label, Pointer, Terminator, Var};
 use crate::utils::group::Group;
-use crate::utils::ir::{Const, Instruction, Label, Pointer, Terminator, Var};
-use crate::utils::stages::{Callable, Demiurge, Elysia};
-use crate::utils::stdlib::utils::stdlib;
+use crate::utils::namespace::Namespace;
+use crate::utils::stages::{Callable, II, III};
 use std::collections::HashMap;
-use std::hash::Hash;
 
 struct Context {
-    consts: Pooling<Const>,
-    groups: Worker<Group, Group>,
-    functions: Worker<Callable, Function>,
+    data: Data,
+    groups: Worker<Group>,
+    functions: Worker<(Vec<usize>, Block)>,
 }
 
-struct Pooling<T> {
-    pool: Vec<T>,
-    fast: HashMap<T, usize>,
+impl Context {
+    fn new(groups: HashMap<usize, Group>, functions: HashMap<usize, (Vec<usize>, Block)>) -> Self {
+        Self {
+            data: Data {
+                pool: vec![],
+                fast: Default::default(),
+            },
+            groups: Worker {
+                indices: Default::default(),
+                source: groups,
+                worklist: vec![],
+            },
+            functions: Worker {
+                indices: Default::default(),
+                source: functions,
+                worklist: vec![],
+            },
+        }
+    }
+
+    fn done(&self) -> bool {
+        self.groups.worklist.is_empty() && self.functions.worklist.is_empty()
+    }
 }
 
-impl<T: Hash + Eq + Clone> Pooling<T> {
-    fn index(&mut self, key: T) -> usize {
+struct Data {
+    pool: Vec<Const>,
+    fast: HashMap<Const, usize>,
+}
+
+impl Data {
+    fn index(&mut self, key: Const) -> usize {
         if let Some(&id) = self.fast.get(&key) {
             return id;
         }
@@ -31,104 +56,116 @@ impl<T: Hash + Eq + Clone> Pooling<T> {
     }
 }
 
-struct Worker<T, S> {
-    pool: HashMap<usize, T>,
-    indices: HashMap<usize, usize>,
-    source: HashMap<usize, S>,
+struct Worker<T> {
+    indices: HashMap<usize, Index>,
+    source: HashMap<usize, T>,
+    worklist: Vec<(Index, T)>,
 }
 
-impl<T, S> Worker<T, S> {
-    fn linearize(mut self) -> Vec<T> {
-        let mut i = 0;
-        let mut all = Vec::new();
-        while let Some(value) = self.pool.remove(&i) {
-            all.push(value);
-            i += 1;
+impl<T> Worker<T> {
+    fn get(&mut self, id: usize) -> Index {
+        if let Some(index) = self.indices.get(&id) {
+            return *index;
         }
-        all
-    }
-}
-
-impl Context {
-    fn new(gps: HashMap<usize, Group>, fns: HashMap<usize, Function>) -> Self {
-        Self {
-            consts: Pooling {
-                pool: Vec::new(),
-                fast: HashMap::new(),
-            },
-            groups: Worker {
-                pool: HashMap::new(),
-                indices: HashMap::new(),
-                source: gps,
-            },
-            functions: Worker {
-                pool: HashMap::new(),
-                indices: HashMap::new(),
-                source: fns,
-            },
-        }
+        let index = Index::try_from(self.indices.len()).unwrap();
+        self.indices.insert(id, index);
+        let todo = self.source.remove(&id).unwrap();
+        self.worklist.push((index, todo));
+        index
     }
 
-    fn group(&mut self, key: usize) -> Index {
-        if let Some(index) = self.groups.indices.get(&key) {
-            Index::try_from(*index).unwrap()
-        } else {
-            let index = self.groups.indices.len();
-            self.groups.indices.insert(key, index);
-            let mut group = self.groups.source.remove(&key).unwrap();
-            group
-                .methods
-                .values_mut()
-                .for_each(|x| *x = self.function(*x as usize));
-            self.groups.pool.insert(index, group);
-            Index::try_from(index).unwrap()
-        }
-    }
-
-    fn function(&mut self, key: usize) -> Index {
-        if let Some(index) = self.functions.indices.get(&key) {
-            Index::try_from(*index).unwrap()
-        } else {
-            let index = self.functions.indices.len();
-            self.functions.indices.insert(key, index);
-            let mut function = self.functions.source.remove(&key).unwrap();
-            let callable = function.codegen(self);
-            self.functions.pool.insert(index, callable);
-            Index::try_from(index).unwrap()
-        }
+    fn pop(&mut self) -> Option<(Index, T)> {
+        self.worklist.pop()
     }
 }
 
-impl Demiurge {
-    pub fn codegen(mut self) -> Elysia {
-        let mut ctx = Context::new(self.gps, self.fns);
-        Elysia {
-            main: self.main.codegen(&mut ctx),
-            text: ctx.functions.linearize(),
-            rust: stdlib().map(|(_, _, _, x)| x).collect(),
-            data: ctx.consts.pool,
-            groups: ctx.groups.linearize(),
+impl II {
+    pub fn codegen(self, limit: usize) -> Result<III, String> {
+        let mut context = Context::new(self.groups, self.functions);
+        let mut groups = HashMap::new();
+        let mut callables = HashMap::new();
+
+        let main = compile(
+            vec![self.main.0],
+            self.main.1,
+            limit,
+            &self.intern,
+            &self.namespace,
+            &mut context,
+        )?;
+
+        while !context.done() {
+            while let Some((index, mut group)) = context.groups.pop() {
+                for id in group.methods.values_mut() {
+                    *id = context.functions.get(*id as usize)
+                }
+                groups.insert(index, group);
+            }
+
+            while let Some((index, (args, block))) = context.functions.pop() {
+                let callable = compile(
+                    args,
+                    block,
+                    limit,
+                    &self.intern,
+                    &self.namespace,
+                    &mut context,
+                )?;
+                callables.insert(index, callable);
+            }
         }
+
+        Ok(III {
+            main,
+            text: linearize(callables),
+            data: context.data.pool,
+            groups: linearize(groups),
+        })
     }
+}
+
+fn compile(
+    args: Vec<usize>,
+    block: Block,
+    limit: usize,
+    intern: &Intern,
+    namespace: &Namespace,
+    ctx: &mut Context,
+) -> Result<Callable, String> {
+    let length = Reg::try_from(args.len()).unwrap();
+    let map = block
+        .semantic(args.iter(), namespace)
+        .map_err(|e| e.recover(intern))?;
+    let mut function = block
+        .function(&map, intern, args)
+        .map_err(|e| e.recover(intern))?;
+    function.optimize(limit)?;
+    let copies = function.copies();
+    let rpo = function.rpo();
+    let (allocation, used) = function.allocate(&rpo, &copies);
+    Ok(Callable {
+        args: length,
+        registers: used,
+        bytecodes: function.codegen(&rpo, &allocation, ctx, copies),
+    })
+}
+
+fn linearize<T>(mut map: HashMap<Index, T>) -> Vec<T> {
+    let mut i = 0;
+    let mut all = Vec::new();
+    while let Some(value) = map.remove(&i) {
+        all.push(value);
+        i += 1;
+    }
+    all
 }
 
 impl Function {
-    fn codegen(&mut self, ctx: &mut Context) -> Callable {
-        let copies = self.copies();
-        let rpo = self.rpo();
-        let (allocation, used) = self.allocate(&rpo, &copies);
-        Callable {
-            args: self.args,
-            registers: used,
-            bytecodes: self.lowering(ctx, &allocation, &rpo, copies),
-        }
-    }
-
-    fn lowering(
+    fn codegen(
         &mut self,
-        ctx: &mut Context,
-        alloc: &HashMap<Var, Reg>,
         rpo: &[Label],
+        alloc: &HashMap<Var, Reg>,
+        ctx: &mut Context,
         mut copies: HashMap<Label, Vec<Copy>>,
     ) -> Vec<Bytecode> {
         let mut index = 0;
@@ -178,16 +215,18 @@ impl Instruction {
                 Pointer::Function => Bytecode::Pointer(
                     alloc[dst],
                     *pt,
-                    Index::try_from(ctx.function(*ptr)).unwrap(),
+                    Index::try_from(ctx.functions.get(*ptr)).unwrap(),
                 ),
-                Pointer::Group => {
-                    Bytecode::Pointer(alloc[dst], *pt, Index::try_from(ctx.group(*ptr)).unwrap())
-                }
+                Pointer::Group => Bytecode::Pointer(
+                    alloc[dst],
+                    *pt,
+                    Index::try_from(ctx.groups.get(*ptr)).unwrap(),
+                ),
                 Pointer::Rust => Bytecode::Pointer(alloc[dst], *pt, Index::try_from(*ptr).unwrap()),
             },
             Instruction::Load(dst, id) => Bytecode::Load(
                 alloc[dst],
-                Index::try_from(ctx.consts.index(id.clone())).unwrap(),
+                Index::try_from(ctx.data.index(id.clone())).unwrap(),
             ),
             Instruction::Binary(dst, lhs, op, rhs) => Bytecode::Binary(
                 alloc[dst],

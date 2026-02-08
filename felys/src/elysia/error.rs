@@ -1,40 +1,46 @@
-use crate::elysia::Object;
+use crate::elysia::runtime::object::Object;
+use crate::elysia::runtime::vm::DEPTH;
 
-pub enum Fault {
+pub enum Error {
     DataType(Object, &'static str),
     BinaryOperation(&'static str, Object, Object),
     UnaryOperation(&'static str, Object),
     NumArgsNotMatch(usize, usize),
     IndexOutOfBounds(Object, i32),
     NotEnoughToUnpack(Object, u32),
+    StackOverflow,
 }
 
-impl From<Fault> for String {
-    fn from(value: Fault) -> Self {
+impl From<Error> for String {
+    fn from(value: Error) -> Self {
         let mut msg = "Elysia: ".to_string();
         match value {
-            Fault::DataType(obj, ty) => {
+            Error::DataType(obj, ty) => {
                 let s = format!("expecting `{obj}` to be `{ty}`");
                 msg.push_str(&s);
             }
-            Fault::BinaryOperation(op, lhs, rhs) => {
+            Error::BinaryOperation(op, lhs, rhs) => {
                 let s = format!("cannot apply `{op}` to `{lhs}` and `{rhs}`");
                 msg.push_str(&s);
             }
-            Fault::UnaryOperation(op, src) => {
+            Error::UnaryOperation(op, src) => {
                 let s = format!("cannot apply `{op}` to `{src}`");
                 msg.push_str(&s);
             }
-            Fault::NumArgsNotMatch(expected, args) => {
+            Error::NumArgsNotMatch(expected, args) => {
                 let s = format!("expected {expected} arguments, got {args}");
                 msg.push_str(&s);
             }
-            Fault::IndexOutOfBounds(obj, index) => {
+            Error::IndexOutOfBounds(obj, index) => {
                 let s = format!("index {index} is out of boundaries for `{obj}`");
                 msg.push_str(&s);
             }
-            Fault::NotEnoughToUnpack(obj, index) => {
+            Error::NotEnoughToUnpack(obj, index) => {
                 let s = format!("cannot unpack element at index {index} for `{obj}`");
+                msg.push_str(&s);
+            }
+            Error::StackOverflow => {
+                let s = format!("stack overflow, max depth set to {DEPTH}");
                 msg.push_str(&s);
             }
         }

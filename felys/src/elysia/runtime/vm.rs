@@ -1,15 +1,14 @@
-use crate::elysia::fault::Fault;
+use crate::elysia::error::Error;
 use crate::elysia::runtime::object::Object;
+use crate::stdlib::STDLIB;
 use crate::utils::bytecode::{Bytecode, Index, Reg};
-use crate::utils::ir::{Const, Pointer};
-use crate::utils::stages::{Callable, Elysia};
+use crate::utils::function::{Const, Pointer};
+use crate::utils::stages::{Callable, III};
 
-impl Elysia {
+pub const DEPTH: usize = 1024;
+
+impl III {
     pub fn exec(&self, args: Object, stdout: &mut String) -> Result<Object, String> {
-        self.kernal(args, stdout).map_err(String::from)
-    }
-
-    fn kernal(&self, args: Object, stdout: &mut String) -> Result<Object, Fault> {
         let mut runtime = self.init(args)?;
         loop {
             let (idx, frame) = runtime.active();
@@ -21,7 +20,7 @@ impl Elysia {
         }
     }
 
-    fn init(&self, args: Object) -> Result<Runtime, Fault> {
+    fn init(&self, args: Object) -> Result<Runtime, Error> {
         let runtime = Runtime {
             args,
             rets: vec![],
@@ -72,13 +71,16 @@ impl Runtime {
         }
     }
 
-    fn call(&mut self, dst: Reg, idx: Index, frame: Frame) -> Result<(), Fault> {
+    fn call(&mut self, dst: Reg, idx: Index, frame: Frame) -> Result<(), Error> {
+        if self.stack.len() >= DEPTH {
+            return Err(Error::StackOverflow);
+        }
         self.rets.push(dst);
         self.stack.push((idx, frame));
         Ok(())
     }
 
-    fn ret(&mut self, src: Reg) -> Result<Option<Object>, Fault> {
+    fn ret(&mut self, src: Reg) -> Result<Option<Object>, Error> {
         let obj = self.frame().load(src);
         if self.stack.pop().is_none() {
             return Ok(Some(obj));
@@ -119,9 +121,9 @@ impl Callable {
         self.bytecodes.get(idx as usize).unwrap()
     }
 
-    fn frame(&self, args: Vec<Reg>) -> Result<Frame, Fault> {
+    fn frame(&self, args: Vec<Reg>) -> Result<Frame, Error> {
         if self.args as usize != args.len() {
-            return Err(Fault::NumArgsNotMatch(self.args as usize, args.len()));
+            return Err(Error::NumArgsNotMatch(self.args as usize, args.len()));
         }
         let frame = Frame {
             pc: 0,
@@ -135,10 +137,10 @@ impl Callable {
 impl Bytecode {
     fn exec(
         &self,
-        elysia: &Elysia,
+        program: &III,
         rt: &mut Runtime,
-        so: &mut String,
-    ) -> Result<Option<Object>, Fault> {
+        stdout: &mut String,
+    ) -> Result<Option<Object>, Error> {
         match self {
             Bytecode::Arg(dst, idx) => {
                 let obj = rt.arg(*idx);
@@ -148,7 +150,7 @@ impl Bytecode {
                 let frame = rt.frame();
                 let tmp = frame.load(*src);
                 let (gp, group) = tmp.group()?;
-                let idx = elysia
+                let idx = program
                     .groups
                     .get(gp as usize)
                     .unwrap()
@@ -169,7 +171,7 @@ impl Bytecode {
                     tmp.tuple()?
                         .get(*idx as usize)
                         .cloned()
-                        .ok_or(Fault::NotEnoughToUnpack(tmp, *idx))?
+                        .ok_or(Error::NotEnoughToUnpack(tmp, *idx))?
                 };
                 frame.store(*dst, obj);
             }
@@ -188,7 +190,7 @@ impl Bytecode {
                 }
             },
             Bytecode::Load(dst, idx) => {
-                let obj = elysia.data.get(*idx as usize).unwrap().into();
+                let obj = program.data.get(*idx as usize).unwrap().into();
                 rt.frame().store(*dst, obj);
             }
             Bytecode::Binary(dst, lhs, op, rhs) => {
@@ -209,22 +211,26 @@ impl Bytecode {
                 let (ty, idx) = frame.load(*src).pointer()?;
                 match ty {
                     Pointer::Function => {
-                        let new = elysia.text.get(idx as usize).unwrap().frame(args.clone())?;
+                        let new = program
+                            .text
+                            .get(idx as usize)
+                            .unwrap()
+                            .frame(args.clone())?;
                         rt.call(*dst, idx, new)?
                     }
                     Pointer::Group => {
-                        let group = elysia.groups.get(idx as usize).unwrap();
+                        let group = program.groups.get(idx as usize).unwrap();
                         let objs = frame.gather(args);
                         let expected = group.indices.len();
                         if expected != args.len() {
-                            return Err(Fault::NumArgsNotMatch(expected, args.len()));
+                            return Err(Error::NumArgsNotMatch(expected, args.len()));
                         }
                         frame.store(*dst, Object::Group(idx, objs.into()));
                     }
                     Pointer::Rust => {
-                        let f = elysia.rust.get(idx as usize).unwrap();
+                        let (_, _, f) = STDLIB.get(idx as usize).unwrap();
                         let objs = frame.gather(args);
-                        frame.store(*dst, f(objs, so));
+                        frame.store(*dst, f(objs, stdout));
                     }
                 };
             }
@@ -248,17 +254,17 @@ impl Bytecode {
                 } else {
                     list.len()
                         .checked_sub(int.unsigned_abs() as usize)
-                        .ok_or(Fault::IndexOutOfBounds(tmp.clone(), int))?
+                        .ok_or(Error::IndexOutOfBounds(tmp.clone(), int))?
                 };
                 let obj = list
                     .get(idx)
                     .cloned()
-                    .ok_or(Fault::IndexOutOfBounds(tmp, int))?;
+                    .ok_or(Error::IndexOutOfBounds(tmp, int))?;
                 frame.store(*dst, obj);
             }
             Bytecode::Method(dst, src, id, args) => {
                 let (gp, _) = rt.frame().load(*src).group()?;
-                let idx = elysia
+                let idx = program
                     .groups
                     .get(gp as usize)
                     .unwrap()
@@ -266,8 +272,8 @@ impl Bytecode {
                     .get(id)
                     .unwrap();
                 let mut args = args.clone();
-                args.push(*src);
-                let new = elysia.text.get(*idx as usize).unwrap().frame(args)?;
+                args.insert(0, *src);
+                let new = program.text.get(*idx as usize).unwrap().frame(args)?;
                 rt.call(*dst, *idx as Index, new)?;
             }
             Bytecode::Branch(cond, yes, no) => {

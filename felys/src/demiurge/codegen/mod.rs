@@ -1,3 +1,3 @@
+mod allocation;
 mod copies;
-mod generation;
-mod register;
+mod generate;

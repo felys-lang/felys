@@ -1,7 +1,7 @@
+mod utils;
+
 use crate::utils::exec;
 use felys::Object;
-
-mod utils;
 
 #[test]
 fn object() -> Result<(), String> {

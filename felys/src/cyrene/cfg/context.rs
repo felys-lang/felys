@@ -1,10 +1,8 @@
-use crate::cyrene::fault::Fault;
 use crate::utils::ast::Lit;
-use crate::utils::bytecode::Reg;
-use crate::utils::function::{Function, Phi};
-use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
+use crate::utils::function::{Const, Function, Instruction, Label, Phi, Terminator, Var};
 use std::collections::{HashMap, HashSet};
 
+#[derive(Default)]
 pub struct Context {
     pub cursor: Label,
     pub consts: HashMap<Lit, Const>,
@@ -23,18 +21,6 @@ pub enum Id {
 }
 
 impl Context {
-    pub fn new(args: Reg) -> Self {
-        Self {
-            cursor: Label::Entry,
-            consts: Default::default(),
-            ids: 0,
-            f: Function::new(args),
-            defs: Default::default(),
-            incompleted: Default::default(),
-            sealed: Default::default(),
-        }
-    }
-
     pub fn id(&mut self) -> Id {
         let id = self.ids;
         self.ids += 1;
@@ -50,7 +36,7 @@ impl Context {
     }
 
     pub fn push(&mut self, instruction: Instruction) {
-        let fragment = self.f.modify(self.cursor).unwrap();
+        let fragment = self.f.get_mut(self.cursor).unwrap();
         if fragment.terminator.is_some() {
             return;
         }
@@ -76,13 +62,13 @@ impl Context {
         if self.dead() {
             return false;
         }
-        let fragment = self.f.modify(self.cursor).unwrap();
+        let fragment = self.f.get_mut(self.cursor).unwrap();
         if fragment.terminator.is_some() {
             return false;
         }
         fragment.terminator = Some(Terminator::Jump(to));
         let cursor = self.cursor;
-        self.f.modify(to).unwrap().predecessors.push(cursor);
+        self.f.get_mut(to).unwrap().predecessors.push(cursor);
         true
     }
 
@@ -90,49 +76,51 @@ impl Context {
         if self.dead() {
             return;
         }
-        let fragment = self.f.modify(self.cursor).unwrap();
+        let fragment = self.f.get_mut(self.cursor).unwrap();
         if fragment.terminator.is_some() {
             return;
         }
         fragment.terminator = Some(Terminator::Branch(cond, to, or));
         let cursor = self.cursor;
-        self.f.modify(to).unwrap().predecessors.push(cursor);
-        self.f.modify(or).unwrap().predecessors.push(cursor);
+        self.f.get_mut(to).unwrap().predecessors.push(cursor);
+        self.f.get_mut(or).unwrap().predecessors.push(cursor);
     }
 
     pub fn ret(&mut self, var: Var) {
         if self.dead() {
             return;
         }
-        let fragment = self.f.modify(self.cursor).unwrap();
+        let fragment = self.f.get_mut(self.cursor).unwrap();
         if fragment.terminator.is_some() {
             return;
         }
         fragment.terminator = Some(Terminator::Return(var));
     }
 
-    fn phi(&mut self, label: Label, var: Var, inputs: Vec<(Label, Var)>) {
-        let phi = Phi { var, inputs };
-        self.f.modify(label).unwrap().phis.push(phi);
+    fn phi(&mut self, var: Var, id: Id, predecessors: Vec<Label>) -> Option<Phi> {
+        let mut phi = Phi {
+            var,
+            inputs: Vec::new(),
+        };
+        for pred in predecessors {
+            let v = self.lookup(pred, id)?;
+            phi.inputs.push((pred, v))
+        }
+        Some(phi)
     }
 
-    pub fn seal(&mut self, label: Label) -> Result<(), Fault> {
+    pub fn seal(&mut self, label: Label) {
         if self.sealed.contains(&label) {
-            return Ok(());
+            return;
         }
         if let Some(phis) = self.incompleted.remove(&label) {
-            let preds = self.f.get(label).unwrap().predecessors.clone();
+            let predecessors = self.f.get(label).unwrap().predecessors.clone();
             for (key, var) in phis {
-                let mut operands = Vec::new();
-                for pred in preds.clone() {
-                    let v = self.lookup(pred, key).unwrap();
-                    operands.push((pred, v));
-                }
-                self.phi(label, var, operands);
+                let phi = self.phi(var, key, predecessors.clone()).unwrap();
+                self.f.get_mut(label).unwrap().phis.push(phi);
             }
         }
         self.sealed.insert(label);
-        Ok(())
     }
 
     pub fn define(&mut self, label: Label, id: Id, value: Var) {
@@ -146,11 +134,6 @@ impl Context {
 
         let predecessors = self.f.get(label).unwrap().predecessors.clone();
         let var = if !self.sealed.contains(&label) {
-            for pred in &predecessors {
-                if self.sealed.contains(pred) && self.lookup(*pred, id).is_none() {
-                    return None;
-                }
-            }
             let var = self.f.var();
             self.incompleted.entry(label).or_default().insert(id, var);
             var
@@ -161,16 +144,8 @@ impl Context {
         } else {
             let var = self.f.var();
             self.define(label, id, var);
-
-            let mut operands = Vec::new();
-            for pred in predecessors {
-                let Some(v) = self.lookup(pred, id) else {
-                    self.defs.get_mut(&label).unwrap().remove(&id);
-                    return None;
-                };
-                operands.push((pred, v));
-            }
-            self.phi(label, var, operands);
+            let phi = self.phi(var, id, predecessors)?;
+            self.f.get_mut(label).unwrap().phis.push(phi);
             var
         };
         self.define(label, id, var);

@@ -1,10 +1,9 @@
-use crate::utils::bytecode::Reg;
-use crate::utils::ir::{Instruction, Label, Terminator, Var};
+use crate::utils::ast::{BinOp, UnaOp};
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Function {
-    pub args: Reg,
     pub vars: usize,
     pub entry: Fragment,
     pub fragments: HashMap<usize, Fragment>,
@@ -12,16 +11,6 @@ pub struct Function {
 }
 
 impl Function {
-    pub fn new(args: Reg) -> Self {
-        Function {
-            args,
-            vars: 0,
-            entry: Default::default(),
-            fragments: Default::default(),
-            exit: Default::default(),
-        }
-    }
-
     pub fn var(&mut self) -> Var {
         let id = self.vars;
         self.vars += 1;
@@ -42,7 +31,7 @@ impl Function {
         }
     }
 
-    pub fn modify(&mut self, label: Label) -> Option<&mut Fragment> {
+    pub fn get_mut(&mut self, label: Label) -> Option<&mut Fragment> {
         match label {
             Label::Entry => Some(&mut self.entry),
             Label::Id(id) => self.fragments.get_mut(&id),
@@ -50,7 +39,7 @@ impl Function {
         }
     }
 
-    pub fn safe(&self) -> impl Iterator<Item = (Label, &Fragment)> {
+    pub fn iter(&self) -> impl Iterator<Item = (Label, &Fragment)> {
         let fragments = self
             .fragments
             .iter()
@@ -61,7 +50,7 @@ impl Function {
             .chain([(Label::Exit, &self.exit)])
     }
 
-    pub fn cautious(&mut self) -> impl Iterator<Item = (Label, &mut Fragment)> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (Label, &mut Fragment)> {
         let fragments = self
             .fragments
             .iter_mut()
@@ -73,8 +62,6 @@ impl Function {
     }
 
     pub fn rpo(&self) -> Vec<Label> {
-        let mut order = Vec::new();
-        let mut visited = HashSet::new();
         fn dfs(f: &Function, label: Label, visited: &mut HashSet<Label>, order: &mut Vec<Label>) {
             if !visited.insert(label) {
                 return;
@@ -91,6 +78,8 @@ impl Function {
             }
             order.push(label);
         }
+        let mut order = Vec::new();
+        let mut visited = HashSet::new();
         dfs(self, Label::Entry, &mut visited, &mut order);
         order.reverse();
         order
@@ -109,4 +98,52 @@ pub struct Fragment {
 pub struct Phi {
     pub var: Var,
     pub inputs: Vec<(Label, Var)>,
+}
+
+#[derive(Debug)]
+pub enum Instruction {
+    Arg(Var, usize),
+    Field(Var, Var, usize),
+    Unpack(Var, Var, usize),
+    Pointer(Var, Pointer, usize),
+    Load(Var, Const),
+    Binary(Var, Var, BinOp, Var),
+    Unary(Var, UnaOp, Var),
+    Call(Var, Var, Vec<Var>),
+    List(Var, Vec<Var>),
+    Tuple(Var, Vec<Var>),
+    Index(Var, Var, Var),
+    Method(Var, Var, usize, Vec<Var>),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Pointer {
+    Group,
+    Function,
+    Rust,
+}
+
+#[derive(Debug)]
+pub enum Terminator {
+    Branch(Var, Label, Label),
+    Jump(Label),
+    Return(Var),
+}
+
+pub type Var = usize;
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
+pub enum Label {
+    #[default]
+    Entry,
+    Id(usize),
+    Exit,
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub enum Const {
+    Int(i32),
+    Float(u32),
+    Bool(bool),
+    Str(Rc<str>),
 }

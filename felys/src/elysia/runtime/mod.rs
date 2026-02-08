@@ -1,4 +1,2 @@
-mod object;
-mod vm;
-
-pub use object::*;
+pub mod object;
+pub mod vm;

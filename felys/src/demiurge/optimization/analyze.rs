@@ -1,6 +1,5 @@
-use crate::demiurge::fault::Fault;
-use crate::utils::function::{Fragment, Function, Phi};
-use crate::utils::ir::{Const, Instruction, Label, Terminator, Var};
+use crate::demiurge::error::Error;
+use crate::utils::function::{Const, Fragment, Function, Instruction, Label, Phi, Terminator, Var};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -66,9 +65,9 @@ enum Id {
 }
 
 impl Function {
-    pub fn analyze(&self) -> Result<Meta, Fault> {
+    pub fn analyze(&self) -> Result<Meta, Error> {
         let mut usage = HashMap::new();
-        for (label, fragment) in self.safe() {
+        for (label, fragment) in self.iter() {
             fragment.usage(label, &mut usage);
         }
 
@@ -113,14 +112,14 @@ impl Function {
             }
         }
         if !meta.visited.contains(&Label::Exit) {
-            return Err(Fault::ExitBlockUnreachable);
+            return Err(Error::ExitBlockUnreachable);
         }
         Ok(meta)
     }
 }
 
 impl Fragment {
-    fn analyze(&self, label: Label, meta: &mut Meta) -> Result<(), Fault> {
+    fn analyze(&self, label: Label, meta: &mut Meta) -> Result<(), Error> {
         for phi in self.phis.iter() {
             phi.analyze(label, meta)?;
         }
@@ -147,7 +146,7 @@ impl Fragment {
 }
 
 impl Phi {
-    fn analyze(&self, label: Label, meta: &mut Meta) -> Result<(), Fault> {
+    fn analyze(&self, label: Label, meta: &mut Meta) -> Result<(), Error> {
         let mut new = Lattice::Top;
         for (pred, var) in self.inputs.iter() {
             if meta.edges.contains(&(*pred, label)) {
@@ -167,7 +166,7 @@ impl Phi {
 }
 
 impl Instruction {
-    fn analyze(&self, meta: &mut Meta) -> Result<(), Fault> {
+    fn analyze(&self, meta: &mut Meta) -> Result<(), Error> {
         match self {
             Instruction::Load(var, c) => meta.update(*var, Lattice::Const(c.clone())),
             Instruction::Binary(var, lhs, op, rhs) => {
@@ -224,7 +223,7 @@ impl Instruction {
 }
 
 impl Terminator {
-    fn analyze(&self, label: Label, meta: &mut Meta) -> Result<(), Fault> {
+    fn analyze(&self, label: Label, meta: &mut Meta) -> Result<(), Error> {
         match self {
             Terminator::Branch(cond, yes, no) => {
                 let val = meta.get(*cond);

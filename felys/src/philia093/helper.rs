@@ -1,9 +1,9 @@
 use crate::philia093::PhiLia093;
-use crate::utils::stages::Cyrene;
+use crate::utils::stages::I;
 use std::fmt::{Display, Formatter};
 
 impl PhiLia093 {
-    pub fn parse(mut self) -> Result<Cyrene, String> {
+    pub fn parse(mut self) -> Result<I, String> {
         let root = self.root();
         if let Some((cursor, msg)) = self.__snapshot {
             let data = self.__stream.data;
@@ -27,7 +27,7 @@ impl PhiLia093 {
             }
 
             let snippet = data[start..end].to_string();
-            let error = Fault {
+            let error = Error {
                 snippet,
                 row,
                 col,
@@ -35,11 +35,10 @@ impl PhiLia093 {
             };
             Err(error.to_string())
         } else {
-            let cyrene = Cyrene {
+            Ok(I {
                 root: root.unwrap(),
                 intern: self.__intern,
-            };
-            Ok(cyrene)
+            })
         }
     }
 
@@ -54,14 +53,14 @@ impl PhiLia093 {
     }
 }
 
-struct Fault {
+struct Error {
     snippet: String,
     row: usize,
     col: usize,
     msg: &'static str,
 }
 
-impl Display for Fault {
+impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let row = self.row + 1;
         let col = self.col + 1;

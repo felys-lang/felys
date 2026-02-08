@@ -947,7 +947,7 @@ impl super::PhiLia093 {
             },
             |x| {
                 let path = x.path()?;
-                Some(Expr::Path(path))
+                Some(Expr::Path(x.__stream.cursor, path))
             },
             |x| {
                 let _ = x.LPAR()?;
@@ -1056,11 +1056,11 @@ impl super::PhiLia093 {
         }];
         self.__peg(RULES)
     }
-    pub fn path(&mut self) -> Option<Path> {
+    pub fn path(&mut self) -> Option<BufVec<usize, 1>> {
         if self.__snapshot.is_some() {
             return None;
         }
-        const RULES: super::R<Path, 1usize> = [|x| {
+        const RULES: super::R<BufVec<usize, 1>, 1usize> = [|x| {
             let first = x.IDENT()?;
             let more = {
                 let mut body = Vec::new();
@@ -1076,7 +1076,7 @@ impl super::PhiLia093 {
                 }
                 body
             };
-            Some(Path(BufVec::new([first], more)))
+            Some(BufVec::new([first], more))
         }];
         self.__peg(RULES)
     }
