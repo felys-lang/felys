@@ -57,24 +57,24 @@ impl Data {
 }
 
 struct Worker<T> {
-    indices: HashMap<usize, usize>,
+    indices: HashMap<usize, Index>,
     source: HashMap<usize, T>,
-    worklist: Vec<(usize, T)>,
+    worklist: Vec<(Index, T)>,
 }
 
 impl<T> Worker<T> {
-    fn get(&mut self, id: usize) -> usize {
+    fn get(&mut self, id: usize) -> Index {
         if let Some(index) = self.indices.get(&id) {
             return *index;
         }
-        let index = self.indices.len();
+        let index = Index::try_from(self.indices.len()).unwrap();
         self.indices.insert(id, index);
         let todo = self.source.remove(&id).unwrap();
         self.worklist.push((index, todo));
         index
     }
 
-    fn pop(&mut self) -> Option<(usize, T)> {
+    fn pop(&mut self) -> Option<(Index, T)> {
         self.worklist.pop()
     }
 }
@@ -97,7 +97,7 @@ impl II {
         while !context.done() {
             while let Some((index, mut group)) = context.groups.pop() {
                 for id in group.methods.values_mut() {
-                    *id = context.functions.get(*id as usize) as Index
+                    *id = context.functions.get(*id as usize)
                 }
                 groups.insert(index, group);
             }
@@ -150,7 +150,7 @@ fn compile(
     })
 }
 
-fn linearize<T>(mut map: HashMap<usize, T>) -> Vec<T> {
+fn linearize<T>(mut map: HashMap<Index, T>) -> Vec<T> {
     let mut i = 0;
     let mut all = Vec::new();
     while let Some(value) = map.remove(&i) {
