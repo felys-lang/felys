@@ -54,14 +54,23 @@ impl Display for Tensor {
 }
 
 impl Tensor {
-    fn rank(&self) -> usize {
-        self.shape.len()
-    }
-
     pub fn binary<F>(&self, other: &Tensor, op: F) -> Result<Self, String>
     where
         F: Fn(f32, f32) -> f32,
     {
+        if self.shape == other.shape {
+            let data = self
+                .data
+                .iter()
+                .zip(other.data.iter())
+                .map(|(&l, &r)| op(l, r))
+                .collect::<Vec<_>>();
+            return Ok(Self {
+                data: Rc::from(data),
+                shape: self.shape.clone(),
+            });
+        }
+
         let shape = broadcast(&self.shape, &other.shape)?;
         let rank = shape.len();
 
@@ -170,16 +179,16 @@ impl Tensor {
     }
 
     pub fn matmul(&self, other: &Tensor) -> Result<Self, String> {
-        let ls = if self.rank() == 1 {
-            &[1, self.shape[0]]
-        } else {
-            self.shape.as_ref()
+        let ls = match self.shape.len() {
+            0 => return Err("matmul is not defined for scalar".to_string()),
+            1 => &[1, self.shape[0]],
+            _ => self.shape.as_ref(),
         };
 
-        let rs = if other.rank() == 1 {
-            &[other.shape[0], 1]
-        } else {
-            other.shape.as_ref()
+        let rs = match other.shape.len() {
+            0 => return Err("matmul is not defined for scalar".to_string()),
+            1 => &[other.shape[0], 1],
+            _ => other.shape.as_ref(),
         };
 
         let lr = ls.len();
@@ -203,11 +212,10 @@ impl Tensor {
         let lhs = strides(lb, rank);
         let rhs = strides(rb, rank);
 
-        let mut data = Vec::with_capacity(size * m * n);
-
         let mut index = vec![0; rank];
         let mut li = 0;
         let mut ri = 0;
+        let mut data = Vec::with_capacity(size * m * n);
 
         for _ in 0..size {
             let lbi = li * m * k;
@@ -238,10 +246,10 @@ impl Tensor {
             }
         }
 
-        if self.rank() > 1 {
+        if self.shape.len() > 1 {
             shape.push(m);
         }
-        if other.rank() > 1 {
+        if other.shape.len() > 1 {
             shape.push(n);
         }
 
