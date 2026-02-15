@@ -4,7 +4,7 @@ use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::bytecode::Index;
 use crate::utils::function::Pointer;
 use std::fmt::{Display, Formatter};
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 use std::rc::Rc;
 
 #[derive(Clone, Debug)]
@@ -361,7 +361,7 @@ impl Object {
     }
 
     fn pos(self) -> Result<Object, Error> {
-        if matches!(self, Object::Int(_) | Object::Float(_)) {
+        if matches!(self, Object::Int(_) | Object::Float(_) | Object::Tensor(_)) {
             Ok(self.clone())
         } else {
             Err(Error::UnaryOperation("+", self))
@@ -372,6 +372,7 @@ impl Object {
         let value = match self {
             Object::Int(x) => (-x).into(),
             Object::Float(x) => (-x).into(),
+            Object::Tensor(x) => x.unary(f32::neg).into(),
             _ => return Err(Error::UnaryOperation("-", self)),
         };
         Ok(value)

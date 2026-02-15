@@ -36,7 +36,7 @@ impl TryFrom<Object> for Tensor {
                 Object::Float(x) if depth == shape.len() => {
                     data.push(*x);
                 }
-                _ => return Err("internal error".to_string()),
+                _ => return Err("tensor conversion error".to_string()),
             }
         }
 
