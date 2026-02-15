@@ -348,8 +348,12 @@ impl Object {
         Ok(value)
     }
 
-    fn dot(self, _: Object) -> Result<Object, Error> {
-        Ok(self)
+    fn dot(self, rhs: Object) -> Result<Object, Error> {
+        let value = match self {
+            Object::Tensor(x) => x.matmul(rhs.tensor()?).map_err(Error::Any)?.into(),
+            _ => return Err(Error::BinaryOperation("@", self, rhs)),
+        };
+        Ok(value)
     }
 
     fn not(self) -> Result<Object, Error> {

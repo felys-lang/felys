@@ -54,6 +54,10 @@ impl Display for Tensor {
 }
 
 impl Tensor {
+    fn rank(&self) -> usize {
+        self.shape.len()
+    }
+
     pub fn binary<F>(&self, other: &Tensor, op: F) -> Result<Self, String>
     where
         F: Fn(f32, f32) -> f32,
@@ -166,7 +170,85 @@ impl Tensor {
     }
 
     pub fn matmul(&self, other: &Tensor) -> Result<Self, String> {
-        todo!()
+        let ls = if self.rank() == 1 {
+            &[1, self.shape[0]]
+        } else {
+            self.shape.as_ref()
+        };
+
+        let rs = if other.rank() == 1 {
+            &[other.shape[0], 1]
+        } else {
+            other.shape.as_ref()
+        };
+
+        let lr = ls.len();
+        let rr = rs.len();
+
+        let m = ls[lr - 2];
+        let k = ls[lr - 1];
+        let n = rs[rr - 1];
+
+        if k != rs[rr - 2] {
+            return Err("matmul dimension mismatch".to_string());
+        }
+
+        let lb = &ls[..lr - 2];
+        let rb = &rs[..rr - 2];
+
+        let mut shape = broadcast(lb, rb)?;
+        let rank = shape.len();
+        let size = shape.iter().product();
+
+        let lhs = strides(lb, rank);
+        let rhs = strides(rb, rank);
+
+        let mut data = Vec::with_capacity(size * m * n);
+
+        let mut index = vec![0; rank];
+        let mut li = 0;
+        let mut ri = 0;
+
+        for _ in 0..size {
+            let lbi = li * m * k;
+            let rbi = ri * k * n;
+
+            for i in 0..m {
+                for j in 0..n {
+                    let mut sum = 0.0;
+                    for l in 0..k {
+                        sum += self.data[lbi + i * k + l] * other.data[rbi + l * n + j];
+                    }
+                    data.push(sum);
+                }
+            }
+
+            if rank > 0 {
+                for j in (0..rank).rev() {
+                    index[j] += 1;
+                    if index[j] < shape[j] {
+                        li += lhs[j];
+                        ri += rhs[j];
+                        break;
+                    }
+                    index[j] = 0;
+                    li -= lhs[j] * (shape[j] - 1);
+                    ri -= rhs[j] * (shape[j] - 1);
+                }
+            }
+        }
+
+        if self.rank() > 1 {
+            shape.push(m);
+        }
+        if other.rank() > 1 {
+            shape.push(n);
+        }
+
+        Ok(Self {
+            data: Rc::from(data),
+            shape: Rc::from(shape),
+        })
     }
 }
 
