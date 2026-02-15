@@ -60,22 +60,20 @@ impl Tensor {
     {
         let shape = broadcast(&self.shape, &other.shape)?;
         let rank = shape.len();
-        let last = rank - 1;
 
         let lhs = strides(&self.shape, rank);
         let rhs = strides(&other.shape, rank);
-        let steps = (lhs[last], rhs[last]);
+        let steps = (lhs[rank - 1], rhs[rank - 1]);
 
-        let size = shape.iter().product::<usize>();
-        let inner = shape[last];
-        let iterations = size / inner;
+        let size = shape.iter().product();
+        let inner = shape[rank - 1];
 
         let mut index = vec![0; rank.saturating_sub(1)];
         let mut li = 0;
         let mut ri = 0;
         let mut data = Vec::with_capacity(size);
 
-        for _ in 0..iterations {
+        for _ in 0..size / inner {
             match steps {
                 (1, 1) => {
                     for (&l, &r) in self.data[li..li + inner]
@@ -149,12 +147,11 @@ impl Tensor {
         shape[rank - 2] = cols;
         shape[rank - 1] = rows;
 
-        let iterations: usize = self.shape[..rank - 2].iter().product();
-        let size = rows * cols;
+        let iterations = self.shape[..rank - 2].iter().product();
         let mut data = Vec::with_capacity(self.data.len());
 
         for i in 0..iterations {
-            let offset = i * size;
+            let offset = i * rows * cols;
             for c in 0..cols {
                 for r in 0..rows {
                     data.push(self.data[offset + r * cols + c]);
@@ -166,6 +163,10 @@ impl Tensor {
             data: Rc::from(data),
             shape: Rc::from(shape),
         }
+    }
+
+    pub fn matmul(&self, other: &Tensor) -> Result<Self, String> {
+        todo!()
     }
 }
 
