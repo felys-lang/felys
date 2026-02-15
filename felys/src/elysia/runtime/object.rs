@@ -158,7 +158,7 @@ impl Object {
             BinOp::Mul => self.mul(rhs),
             BinOp::Div => self.div(rhs),
             BinOp::Mod => self.rem(rhs),
-            BinOp::Dot => self.dot(rhs),
+            BinOp::At => self.matmul(rhs),
         }
     }
 
@@ -348,7 +348,7 @@ impl Object {
         Ok(value)
     }
 
-    fn dot(self, rhs: Object) -> Result<Object, Error> {
+    fn matmul(self, rhs: Object) -> Result<Object, Error> {
         let value = match self {
             Object::Tensor(x) => x.matmul(rhs.tensor()?).map_err(Error::Any)?.into(),
             _ => return Err(Error::BinaryOperation("@", self, rhs)),

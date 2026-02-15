@@ -1,6 +1,6 @@
 use crate::builder::common::{Builder, Common, Root};
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 
 impl Builder {
     pub fn template(&self, core: TokenStream, memo: Vec<(TokenStream, TokenStream)>) -> Root {

@@ -40,7 +40,7 @@ pub enum BinOp {
     Mul,
     Div,
     Mod,
-    Dot,
+    At,
 }
 
 #[derive(Clone, Copy, Debug)]

@@ -113,14 +113,14 @@ peg term -> { Expr }:
     ;
 
 peg factor -> { Expr }:
-    / lhs=factor ASTERISK rhs=[dot] { Expr::Binary(lhs.into(), BinOp::Mul, rhs.into()) }
-    / lhs=factor SLASH rhs=[dot] { Expr::Binary(lhs.into(), BinOp::Div, rhs.into()) }
-    / lhs=factor PERCENT rhs=[dot] { Expr::Binary(lhs.into(), BinOp::Mod, rhs.into()) }
-    / dot=dot
+    / lhs=factor ASTERISK rhs=[at] { Expr::Binary(lhs.into(), BinOp::Mul, rhs.into()) }
+    / lhs=factor SLASH rhs=[at] { Expr::Binary(lhs.into(), BinOp::Div, rhs.into()) }
+    / lhs=factor PERCENT rhs=[at] { Expr::Binary(lhs.into(), BinOp::Mod, rhs.into()) }
+    / at=at
     ;
 
-peg dot -> { Expr }:
-    / lhs=dot AT rhs=[unary] { Expr::Binary(lhs.into(), BinOp::Dot, rhs.into()) }
+peg at -> { Expr }:
+    / lhs=at AT rhs=[unary] { Expr::Binary(lhs.into(), BinOp::At, rhs.into()) }
     / unary=unary
     ;
 

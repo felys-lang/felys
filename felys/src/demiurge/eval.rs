@@ -19,7 +19,7 @@ impl Const {
             BinOp::Mul => self.mul(rhs),
             BinOp::Div => self.div(rhs),
             BinOp::Mod => self.rem(rhs),
-            BinOp::Dot => self.dot(rhs),
+            BinOp::At => self.dot(rhs),
         }
     }
 

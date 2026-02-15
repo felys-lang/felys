@@ -155,7 +155,7 @@ impl BinOp {
             0xA => BinOp::Mul,
             0xB => BinOp::Div,
             0xC => BinOp::Mod,
-            0xD => BinOp::Dot,
+            0xD => BinOp::At,
             _ => {
                 return Err(Error::new(ErrorKind::InvalidData, x.to_string()));
             }

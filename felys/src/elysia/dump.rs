@@ -164,7 +164,7 @@ impl From<&BinOp> for u8 {
             BinOp::Mul => 0xA,
             BinOp::Div => 0xB,
             BinOp::Mod => 0xC,
-            BinOp::Dot => 0xD,
+            BinOp::At => 0xD,
         }
     }
 }

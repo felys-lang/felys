@@ -1,4 +1,4 @@
-use felys::{BinOp, Object, PhiLia093, III};
+use felys::{BinOp, III, Object, PhiLia093};
 
 pub fn exec(
     args: Object,
