@@ -12,8 +12,18 @@ pub struct Tensor {
 impl TryFrom<Object> for Tensor {
     type Error = String;
     fn try_from(value: Object) -> Result<Self, Self::Error> {
-        let mut shape = Vec::new();
+        match &value {
+            Object::Float(x) => {
+                return Ok(Self {
+                    data: Rc::new([*x]),
+                    shape: Rc::new([]),
+                });
+            }
+            Object::Tensor(x) => return Ok(x.clone()),
+            _ => {}
+        }
 
+        let mut shape = Vec::new();
         let mut cursor = &value;
         while let Object::List(list) = cursor
             && !list.is_empty()
