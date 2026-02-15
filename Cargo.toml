@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["felys", "philia093", "scepter"]
+members = ["felys", "philia093"]
 
 [workspace.package]
 license = "MIT"

@@ -1,8 +1,10 @@
 use crate::elysia::error::Error;
+use crate::stdlib::nn::tensor::Tensor;
 use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::bytecode::Index;
 use crate::utils::function::Pointer;
 use std::fmt::{Display, Formatter};
+use std::ops::{Add, Div, Mul, Sub};
 use std::rc::Rc;
 
 #[derive(Clone, Debug)]
@@ -15,6 +17,7 @@ pub enum Object {
     Int(i32),
     Float(f32),
     Bool(bool),
+    Tensor(Tensor),
 }
 
 impl Display for Object {
@@ -62,6 +65,7 @@ impl Display for Object {
             Object::Int(x) => write!(f, "{}", x),
             Object::Float(x) => write!(f, "{}", x),
             Object::Bool(x) => write!(f, "{}", x),
+            Object::Tensor(x) => write!(f, "{}", x),
         }
     }
 }
@@ -96,6 +100,14 @@ impl Object {
             Ok((*ty, *idx))
         } else {
             Err(Error::DataType(self.clone(), "ptr"))
+        }
+    }
+
+    pub fn tensor(&self) -> Result<&Tensor, Error> {
+        if let Object::Tensor(x) = self {
+            Ok(x)
+        } else {
+            Err(Error::DataType(self.clone(), "tensor"))
         }
     }
 
@@ -252,6 +264,7 @@ impl Object {
                 }
                 true
             }
+            Object::Tensor(lhs) => lhs == *rhs.tensor()?,
             Object::Pointer(pt, ptr) => (pt, ptr) == rhs.pointer()?,
         };
         Ok(Object::Bool(value))
@@ -270,6 +283,10 @@ impl Object {
                 .into(),
             Object::Float(x) => (x + rhs.float()?).into(),
             Object::Str(x) => format!("{}{}", x, rhs.str()?).into(),
+            Object::Tensor(x) => x
+                .binary(rhs.tensor()?, f32::add)
+                .map_err(Error::Any)?
+                .into(),
             _ => return Err(Error::BinaryOperation("+", self, rhs)),
         };
         Ok(value)
@@ -282,6 +299,10 @@ impl Object {
                     .ok_or(Error::BinaryOperation("-", self, rhs))?,
             ),
             Object::Float(x) => (x - rhs.float()?).into(),
+            Object::Tensor(x) => x
+                .binary(rhs.tensor()?, f32::sub)
+                .map_err(Error::Any)?
+                .into(),
             _ => return Err(Error::BinaryOperation("-", self, rhs)),
         };
         Ok(value)
@@ -294,6 +315,10 @@ impl Object {
                 .ok_or(Error::BinaryOperation("*", self, rhs))?
                 .into(),
             Object::Float(x) => (x * rhs.float()?).into(),
+            Object::Tensor(x) => x
+                .binary(rhs.tensor()?, f32::mul)
+                .map_err(Error::Any)?
+                .into(),
             _ => return Err(Error::BinaryOperation("*", self, rhs)),
         };
         Ok(value)
@@ -306,6 +331,10 @@ impl Object {
                 .ok_or(Error::BinaryOperation("/", self, rhs))?
                 .into(),
             Object::Float(x) => (x / rhs.float()?).into(),
+            Object::Tensor(x) => x
+                .binary(rhs.tensor()?, f32::div)
+                .map_err(Error::Any)?
+                .into(),
             _ => return Err(Error::BinaryOperation("/", self, rhs)),
         };
         Ok(value)
@@ -314,7 +343,6 @@ impl Object {
     fn rem(self, rhs: Object) -> Result<Object, Error> {
         let value = match self {
             Object::Int(x) => (x % rhs.int()?).into(),
-            Object::Float(x) => (x % rhs.float()?).into(),
             _ => return Err(Error::BinaryOperation("%", self, rhs)),
         };
         Ok(value)
@@ -371,5 +399,11 @@ impl From<bool> for Object {
 impl From<String> for Object {
     fn from(x: String) -> Object {
         Object::Str(x.into())
+    }
+}
+
+impl From<Tensor> for Object {
+    fn from(value: Tensor) -> Self {
+        Object::Tensor(value)
     }
 }

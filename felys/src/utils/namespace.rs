@@ -1,5 +1,5 @@
 use crate::philia093::Intern;
-use crate::stdlib::STDLIB;
+use crate::stdlib::registry::STDLIB;
 use crate::utils::function::Pointer;
 use std::collections::HashMap;
 
