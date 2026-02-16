@@ -1,6 +1,6 @@
 use crate::elysia::error::Error;
 use crate::elysia::runtime::object::Object;
-use crate::stdlib::registry::STDLIB;
+use crate::utils::stdlib::registry::STDLIB;
 use crate::utils::bytecode::{Bytecode, Index, Reg};
 use crate::utils::function::{Const, Pointer};
 use crate::utils::stages::{Callable, III};

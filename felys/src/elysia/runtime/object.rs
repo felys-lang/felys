@@ -1,5 +1,5 @@
 use crate::elysia::error::Error;
-use crate::stdlib::nn::tensor::Tensor;
+use crate::utils::stdlib::nn::tensor::Tensor;
 use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::bytecode::Index;
 use crate::utils::function::Pointer;

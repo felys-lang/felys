@@ -2,7 +2,6 @@ mod cyrene;
 mod demiurge;
 mod elysia;
 mod philia093;
-mod stdlib;
 mod utils;
 
 pub use elysia::runtime::object::Object;

@@ -1,5 +1,5 @@
 use crate::Object;
-use crate::stdlib::nn::tensor::Tensor;
+use crate::utils::stdlib::nn::tensor::Tensor;
 
 pub type Stdlib = [(&'static str, &'static str, Signature); 5];
 
