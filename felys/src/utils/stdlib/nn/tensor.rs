@@ -64,6 +64,18 @@ impl Display for Tensor {
 }
 
 impl Tensor {
+    pub fn shape(&self) -> &[usize] {
+        &self.shape
+    }
+
+    pub fn fill(x: f32, shape: &[usize]) -> Self {
+        let size = shape.iter().product();
+        Self {
+            data: Rc::from(vec![x; size]),
+            shape: Rc::from(shape),
+        }
+    }
+
     pub fn binary<F>(&self, other: &Tensor, op: F) -> Result<Self, String>
     where
         F: Fn(f32, f32) -> f32,
@@ -91,7 +103,7 @@ impl Tensor {
         let size = shape.iter().product();
         let inner = shape[rank - 1];
 
-        let mut index = vec![0; rank.saturating_sub(1)];
+        let mut indices = vec![0; rank.saturating_sub(1)];
         let mut li = 0;
         let mut ri = 0;
         let mut data = Vec::with_capacity(size);
@@ -128,13 +140,13 @@ impl Tensor {
 
             if rank > 1 {
                 for j in (0..rank - 1).rev() {
-                    index[j] += 1;
-                    if index[j] < shape[j] {
+                    indices[j] += 1;
+                    if indices[j] < shape[j] {
                         li += lhs[j];
                         ri += rhs[j];
                         break;
                     }
-                    index[j] = 0;
+                    indices[j] = 0;
                     li -= lhs[j] * (shape[j] - 1);
                     ri -= rhs[j] * (shape[j] - 1);
                 }
@@ -222,7 +234,7 @@ impl Tensor {
         let lhs = strides(lb, rank);
         let rhs = strides(rb, rank);
 
-        let mut index = vec![0; rank];
+        let mut indices = vec![0; rank];
         let mut li = 0;
         let mut ri = 0;
         let mut data = Vec::with_capacity(size * m * n);
@@ -243,13 +255,13 @@ impl Tensor {
 
             if rank > 0 {
                 for j in (0..rank).rev() {
-                    index[j] += 1;
-                    if index[j] < shape[j] {
+                    indices[j] += 1;
+                    if indices[j] < shape[j] {
                         li += lhs[j];
                         ri += rhs[j];
                         break;
                     }
-                    index[j] = 0;
+                    indices[j] = 0;
                     li -= lhs[j] * (shape[j] - 1);
                     ri -= rhs[j] * (shape[j] - 1);
                 }
@@ -266,6 +278,46 @@ impl Tensor {
         Ok(Self {
             data: Rc::from(data),
             shape: Rc::from(shape),
+        })
+    }
+
+    pub fn unbroadcast(&self, target: &[usize]) -> Result<Self, String> {
+        if self.shape.as_ref() == target {
+            return Ok(self.clone());
+        }
+
+        if self.shape() != broadcast(self.shape(), target)? {
+            return Err("unbroadcast failed".to_string());
+        }
+
+        let rank = self.shape.len();
+        let size = target.iter().product();
+        let strides = strides(target, rank);
+
+        let mut indices = vec![0; rank];
+        let mut data = vec![0.0; size];
+
+        for x in self.data.iter() {
+            let mut index = 0;
+            for i in 0..rank {
+                index += indices[i] * strides[i];
+            }
+            data[index] += x;
+
+            if rank > 0 {
+                for j in (0..rank).rev() {
+                    indices[j] += 1;
+                    if indices[j] < self.shape[j] {
+                        break;
+                    }
+                    indices[j] = 0;
+                }
+            }
+        }
+
+        Ok(Self {
+            data: Rc::from(data),
+            shape: Rc::from(target),
         })
     }
 }
