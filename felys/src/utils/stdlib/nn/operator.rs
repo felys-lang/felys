@@ -1,6 +1,7 @@
+use crate::Object;
 use crate::utils::stdlib::nn::tensor::Tensor;
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::fmt::Debug;
 use std::rc::Rc;
 
@@ -11,10 +12,20 @@ pub trait Differentiable<const S: usize>: Debug {
     fn differentiate(&self, inputs: [&Tensor; S], grad: Tensor) -> Result<[Tensor; S], String>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node {
     tensor: Tensor,
     op: Operator,
+}
+
+impl TryFrom<Object> for Node {
+    type Error = String;
+    fn try_from(value: Object) -> Result<Self, Self::Error> {
+        Ok(Self {
+            tensor: value.try_into()?,
+            op: Operator::Detached,
+        })
+    }
 }
 
 impl Node {

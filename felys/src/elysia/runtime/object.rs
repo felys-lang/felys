@@ -1,10 +1,9 @@
 use crate::elysia::error::Error;
-use crate::utils::stdlib::nn::tensor::Tensor;
 use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::bytecode::Index;
 use crate::utils::function::Pointer;
+use crate::utils::stdlib::nn::operator::{Add, Differentiable, Div, MatMul, Mul, Node, Sub};
 use std::fmt::{Display, Formatter};
-use std::ops::{Add, Div, Mul, Neg, Sub};
 use std::rc::Rc;
 
 #[derive(Clone, Debug)]
@@ -17,7 +16,7 @@ pub enum Object {
     Int(i32),
     Float(f32),
     Bool(bool),
-    Tensor(Tensor),
+    Node(Rc<Node>),
 }
 
 impl Display for Object {
@@ -65,7 +64,7 @@ impl Display for Object {
             Object::Int(x) => write!(f, "{}", x),
             Object::Float(x) => write!(f, "{}", x),
             Object::Bool(x) => write!(f, "{}", x),
-            Object::Tensor(x) => write!(f, "{}", x),
+            Object::Node(x) => write!(f, "{:?}", x),
         }
     }
 }
@@ -103,11 +102,11 @@ impl Object {
         }
     }
 
-    pub fn tensor(&self) -> Result<&Tensor, Error> {
-        if let Object::Tensor(x) = self {
-            Ok(x)
+    pub fn node(&self) -> Result<Rc<Node>, Error> {
+        if let Object::Node(x) = self {
+            Ok(x.clone())
         } else {
-            Err(Error::DataType(self.clone(), "tensor"))
+            Err(Error::DataType(self.clone(), "node"))
         }
     }
 
@@ -264,7 +263,7 @@ impl Object {
                 }
                 true
             }
-            Object::Tensor(lhs) => lhs == *rhs.tensor()?,
+            Object::Node(lhs) => return Err(Error::BinaryOperation("==", Object::Node(lhs), rhs)),
             Object::Pointer(pt, ptr) => (pt, ptr) == rhs.pointer()?,
         };
         Ok(Object::Bool(value))
@@ -283,10 +282,7 @@ impl Object {
                 .into(),
             Object::Float(x) => (x + rhs.float()?).into(),
             Object::Str(x) => format!("{}{}", x, rhs.str()?).into(),
-            Object::Tensor(x) => x
-                .binary(rhs.tensor()?, f32::add)
-                .map_err(Error::Any)?
-                .into(),
+            Object::Node(x) => Add::compute([x, rhs.node()?]).map_err(Error::Any)?.into(),
             _ => return Err(Error::BinaryOperation("+", self, rhs)),
         };
         Ok(value)
@@ -299,10 +295,7 @@ impl Object {
                     .ok_or(Error::BinaryOperation("-", self, rhs))?,
             ),
             Object::Float(x) => (x - rhs.float()?).into(),
-            Object::Tensor(x) => x
-                .binary(rhs.tensor()?, f32::sub)
-                .map_err(Error::Any)?
-                .into(),
+            Object::Node(x) => Sub::compute([x, rhs.node()?]).map_err(Error::Any)?.into(),
             _ => return Err(Error::BinaryOperation("-", self, rhs)),
         };
         Ok(value)
@@ -315,10 +308,7 @@ impl Object {
                 .ok_or(Error::BinaryOperation("*", self, rhs))?
                 .into(),
             Object::Float(x) => (x * rhs.float()?).into(),
-            Object::Tensor(x) => x
-                .binary(rhs.tensor()?, f32::mul)
-                .map_err(Error::Any)?
-                .into(),
+            Object::Node(x) => Mul::compute([x, rhs.node()?]).map_err(Error::Any)?.into(),
             _ => return Err(Error::BinaryOperation("*", self, rhs)),
         };
         Ok(value)
@@ -331,10 +321,7 @@ impl Object {
                 .ok_or(Error::BinaryOperation("/", self, rhs))?
                 .into(),
             Object::Float(x) => (x / rhs.float()?).into(),
-            Object::Tensor(x) => x
-                .binary(rhs.tensor()?, f32::div)
-                .map_err(Error::Any)?
-                .into(),
+            Object::Node(x) => Div::compute([x, rhs.node()?]).map_err(Error::Any)?.into(),
             _ => return Err(Error::BinaryOperation("/", self, rhs)),
         };
         Ok(value)
@@ -350,7 +337,9 @@ impl Object {
 
     fn matmul(self, rhs: Object) -> Result<Object, Error> {
         let value = match self {
-            Object::Tensor(x) => x.matmul(rhs.tensor()?).map_err(Error::Any)?.into(),
+            Object::Node(x) => MatMul::compute([x, rhs.node()?])
+                .map_err(Error::Any)?
+                .into(),
             _ => return Err(Error::BinaryOperation("@", self, rhs)),
         };
         Ok(value)
@@ -365,7 +354,7 @@ impl Object {
     }
 
     fn pos(self) -> Result<Object, Error> {
-        if matches!(self, Object::Int(_) | Object::Float(_) | Object::Tensor(_)) {
+        if matches!(self, Object::Int(_) | Object::Float(_) | Object::Node(_)) {
             Ok(self.clone())
         } else {
             Err(Error::UnaryOperation("+", self))
@@ -376,7 +365,6 @@ impl Object {
         let value = match self {
             Object::Int(x) => (-x).into(),
             Object::Float(x) => (-x).into(),
-            Object::Tensor(x) => x.unary(f32::neg).into(),
             _ => return Err(Error::UnaryOperation("-", self)),
         };
         Ok(value)
@@ -407,8 +395,8 @@ impl From<String> for Object {
     }
 }
 
-impl From<Tensor> for Object {
-    fn from(value: Tensor) -> Self {
-        Object::Tensor(value)
+impl From<Rc<Node>> for Object {
+    fn from(value: Rc<Node>) -> Self {
+        Object::Node(value)
     }
 }

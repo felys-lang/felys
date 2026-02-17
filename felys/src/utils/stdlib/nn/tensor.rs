@@ -12,15 +12,11 @@ pub struct Tensor {
 impl TryFrom<Object> for Tensor {
     type Error = String;
     fn try_from(value: Object) -> Result<Self, Self::Error> {
-        match &value {
-            Object::Float(x) => {
-                return Ok(Self {
-                    data: Rc::new([*x]),
-                    shape: Rc::new([]),
-                });
-            }
-            Object::Tensor(x) => return Ok(x.clone()),
-            _ => {}
+        if let Object::Float(x) = value {
+            return Ok(Self {
+                data: Rc::new([x]),
+                shape: Rc::new([]),
+            });
         }
 
         let mut shape = Vec::new();

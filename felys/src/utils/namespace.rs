@@ -1,6 +1,6 @@
 use crate::philia093::Intern;
-use crate::utils::stdlib::registry::STDLIB;
 use crate::utils::function::Pointer;
+use crate::utils::stdlib::registry::STDLIB;
 use std::collections::HashMap;
 
 pub struct Namespace {

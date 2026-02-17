@@ -1,5 +1,5 @@
 use crate::Object;
-use crate::utils::stdlib::nn::tensor::Tensor;
+use crate::utils::stdlib::nn::operator::Node;
 
 pub type Stdlib = [(&'static str, &'static str, Signature); 5];
 
@@ -37,6 +37,6 @@ const TENSOR: Signature = |mut args, _| {
     if !args.is_empty() {
         return Err("expected one argument".to_string());
     }
-    let tensor = Tensor::try_from(object)?;
-    Ok(Object::Tensor(tensor))
+    let node = Node::try_from(object)?;
+    Ok(Object::Node(node.into()))
 };
