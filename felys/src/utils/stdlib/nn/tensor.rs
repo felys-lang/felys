@@ -12,10 +12,7 @@ impl TryFrom<Object> for Tensor {
     type Error = String;
     fn try_from(value: Object) -> Result<Self, Self::Error> {
         if let Object::Float(x) = value {
-            return Ok(Self {
-                data: Rc::new([x]),
-                shape: Rc::new([]),
-            });
+            return Ok(Self::fill(x, &[]));
         }
 
         let mut shape = Vec::new();
@@ -274,18 +271,18 @@ impl Tensor {
         })
     }
 
-    pub fn unbroadcast(&self, target: &[usize]) -> Result<Self, String> {
-        if self.shape.as_ref() == target {
+    pub fn unbroadcast(&self, target: Rc<[usize]>) -> Result<Self, String> {
+        if self.shape == target {
             return Ok(self.clone());
         }
 
-        if self.shape.as_ref() != broadcast(&self.shape, target)? {
+        if self.shape.as_ref() != broadcast(&self.shape, target.as_ref())? {
             return Err("unbroadcast failed".to_string());
         }
 
         let rank = self.shape.len();
         let size = target.iter().product();
-        let strides = strides(target, rank);
+        let strides = strides(target.as_ref(), rank);
 
         let mut indices = vec![0; rank];
         let mut data = vec![0.0; size];
@@ -310,7 +307,7 @@ impl Tensor {
 
         Ok(Self {
             data: Rc::from(data),
-            shape: Rc::from(target),
+            shape: target,
         })
     }
 }

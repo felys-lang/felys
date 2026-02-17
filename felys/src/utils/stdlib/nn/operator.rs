@@ -50,18 +50,18 @@ impl Node {
             match operator {
                 Operator::Binary(x, y, op) => {
                     let [dx, dy] = op.differentiate([&x.tensor, &y.tensor], grad)?;
-                    let dx = dx.unbroadcast(x.tensor.shape.as_ref())?;
-                    let dy = dy.unbroadcast(y.tensor.shape.as_ref())?;
+                    let dx = dx.unbroadcast(x.tensor.shape.clone())?;
+                    let dy = dy.unbroadcast(y.tensor.shape.clone())?;
                     todo.push((&x.op, dx));
                     todo.push((&y.op, dy));
                 }
                 Operator::Unary(x, op) => {
                     let [dx] = op.differentiate([&x.tensor], grad)?;
-                    let dx = dx.unbroadcast(x.tensor.shape.as_ref())?;
+                    let dx = dx.unbroadcast(x.tensor.shape.clone())?;
                     todo.push((&x.op, dx));
                 }
                 Operator::Parameter(i, shape) => {
-                    let dx = grad.unbroadcast(shape)?;
+                    let dx = grad.unbroadcast(shape.clone())?;
                     match gradients.entry(*i) {
                         Entry::Vacant(entry) => {
                             entry.insert(dx);
