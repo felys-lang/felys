@@ -6,7 +6,7 @@ use std::rc::Rc;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Tensor {
     data: Rc<[f32]>,
-    shape: Rc<[usize]>,
+    pub shape: Rc<[usize]>,
 }
 
 impl TryFrom<Object> for Tensor {
@@ -64,10 +64,28 @@ impl Display for Tensor {
 }
 
 impl Tensor {
-    pub fn shape(&self) -> &[usize] {
-        &self.shape
+    pub fn add(lhs: f32, rhs: f32) -> f32 {
+        lhs + rhs
     }
 
+    pub fn sub(lhs: f32, rhs: f32) -> f32 {
+        lhs - rhs
+    }
+
+    pub fn mul(lhs: f32, rhs: f32) -> f32 {
+        lhs * rhs
+    }
+
+    pub fn div(lhs: f32, rhs: f32) -> f32 {
+        lhs / rhs
+    }
+
+    pub fn neg(x: f32) -> f32 {
+        -x
+    }
+}
+
+impl Tensor {
     pub fn fill(x: f32, shape: &[usize]) -> Self {
         let size = shape.iter().product();
         Self {
@@ -286,7 +304,7 @@ impl Tensor {
             return Ok(self.clone());
         }
 
-        if self.shape() != broadcast(self.shape(), target)? {
+        if self.shape.as_ref() != broadcast(&self.shape, target)? {
             return Err("unbroadcast failed".to_string());
         }
 
