@@ -1,6 +1,5 @@
 use crate::Object;
 use std::cmp::max;
-use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -50,12 +49,6 @@ impl TryFrom<Object> for Tensor {
             data: Rc::from(data),
             shape: Rc::from(shape),
         })
-    }
-}
-
-impl Display for Tensor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "<{:?}>", self.shape)
     }
 }
 
@@ -215,31 +208,23 @@ impl Tensor {
     }
 
     pub fn matmul(&self, other: &Tensor) -> Result<Self, String> {
-        let ls = match self.shape.len() {
-            0 => return Err("matmul is not defined for scalar".to_string()),
-            1 => &[1, self.shape[0]],
-            _ => self.shape.as_ref(),
-        };
+        if self.shape.len() < 2 || other.shape.len() < 2 {
+            return Err("matmul requires at least 2 dimensions".to_string());
+        }
 
-        let rs = match other.shape.len() {
-            0 => return Err("matmul is not defined for scalar".to_string()),
-            1 => &[other.shape[0], 1],
-            _ => other.shape.as_ref(),
-        };
+        let ls = self.shape.as_ref();
+        let rs = other.shape.as_ref();
 
-        let lr = ls.len();
-        let rr = rs.len();
+        let m = ls[ls.len() - 2];
+        let k = ls[ls.len() - 1];
+        let n = rs[rs.len() - 1];
 
-        let m = ls[lr - 2];
-        let k = ls[lr - 1];
-        let n = rs[rr - 1];
-
-        if k != rs[rr - 2] {
+        if k != rs[rs.len() - 2] {
             return Err("matmul dimension mismatch".to_string());
         }
 
-        let lb = &ls[..lr - 2];
-        let rb = &rs[..rr - 2];
+        let lb = &ls[..ls.len() - 2];
+        let rb = &rs[..rs.len() - 2];
 
         let mut shape = broadcast(lb, rb)?;
         let rank = shape.len();
@@ -267,27 +252,21 @@ impl Tensor {
                 }
             }
 
-            if rank > 0 {
-                for j in (0..rank).rev() {
-                    indices[j] += 1;
-                    if indices[j] < shape[j] {
-                        li += lhs[j];
-                        ri += rhs[j];
-                        break;
-                    }
-                    indices[j] = 0;
-                    li -= lhs[j] * (shape[j] - 1);
-                    ri -= rhs[j] * (shape[j] - 1);
+            for j in (0..rank).rev() {
+                indices[j] += 1;
+                if indices[j] < shape[j] {
+                    li += lhs[j];
+                    ri += rhs[j];
+                    break;
                 }
+                indices[j] = 0;
+                li -= lhs[j] * (shape[j] - 1);
+                ri -= rhs[j] * (shape[j] - 1);
             }
         }
 
-        if self.shape.len() > 1 {
-            shape.push(m);
-        }
-        if other.shape.len() > 1 {
-            shape.push(n);
-        }
+        shape.push(m);
+        shape.push(n);
 
         Ok(Self {
             data: Rc::from(data),

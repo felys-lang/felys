@@ -29,11 +29,12 @@ impl TryFrom<Object> for Node {
 }
 
 impl Node {
-    pub fn attach(&self, i: i32) -> Result<Self, String> {
+    pub fn attach(self, i: i32) -> Result<Self, String> {
         if let Operator::Detached = self.op {
+            let shape = self.tensor.shape.clone();
             Ok(Self {
-                tensor: self.tensor.clone(),
-                op: Operator::Parameter(i, self.tensor.shape.clone()),
+                tensor: self.tensor,
+                op: Operator::Parameter(i, shape),
             })
         } else {
             Err("cannot attach".to_string())
