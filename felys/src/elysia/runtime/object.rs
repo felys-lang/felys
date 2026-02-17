@@ -2,7 +2,7 @@ use crate::elysia::error::Error;
 use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::bytecode::Index;
 use crate::utils::function::Pointer;
-use crate::utils::stdlib::nn::operator::{Add, Differentiable, Div, MatMul, Mul, Node, Sub};
+use crate::utils::stdlib::nn::operator::{Add, Differentiable, Div, MatMul, Mul, Neg, Node, Sub};
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
@@ -365,6 +365,7 @@ impl Object {
         let value = match self {
             Object::Int(x) => (-x).into(),
             Object::Float(x) => (-x).into(),
+            Object::Node(x) => Neg::compute([x]).map_err(Error::Any)?.into(),
             _ => return Err(Error::UnaryOperation("-", self)),
         };
         Ok(value)

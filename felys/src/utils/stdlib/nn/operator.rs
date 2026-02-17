@@ -181,3 +181,23 @@ impl Differentiable<2> for MatMul {
         Ok([dx, dy])
     }
 }
+
+#[derive(Debug)]
+pub struct Neg;
+
+impl Differentiable<1> for Neg {
+    fn compute([x]: [Rc<Node>; 1]) -> Result<Rc<Node>, String>
+    where
+        Self: Sized,
+    {
+        let tensor = x.tensor.unary(Tensor::neg);
+        Ok(Rc::new(Node {
+            tensor,
+            op: Operator::Unary(x, Rc::new(Self)),
+        }))
+    }
+
+    fn differentiate(&self, _: [&Tensor; 1], grad: Tensor) -> Result<[Tensor; 1], String> {
+        Ok([grad.unary(Tensor::neg)])
+    }
+}
