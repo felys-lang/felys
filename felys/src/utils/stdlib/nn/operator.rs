@@ -6,11 +6,13 @@ use std::fmt::Debug;
 use std::rc::Rc;
 
 pub trait Differentiable<const S: usize> {
-    fn differentiate(&self, grad: Tensor) -> Result<[(Operator, Tensor); S], String>;
+    fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); S], String>;
 
     fn backward(&self, grad: Tensor, todo: &mut Vec<(Operator, Tensor)>) -> Result<(), String> {
-        for (op, tensor) in self.differentiate(grad)? {
-            todo.push((op, tensor));
+        for (node, tensor) in self.differentiate(grad)? {
+            let op = node.op.clone();
+            let unbroadcasted = tensor.unbroadcast(node.tensor.shape.clone())?;
+            todo.push((op, unbroadcasted));
         }
         Ok(())
     }
@@ -99,7 +101,7 @@ pub struct Add {
 }
 
 impl Add {
-    pub fn new(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
+    pub fn compute(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
         let tensor = lhs.tensor.binary(&rhs.tensor, Tensor::add)?;
         Ok(Rc::new(Node {
             tensor,
@@ -109,10 +111,10 @@ impl Add {
 }
 
 impl Differentiable<2> for Add {
-    fn differentiate(&self, grad: Tensor) -> Result<[(Operator, Tensor); 2], String> {
-        let x = (self.lhs.op.clone(), grad.clone());
-        let y = (self.rhs.op.clone(), grad.clone());
-        Ok([x, y])
+    fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); 2], String> {
+        let lhs = (self.lhs.clone(), grad.clone());
+        let rhs = (self.rhs.clone(), grad.clone());
+        Ok([lhs, rhs])
     }
 }
 #[derive(Clone, Debug)]
@@ -122,7 +124,7 @@ pub struct Sub {
 }
 
 impl Sub {
-    pub fn new(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
+    pub fn compute(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
         let tensor = lhs.tensor.binary(&rhs.tensor, Tensor::sub)?;
         Ok(Rc::new(Node {
             tensor,
@@ -132,10 +134,9 @@ impl Sub {
 }
 
 impl Differentiable<2> for Sub {
-    fn differentiate(&self, grad: Tensor) -> Result<[(Operator, Tensor); 2], String> {
-        let dx = (self.lhs.op.clone(), grad.clone());
-        let dy = (self.rhs.op.clone(), grad.unary(Tensor::neg));
-        Ok([dx, dy])
+    fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); 2], String> {
+        let dy = grad.unary(Tensor::neg);
+        Ok([(self.lhs.clone(), grad), (self.rhs.clone(), dy)])
     }
 }
 #[derive(Clone, Debug)]
@@ -145,7 +146,7 @@ pub struct Mul {
 }
 
 impl Mul {
-    pub fn new(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
+    pub fn compute(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
         let tensor = lhs.tensor.binary(&rhs.tensor, Tensor::mul)?;
         Ok(Rc::new(Node {
             tensor,
@@ -155,16 +156,10 @@ impl Mul {
 }
 
 impl Differentiable<2> for Mul {
-    fn differentiate(&self, grad: Tensor) -> Result<[(Operator, Tensor); 2], String> {
-        let dx = (
-            self.lhs.op.clone(),
-            grad.binary(&self.rhs.tensor, Tensor::mul)?,
-        );
-        let dy = (
-            self.rhs.op.clone(),
-            grad.binary(&self.lhs.tensor, Tensor::mul)?,
-        );
-        Ok([dx, dy])
+    fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); 2], String> {
+        let dx = grad.binary(&self.rhs.tensor, Tensor::mul)?;
+        let dy = grad.binary(&self.lhs.tensor, Tensor::mul)?;
+        Ok([(self.lhs.clone(), dx), (self.rhs.clone(), dy)])
     }
 }
 #[derive(Clone, Debug)]
@@ -174,7 +169,7 @@ pub struct Div {
 }
 
 impl Div {
-    pub fn new(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
+    pub fn compute(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
         let tensor = lhs.tensor.binary(&rhs.tensor, Tensor::div)?;
         Ok(Rc::new(Node {
             tensor,
@@ -184,15 +179,13 @@ impl Div {
 }
 
 impl Differentiable<2> for Div {
-    fn differentiate(&self, grad: Tensor) -> Result<[(Operator, Tensor); 2], String> {
-        // dx = grad / rhs
-        let dx_t = grad.binary(&self.rhs.tensor, Tensor::div)?;
-        // dy = -grad * lhs / (rhs^2) = -dx * lhs / rhs
-        let dy_t = dx_t
+    fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); 2], String> {
+        let dx = grad.binary(&self.rhs.tensor, Tensor::div)?;
+        let dy = dx
             .binary(&self.lhs.tensor, Tensor::mul)?
             .binary(&self.rhs.tensor, |a, b| -a / b)?;
 
-        Ok([(self.lhs.op.clone(), dx_t), (self.rhs.op.clone(), dy_t)])
+        Ok([(self.lhs.clone(), dx), (self.rhs.clone(), dy)])
     }
 }
 #[derive(Clone, Debug)]
@@ -202,7 +195,7 @@ pub struct MatMul {
 }
 
 impl MatMul {
-    pub fn new(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
+    pub fn compute(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
         let tensor = lhs.tensor.matmul(&rhs.tensor)?;
         Ok(Rc::new(Node {
             tensor,
@@ -212,10 +205,10 @@ impl MatMul {
 }
 
 impl Differentiable<2> for MatMul {
-    fn differentiate(&self, grad: Tensor) -> Result<[(Operator, Tensor); 2], String> {
-        let dx = (self.lhs.op.clone(), grad.matmul(&self.rhs.tensor.t())?);
-        let dy = (self.rhs.op.clone(), self.lhs.tensor.t().matmul(&grad)?);
-        Ok([dx, dy])
+    fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); 2], String> {
+        let dx = grad.matmul(&self.rhs.tensor.t())?;
+        let dy = self.lhs.tensor.t().matmul(&grad)?;
+        Ok([(self.lhs.clone(), dx), (self.rhs.clone(), dy)])
     }
 }
 #[derive(Clone, Debug)]
@@ -224,7 +217,7 @@ pub struct Neg {
 }
 
 impl Neg {
-    pub fn new(src: Rc<Node>) -> Result<Rc<Node>, String> {
+    pub fn compute(src: Rc<Node>) -> Result<Rc<Node>, String> {
         let tensor = src.tensor.unary(Tensor::neg);
         Ok(Rc::new(Node {
             tensor,
@@ -234,8 +227,8 @@ impl Neg {
 }
 
 impl Differentiable<1> for Neg {
-    fn differentiate(&self, grad: Tensor) -> Result<[(Operator, Tensor); 1], String> {
-        Ok([(self.src.op.clone(), grad.unary(Tensor::neg))])
+    fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); 1], String> {
+        Ok([(self.src.clone(), grad.unary(Tensor::neg))])
     }
 }
 #[derive(Clone, Debug)]
@@ -244,7 +237,7 @@ pub struct ReLU {
 }
 
 impl ReLU {
-    pub fn new(src: Rc<Node>) -> Result<Rc<Node>, String> {
+    pub fn compute(src: Rc<Node>) -> Result<Rc<Node>, String> {
         let tensor = src.tensor.unary(|i| if i > 0.0 { i } else { 0.0 });
         Ok(Rc::new(Node {
             tensor,
@@ -254,8 +247,8 @@ impl ReLU {
 }
 
 impl Differentiable<1> for ReLU {
-    fn differentiate(&self, grad: Tensor) -> Result<[(Operator, Tensor); 1], String> {
+    fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); 1], String> {
         let dx = grad.binary(&self.src.tensor, |g, i| if i > 0.0 { g } else { 0.0 })?;
-        Ok([(self.src.op.clone(), dx)])
+        Ok([(self.src.clone(), dx)])
     }
 }

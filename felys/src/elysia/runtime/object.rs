@@ -2,7 +2,7 @@ use crate::elysia::error::Error;
 use crate::utils::ast::{BinOp, UnaOp};
 use crate::utils::bytecode::Index;
 use crate::utils::function::Pointer;
-use crate::utils::stdlib::nn::operator::{Add, Differentiable, Div, MatMul, Mul, Neg, Node, Sub};
+use crate::utils::stdlib::nn::operator::{Add, Div, MatMul, Mul, Neg, Node, Sub};
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
@@ -282,7 +282,7 @@ impl Object {
                 .into(),
             Object::Float(x) => (x + rhs.float()?).into(),
             Object::Str(x) => format!("{}{}", x, rhs.str()?).into(),
-            Object::Node(x) => Add::compute([x, rhs.node()?]).map_err(Error::Any)?.into(),
+            Object::Node(x) => Add::compute(x, rhs.node()?).map_err(Error::Any)?.into(),
             _ => return Err(Error::BinaryOperation("+", self, rhs)),
         };
         Ok(value)
@@ -295,7 +295,7 @@ impl Object {
                     .ok_or(Error::BinaryOperation("-", self, rhs))?,
             ),
             Object::Float(x) => (x - rhs.float()?).into(),
-            Object::Node(x) => Sub::compute([x, rhs.node()?]).map_err(Error::Any)?.into(),
+            Object::Node(x) => Sub::compute(x, rhs.node()?).map_err(Error::Any)?.into(),
             _ => return Err(Error::BinaryOperation("-", self, rhs)),
         };
         Ok(value)
@@ -308,7 +308,7 @@ impl Object {
                 .ok_or(Error::BinaryOperation("*", self, rhs))?
                 .into(),
             Object::Float(x) => (x * rhs.float()?).into(),
-            Object::Node(x) => Mul::compute([x, rhs.node()?]).map_err(Error::Any)?.into(),
+            Object::Node(x) => Mul::compute(x, rhs.node()?).map_err(Error::Any)?.into(),
             _ => return Err(Error::BinaryOperation("*", self, rhs)),
         };
         Ok(value)
@@ -321,7 +321,7 @@ impl Object {
                 .ok_or(Error::BinaryOperation("/", self, rhs))?
                 .into(),
             Object::Float(x) => (x / rhs.float()?).into(),
-            Object::Node(x) => Div::compute([x, rhs.node()?]).map_err(Error::Any)?.into(),
+            Object::Node(x) => Div::compute(x, rhs.node()?).map_err(Error::Any)?.into(),
             _ => return Err(Error::BinaryOperation("/", self, rhs)),
         };
         Ok(value)
@@ -337,9 +337,7 @@ impl Object {
 
     fn matmul(self, rhs: Object) -> Result<Object, Error> {
         let value = match self {
-            Object::Node(x) => MatMul::compute([x, rhs.node()?])
-                .map_err(Error::Any)?
-                .into(),
+            Object::Node(x) => MatMul::compute(x, rhs.node()?).map_err(Error::Any)?.into(),
             _ => return Err(Error::BinaryOperation("@", self, rhs)),
         };
         Ok(value)
@@ -365,7 +363,7 @@ impl Object {
         let value = match self {
             Object::Int(x) => (-x).into(),
             Object::Float(x) => (-x).into(),
-            Object::Node(x) => Neg::compute([x]).map_err(Error::Any)?.into(),
+            Object::Node(x) => Neg::compute(x).map_err(Error::Any)?.into(),
             _ => return Err(Error::UnaryOperation("-", self)),
         };
         Ok(value)
