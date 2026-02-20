@@ -12,7 +12,7 @@ impl TryFrom<Object> for Tensor {
     type Error = String;
     fn try_from(value: Object) -> Result<Self, Self::Error> {
         if let Object::Float(x) = value {
-            return Ok(Self::fill(x, &[]));
+            return Ok(Self::fill(x, [].into()));
         }
 
         let mut shape = Vec::new();
@@ -69,14 +69,22 @@ impl Tensor {
     pub fn neg(x: f32) -> f32 {
         -x
     }
+
+    pub fn ln(x: f32) -> f32 {
+        x.ln()
+    }
+
+    pub fn exp(x: f32) -> f32 {
+        x.exp()
+    }
 }
 
 impl Tensor {
-    pub fn fill(x: f32, shape: &[usize]) -> Self {
+    pub fn fill(x: f32, shape: Rc<[usize]>) -> Self {
         let size = shape.iter().product();
         Self {
             data: Rc::from(vec![x; size]),
-            shape: Rc::from(shape),
+            shape,
         }
     }
 
@@ -309,6 +317,23 @@ impl Tensor {
             data: Rc::from(data),
             shape: target,
         })
+    }
+
+    pub fn sum(&self, axes: &[usize]) -> Result<Self, String> {
+        let mut shape = self.shape.to_vec();
+        let mut target = Vec::new();
+
+        for (i, length) in shape.iter_mut().enumerate() {
+            if axes.contains(&i) {
+                *length = 1;
+            } else {
+                target.push(*length);
+            }
+        }
+
+        let mut tensor = self.unbroadcast(shape.into())?;
+        tensor.shape = target.into();
+        Ok(tensor)
     }
 }
 

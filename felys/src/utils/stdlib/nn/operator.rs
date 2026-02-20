@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::rc::Rc;
 
-pub trait Differentiable<const S: usize> {
+trait Differentiable<const S: usize> {
     fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); S], String>;
 
     fn backward(&self, grad: Tensor, todo: &mut Vec<(Operator, Tensor)>) -> Result<(), String> {
@@ -49,7 +49,7 @@ impl Node {
 
     pub fn backward(&self) -> Result<HashMap<i32, Tensor>, String> {
         let mut gradients = HashMap::new();
-        let ones = Tensor::fill(1.0, self.tensor.shape.as_ref());
+        let ones = Tensor::fill(1.0, self.tensor.shape.clone());
         let mut todo = vec![(self.op.clone(), ones)];
 
         while let Some((operator, grad)) = todo.pop() {
@@ -59,7 +59,10 @@ impl Node {
                 Operator::Mul(x) => x.backward(grad, &mut todo)?,
                 Operator::Div(x) => x.backward(grad, &mut todo)?,
                 Operator::MatMul(x) => x.backward(grad, &mut todo)?,
+                Operator::Log(x) => x.backward(grad, &mut todo)?,
+                Operator::Exp(x) => x.backward(grad, &mut todo)?,
                 Operator::Neg(x) => x.backward(grad, &mut todo)?,
+                Operator::Sum(x) => x.backward(grad, &mut todo)?,
                 Operator::ReLU(x) => x.backward(grad, &mut todo)?,
                 Operator::Parameter(i, shape) => {
                     let dx = grad.unbroadcast(shape.clone())?;
@@ -89,7 +92,10 @@ enum Operator {
     Div(Div),
     MatMul(MatMul),
     Neg(Neg),
+    Log(Ln),
+    Exp(Exp),
     ReLU(ReLU),
+    Sum(Sum),
     Parameter(i32, Rc<[usize]>),
     Detached,
 }
@@ -250,5 +256,73 @@ impl Differentiable<1> for ReLU {
     fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); 1], String> {
         let dx = grad.binary(&self.src.tensor, |g, i| if i > 0.0 { g } else { 0.0 })?;
         Ok([(self.src.clone(), dx)])
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Ln {
+    src: Rc<Node>,
+}
+
+impl Ln {
+    pub fn compute(src: Rc<Node>) -> Result<Rc<Node>, String> {
+        let tensor = src.tensor.unary(Tensor::ln);
+        Ok(Rc::new(Node {
+            tensor,
+            op: Operator::Log(Ln { src }),
+        }))
+    }
+}
+
+impl Differentiable<1> for Ln {
+    fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); 1], String> {
+        let dx = grad.binary(&self.src.tensor, Tensor::div)?;
+        Ok([(self.src.clone(), dx)])
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Exp {
+    src: Rc<Node>,
+    cache: Tensor,
+}
+
+impl Exp {
+    pub fn compute(src: Rc<Node>) -> Result<Rc<Node>, String> {
+        let tensor = src.tensor.unary(Tensor::exp);
+        Ok(Rc::new(Node {
+            tensor: tensor.clone(),
+            op: Operator::Exp(Exp { src, cache: tensor }),
+        }))
+    }
+}
+
+impl Differentiable<1> for Exp {
+    fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); 1], String> {
+        let dx = self.cache.binary(&grad, Tensor::mul)?;
+        Ok([(self.src.clone(), dx)])
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Sum {
+    src: Rc<Node>,
+}
+
+impl Sum {
+    pub fn compute(src: Rc<Node>, axes: &[usize]) -> Result<Rc<Node>, String> {
+        let tensor = src.tensor.sum(axes)?;
+        Ok(Rc::new(Node {
+            tensor,
+            op: Operator::Sum(Sum { src }),
+        }))
+    }
+}
+
+impl Differentiable<1> for Sum {
+    fn differentiate(&self, grad: Tensor) -> Result<[(Rc<Node>, Tensor); 1], String> {
+        let ones = Tensor::fill(1.0, self.src.tensor.shape.clone());
+        let broadcasted = ones.binary(&grad, Tensor::mul)?;
+        Ok([(self.src.clone(), broadcasted)])
     }
 }
