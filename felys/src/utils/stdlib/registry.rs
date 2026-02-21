@@ -1,9 +1,14 @@
-use crate::Object;
 use crate::utils::stdlib::nn::operator::Node;
+use crate::Object;
 
-pub type Stdlib = [(&'static str, &'static str, Signature); 5];
+pub type Stdlib = [(&'static str, &'static str, Signature); 9];
 
 pub type Signature = fn(Vec<Object>, &mut String) -> Result<Object, String>;
+
+fn extract<const S: usize>(args: Vec<Object>) -> Result<[Object; S], String> {
+    args.try_into()
+        .map_err(|_| "invalid number of args".to_string())
+}
 
 pub const STDLIB: Stdlib = [
     ("io", "print", PRINT),
@@ -11,6 +16,10 @@ pub const STDLIB: Stdlib = [
     ("pink", "elysia", ELYSIA),
     ("pink", "felysneko", FELYSNEKO),
     ("nn", "tensor", TENSOR),
+    ("nn", "relu", RELU),
+    ("nn", "ln", LN),
+    ("nn", "exp", EXP),
+    ("nn", "sum", SUM),
 ];
 
 const PRINT: Signature = |args, stdout| {
@@ -32,11 +41,40 @@ const ELYSIA: Signature = |_, _| Ok(Object::Str("粉色妖精小姐♪".into()))
 
 const FELYSNEKO: Signature = |_, _| Ok(Object::Str("银河猫猫侠♪".into()));
 
-const TENSOR: Signature = |mut args, _| {
-    let object = args.pop().ok_or("expected one argument")?;
-    if !args.is_empty() {
-        return Err("expected one argument".to_string());
-    }
+const TENSOR: Signature = |args, _| {
+    let [object] = extract(args)?;
     let node = Node::try_from(object)?;
     Ok(Object::Node(node.into()))
+};
+
+const RELU: Signature = |args, _| {
+    let [object] = extract(args)?;
+    let node = Node::relu(object.node()?)?;
+    Ok(Object::Node(node))
+};
+
+const LN: Signature = |args, _| {
+    let [object] = extract(args)?;
+    let node = Node::ln(object.node()?)?;
+    Ok(Object::Node(node))
+};
+
+const EXP: Signature = |args, _| {
+    let [object] = extract(args)?;
+    let node = Node::exp(object.node()?)?;
+    Ok(Object::Node(node))
+};
+
+const SUM: Signature = |args, _| {
+    let [object, axes] = extract(args)?;
+    let mut indices = Vec::new();
+    for x in axes.list()?.iter() {
+        let int = x
+            .int()?
+            .try_into()
+            .map_err(|_| "invalid axis".to_string())?;
+        indices.push(int);
+    }
+    let node = Node::sum(object.node()?, &indices)?;
+    Ok(Object::Node(node))
 };
