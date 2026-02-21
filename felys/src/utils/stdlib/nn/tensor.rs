@@ -18,20 +18,20 @@ impl Display for Tensor {
             offset: &mut usize,
         ) -> std::fmt::Result {
             if shape.is_empty() {
-                write!(f, "{}", data[*offset])?;
+                write!(f, "{:?}", data[*offset])?;
                 *offset += 1;
                 return Ok(());
             }
 
             write!(f, "[")?;
             let len = shape[0];
-            let rest_shape = &shape[1..];
+            let rest = &shape[1..];
 
             for i in 0..len {
                 if i > 0 {
                     write!(f, ", ")?;
                 }
-                dfs(f, data, rest_shape, offset)?;
+                dfs(f, data, rest, offset)?;
             }
             write!(f, "]")
         }

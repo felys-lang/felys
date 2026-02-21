@@ -1,7 +1,7 @@
-use crate::utils::stdlib::nn::tensor::Tensor;
 use crate::Object;
-use std::collections::hash_map::Entry;
+use crate::utils::stdlib::nn::tensor::Tensor;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::fmt::Debug;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
@@ -14,7 +14,7 @@ pub struct Node {
 
 impl Display for Node {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: <", self.tensor)?;
+        write!(f, "{}::<", self.tensor)?;
         match self.op {
             Operator::Add(_, _) => write!(f, "Add")?,
             Operator::Sub(_, _) => write!(f, "Sub")?,
