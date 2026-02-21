@@ -1,11 +1,49 @@
 use crate::Object;
 use std::cmp::max;
+use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Tensor {
     data: Rc<[f32]>,
     pub shape: Rc<[usize]>,
+}
+
+impl Display for Tensor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        fn dfs(
+            f: &mut Formatter<'_>,
+            data: &[f32],
+            shape: &[usize],
+            offset: &mut usize,
+        ) -> std::fmt::Result {
+            if shape.is_empty() {
+                write!(f, "{}", data[*offset])?;
+                *offset += 1;
+                return Ok(());
+            }
+
+            write!(f, "[")?;
+            let len = shape[0];
+            let rest_shape = &shape[1..];
+
+            for i in 0..len {
+                if i > 0 {
+                    write!(f, ", ")?;
+                }
+                dfs(f, data, rest_shape, offset)?;
+            }
+            write!(f, "]")
+        }
+
+        let mut offset = 0;
+
+        if self.shape.is_empty() {
+            return write!(f, "{}", self.data[0]);
+        }
+
+        dfs(f, &self.data, &self.shape, &mut offset)
+    }
 }
 
 impl TryFrom<Object> for Tensor {

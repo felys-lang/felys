@@ -1,14 +1,36 @@
-use crate::Object;
 use crate::utils::stdlib::nn::tensor::Tensor;
-use std::collections::HashMap;
+use crate::Object;
 use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::fmt::Debug;
+use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct Node {
-    pub tensor: Tensor,
-    pub op: Operator,
+    tensor: Tensor,
+    op: Operator,
+}
+
+impl Display for Node {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: <", self.tensor)?;
+        match self.op {
+            Operator::Add(_, _) => write!(f, "Add")?,
+            Operator::Sub(_, _) => write!(f, "Sub")?,
+            Operator::Mul(_, _) => write!(f, "Mul")?,
+            Operator::Div(_, _) => write!(f, "Div")?,
+            Operator::MatMul(_, _) => write!(f, "MatMul")?,
+            Operator::Neg(_) => write!(f, "Neg")?,
+            Operator::Log(_) => write!(f, "Log")?,
+            Operator::Exp(_) => write!(f, "Exp")?,
+            Operator::ReLU(_) => write!(f, "ReLU")?,
+            Operator::Sum(_) => write!(f, "Sum")?,
+            Operator::Parameter(i, _) => write!(f, "Parameter<{i}>")?,
+            Operator::Detached => write!(f, "Detached")?,
+        };
+        write!(f, ">")
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -25,6 +47,34 @@ pub enum Operator {
     Sum(Rc<Node>),
     Parameter(i32, Rc<[usize]>),
     Detached,
+}
+
+impl Operator {
+    fn pruned(self) -> Self {
+        match &self {
+            Operator::Add(lhs, rhs)
+            | Operator::Sub(lhs, rhs)
+            | Operator::Mul(lhs, rhs)
+            | Operator::Div(lhs, rhs)
+            | Operator::MatMul(lhs, rhs) => {
+                if lhs.fixed() && rhs.fixed() {
+                    return Operator::Detached;
+                }
+            }
+            Operator::Neg(src)
+            | Operator::Log(src)
+            | Operator::Exp(src)
+            | Operator::ReLU(src)
+            | Operator::Sum(src) => {
+                if src.fixed() {
+                    return Operator::Detached;
+                }
+            }
+            Operator::Parameter(_, _) => {}
+            Operator::Detached => {}
+        }
+        self
+    }
 }
 
 impl TryFrom<Object> for Node {
@@ -50,11 +100,15 @@ impl Node {
         }
     }
 
+    pub fn fixed(&self) -> bool {
+        matches!(self.op, Operator::Detached)
+    }
+
     pub fn add(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
         let tensor = lhs.tensor.binary(&rhs.tensor, Tensor::add)?;
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Add(lhs, rhs),
+            op: Operator::Add(lhs, rhs).pruned(),
         }))
     }
 
@@ -62,7 +116,7 @@ impl Node {
         let tensor = lhs.tensor.binary(&rhs.tensor, Tensor::sub)?;
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Sub(lhs, rhs),
+            op: Operator::Sub(lhs, rhs).pruned(),
         }))
     }
 
@@ -70,7 +124,7 @@ impl Node {
         let tensor = lhs.tensor.binary(&rhs.tensor, Tensor::mul)?;
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Mul(lhs, rhs),
+            op: Operator::Mul(lhs, rhs).pruned(),
         }))
     }
 
@@ -78,7 +132,7 @@ impl Node {
         let tensor = lhs.tensor.binary(&rhs.tensor, Tensor::div)?;
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Div(lhs, rhs),
+            op: Operator::Div(lhs, rhs).pruned(),
         }))
     }
 
@@ -86,7 +140,7 @@ impl Node {
         let tensor = lhs.tensor.matmul(&rhs.tensor)?;
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::MatMul(lhs, rhs),
+            op: Operator::MatMul(lhs, rhs).pruned(),
         }))
     }
 
@@ -94,7 +148,7 @@ impl Node {
         let tensor = src.tensor.unary(Tensor::neg);
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Neg(src),
+            op: Operator::Neg(src).pruned(),
         }))
     }
 
@@ -102,7 +156,7 @@ impl Node {
         let tensor = src.tensor.unary(|i| if i > 0.0 { i } else { 0.0 });
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::ReLU(src),
+            op: Operator::ReLU(src).pruned(),
         }))
     }
 
@@ -110,7 +164,7 @@ impl Node {
         let tensor = src.tensor.unary(Tensor::ln);
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Log(src),
+            op: Operator::Log(src).pruned(),
         }))
     }
 
@@ -118,7 +172,7 @@ impl Node {
         let tensor = src.tensor.unary(Tensor::exp);
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Exp(src),
+            op: Operator::Exp(src).pruned(),
         }))
     }
 
@@ -126,7 +180,7 @@ impl Node {
         let tensor = src.tensor.sum(axes)?;
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Sum(src),
+            op: Operator::Sum(src).pruned(),
         }))
     }
 

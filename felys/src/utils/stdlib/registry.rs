@@ -1,5 +1,5 @@
-use crate::utils::stdlib::nn::operator::Node;
 use crate::Object;
+use crate::utils::stdlib::nn::operator::Node;
 
 pub type Stdlib = [(&'static str, &'static str, Signature); 9];
 
