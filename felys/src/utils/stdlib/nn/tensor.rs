@@ -358,10 +358,21 @@ impl Tensor {
     }
 
     pub fn sum(&self, axes: &[usize]) -> Result<Self, String> {
+        if axes.is_empty() {
+            return Ok(self.clone());
+        }
+
         let mut shape = self.shape.to_vec();
         let mut target = Vec::new();
+        let rank = shape.len();
 
-        for (i, length) in shape.iter_mut().rev().enumerate() {
+        for axis in axes {
+            if *axis >= rank {
+                return Err("axes must be less than rank".to_string());
+            }
+        }
+
+        for (i, length) in shape.iter_mut().enumerate() {
             if axes.contains(&i) {
                 *length = 1;
             } else {
@@ -403,4 +414,164 @@ fn broadcast(lhs: &[usize], rhs: &[usize]) -> Result<Vec<usize>, String> {
         shape[i] = max(l, r);
     }
     Ok(shape)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    impl Tensor {
+        fn range(shape: Vec<usize>, offset: usize) -> Self {
+            let length = shape.iter().product::<usize>();
+            Self {
+                data: (offset..length + offset).map(|x| x as f32).collect(),
+                shape: shape.into(),
+            }
+        }
+    }
+
+    #[test]
+    fn binary() {
+        let lhs = Tensor::range(vec![], 0);
+        let rhs = Tensor::range(vec![], 1);
+        let res = lhs.binary(&rhs, Tensor::add).unwrap();
+        assert_eq!(res.shape.as_ref(), &[]);
+        assert_eq!(res.data.as_ref(), &[1.0]);
+
+        let lhs = Tensor::range(vec![], 10);
+        let rhs = Tensor::range(vec![3], 0);
+        let res = lhs.binary(&rhs, Tensor::add).unwrap();
+        assert_eq!(res.shape.as_ref(), &[3]);
+        assert_eq!(res.data.as_ref(), &[10.0, 11.0, 12.0]);
+
+        let lhs = Tensor::range(vec![3], 0);
+        let rhs = Tensor::range(vec![2, 3], 10);
+        let res = lhs.binary(&rhs, Tensor::add).unwrap();
+        assert_eq!(res.shape.as_ref(), &[2, 3]);
+        assert_eq!(res.data.as_ref(), &[10.0, 12.0, 14.0, 13.0, 15.0, 17.0]);
+
+        let lhs = Tensor::range(vec![2, 3], 0);
+        let rhs = Tensor::range(vec![2, 1], 10);
+        let res = lhs.binary(&rhs, Tensor::add).unwrap();
+        assert_eq!(res.shape.as_ref(), &[2, 3]);
+        assert_eq!(res.data.as_ref(), &[10.0, 11.0, 12.0, 14.0, 15.0, 16.0]);
+
+        let lhs = Tensor::range(vec![1, 3], 0);
+        let rhs = Tensor::range(vec![2, 1], 10);
+        let res = lhs.binary(&rhs, Tensor::add).unwrap();
+        assert_eq!(res.shape.as_ref(), &[2, 3]);
+        assert_eq!(res.data.as_ref(), &[10.0, 11.0, 12.0, 11.0, 12.0, 13.0]);
+
+        let lhs = Tensor::range(vec![2, 1], 0);
+        let rhs = Tensor::range(vec![2, 1], 10);
+        let res = lhs.binary(&rhs, Tensor::add).unwrap();
+        assert_eq!(res.shape.as_ref(), &[2, 1]);
+        assert_eq!(res.data.as_ref(), &[10.0, 12.0]);
+
+        let lhs = Tensor::range(vec![2, 3, 1], 0);
+        let rhs = Tensor::range(vec![1, 1, 4], 10);
+        let res = lhs.binary(&rhs, Tensor::add).unwrap();
+        assert_eq!(res.shape.as_ref(), &[2, 3, 4]);
+        assert_eq!(
+            res.data.as_ref(),
+            &[
+                10.0, 11.0, 12.0, 13.0, 11.0, 12.0, 13.0, 14.0, 12.0, 13.0, 14.0, 15.0, 13.0, 14.0,
+                15.0, 16.0, 14.0, 15.0, 16.0, 17.0, 15.0, 16.0, 17.0, 18.0
+            ]
+        );
+
+        let lhs = Tensor::range(vec![2], 0);
+        let rhs = Tensor::range(vec![3], 0);
+        assert!(lhs.binary(&rhs, Tensor::add).is_err());
+
+        let lhs = Tensor::range(vec![2, 3], 0);
+        let rhs = Tensor::range(vec![3, 2], 0);
+        assert!(lhs.binary(&rhs, Tensor::add).is_err());
+    }
+
+    #[test]
+    fn t() {
+        let t = Tensor::range(vec![], 5);
+        let res = t.t();
+        assert_eq!(res.shape.as_ref(), &[]);
+        assert_eq!(res.data.as_ref(), &[5.0]);
+
+        let t = Tensor::range(vec![3], 0);
+        let res = t.t();
+        assert_eq!(res.shape.as_ref(), &[3]);
+        assert_eq!(res.data.as_ref(), &[0.0, 1.0, 2.0]);
+
+        let t = Tensor::range(vec![2, 3], 0);
+        let res = t.t();
+        assert_eq!(res.shape.as_ref(), &[3, 2]);
+        assert_eq!(res.data.as_ref(), &[0.0, 3.0, 1.0, 4.0, 2.0, 5.0]);
+
+        let t = Tensor::range(vec![2, 3, 4], 0);
+        let res = t.t();
+        assert_eq!(res.shape.as_ref(), &[2, 4, 3]);
+        assert_eq!(
+            res.data.as_ref(),
+            &[
+                0.0, 4.0, 8.0, 1.0, 5.0, 9.0, 2.0, 6.0, 10.0, 3.0, 7.0, 11.0, 12.0, 16.0, 20.0,
+                13.0, 17.0, 21.0, 14.0, 18.0, 22.0, 15.0, 19.0, 23.0
+            ]
+        );
+    }
+
+    #[test]
+    fn matmul() {
+        let lhs = Tensor::range(vec![2, 3], 0);
+        let rhs = Tensor::range(vec![3, 2], 6);
+        let res = lhs.matmul(&rhs).unwrap();
+        assert_eq!(res.shape.as_ref(), &[2, 2]);
+        assert_eq!(res.data.as_ref(), &[28.0, 31.0, 100.0, 112.0]);
+
+        let lhs = Tensor::range(vec![2, 2, 3], 0);
+        let rhs = Tensor::range(vec![2, 3, 4], 12);
+        let res = lhs.matmul(&rhs).unwrap();
+        assert_eq!(res.shape.as_ref(), &[2, 2, 4]);
+        assert_eq!(
+            &res.data.as_ref(),
+            &[
+                56.0, 59.0, 62.0, 65.0, 200.0, 212.0, 224.0, 236.0, 596.0, 617.0, 638.0, 659.0,
+                848.0, 878.0, 908.0, 938.0
+            ]
+        );
+
+        let lhs = Tensor::range(vec![2, 3], 0);
+        let rhs = Tensor::range(vec![2, 3], 0);
+        assert!(lhs.matmul(&rhs).is_err());
+
+        let lhs = Tensor::range(vec![3], 0);
+        let rhs = Tensor::range(vec![3, 2], 0);
+        assert!(lhs.matmul(&rhs).is_err());
+    }
+
+    #[test]
+    fn sum() {
+        let t = Tensor::range(vec![2, 3], 0);
+        let res = t.sum(&[1]).unwrap();
+        assert_eq!(res.shape.as_ref(), &[2]);
+        assert_eq!(res.data.as_ref(), &[3.0, 12.0]);
+
+        let t = Tensor::range(vec![2, 3], 0);
+        let res = t.sum(&[0]).unwrap();
+        assert_eq!(res.shape.as_ref(), &[3]);
+        assert_eq!(res.data.as_ref(), &[3.0, 5.0, 7.0]);
+
+        let t = Tensor::range(vec![2, 3], 0);
+        let res = t.sum(&[0, 1]).unwrap();
+        assert_eq!(res.shape.as_ref(), &[]);
+        assert_eq!(res.data.as_ref(), &[15.0]);
+
+        let t = Tensor::range(vec![2, 3, 4], 0);
+        let res = t.sum(&[2]).unwrap();
+        assert_eq!(res.shape.as_ref(), &[2, 3]);
+        assert_eq!(res.data.as_ref(), &[6.0, 22.0, 38.0, 54.0, 70.0, 86.0]);
+
+        let t = Tensor::range(vec![2, 3, 4], 0);
+        let res = t.sum(&[1, 2]).unwrap();
+        assert_eq!(res.shape.as_ref(), &[2]);
+        assert_eq!(res.data.as_ref(), &[66.0, 210.0]);
+    }
 }
