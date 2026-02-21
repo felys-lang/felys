@@ -1,7 +1,7 @@
 use crate::demiurge::codegen::copies::Copy;
 use crate::utils::bytecode::Reg;
 use crate::utils::function::{Function, Instruction, Label, Terminator, Var};
-use std::cmp::{max, Reverse};
+use std::cmp::{Reverse, max};
 use std::collections::hash_map::Entry;
 use std::collections::{BinaryHeap, HashMap};
 use std::hash::Hash;

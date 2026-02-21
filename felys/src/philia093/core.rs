@@ -712,33 +712,33 @@ impl super::PhiLia093 {
             |x| {
                 let lhs = x.factor()?;
                 let _ = x.ASTERISK()?;
-                let rhs = match x.dot() {
+                let rhs = match x.at() {
                     Some(value) => value,
-                    None => return x.__error("<dot>"),
+                    None => return x.__error("<at>"),
                 };
                 Some(Expr::Binary(lhs.into(), BinOp::Mul, rhs.into()))
             },
             |x| {
                 let lhs = x.factor()?;
                 let _ = x.SLASH()?;
-                let rhs = match x.dot() {
+                let rhs = match x.at() {
                     Some(value) => value,
-                    None => return x.__error("<dot>"),
+                    None => return x.__error("<at>"),
                 };
                 Some(Expr::Binary(lhs.into(), BinOp::Div, rhs.into()))
             },
             |x| {
                 let lhs = x.factor()?;
                 let _ = x.PERCENT()?;
-                let rhs = match x.dot() {
+                let rhs = match x.at() {
                     Some(value) => value,
-                    None => return x.__error("<dot>"),
+                    None => return x.__error("<at>"),
                 };
                 Some(Expr::Binary(lhs.into(), BinOp::Mod, rhs.into()))
             },
             |x| {
-                let dot = x.dot()?;
-                Some((dot))
+                let at = x.at()?;
+                Some((at))
             },
         ];
         let start = self.__stream.cursor;
@@ -765,19 +765,19 @@ impl super::PhiLia093 {
         self.__memo.factor.insert(start, (end, cache));
         result
     }
-    pub fn dot(&mut self) -> Option<Expr> {
+    pub fn at(&mut self) -> Option<Expr> {
         if self.__snapshot.is_some() {
             return None;
         }
         const RULES: super::R<Expr, 2usize> = [
             |x| {
-                let lhs = x.dot()?;
+                let lhs = x.at()?;
                 let _ = x.AT()?;
                 let rhs = match x.unary() {
                     Some(value) => value,
                     None => return x.__error("<unary>"),
                 };
-                Some(Expr::Binary(lhs.into(), BinOp::Dot, rhs.into()))
+                Some(Expr::Binary(lhs.into(), BinOp::At, rhs.into()))
             },
             |x| {
                 let unary = x.unary()?;
@@ -785,7 +785,7 @@ impl super::PhiLia093 {
             },
         ];
         let start = self.__stream.cursor;
-        if let Some((end, cache)) = self.__memo.dot.get(&start) {
+        if let Some((end, cache)) = self.__memo.at.get(&start) {
             self.__stream.cursor = end.to_owned();
             return cache.clone();
         }
@@ -793,7 +793,7 @@ impl super::PhiLia093 {
         let mut end = start;
         loop {
             let cache = result.clone();
-            self.__memo.dot.insert(start, (end, cache));
+            self.__memo.at.insert(start, (end, cache));
             let temp = self.__peg(RULES);
             if end < self.__stream.cursor {
                 result = temp;
@@ -805,7 +805,7 @@ impl super::PhiLia093 {
             }
         }
         let cache = result.clone();
-        self.__memo.dot.insert(start, (end, cache));
+        self.__memo.at.insert(start, (end, cache));
         result
     }
     pub fn unary(&mut self) -> Option<Expr> {

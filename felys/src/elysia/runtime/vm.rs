@@ -1,9 +1,9 @@
 use crate::elysia::error::Error;
 use crate::elysia::runtime::object::Object;
-use crate::stdlib::STDLIB;
 use crate::utils::bytecode::{Bytecode, Index, Reg};
 use crate::utils::function::{Const, Pointer};
 use crate::utils::stages::{Callable, III};
+use crate::utils::stdlib::registry::STDLIB;
 
 pub const DEPTH: usize = 1024;
 
@@ -230,7 +230,7 @@ impl Bytecode {
                     Pointer::Rust => {
                         let (_, _, f) = STDLIB.get(idx as usize).unwrap();
                         let objs = frame.gather(args);
-                        frame.store(*dst, f(objs, stdout));
+                        frame.store(*dst, f(objs, stdout).map_err(Error::Any)?);
                     }
                 };
             }

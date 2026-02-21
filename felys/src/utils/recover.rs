@@ -361,7 +361,7 @@ impl Display for BinOp {
             BinOp::Mul => write!(f, "*"),
             BinOp::Div => write!(f, "/"),
             BinOp::Mod => write!(f, "%"),
-            BinOp::Dot => write!(f, "@"),
+            BinOp::At => write!(f, "@"),
         }
     }
 }

@@ -3,7 +3,7 @@ use crate::builder::common::{Builder, Root, Template};
 use crate::builder::dfa::common::Automaton;
 use crate::philia093::Intern;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote, ToTokens};
+use quote::{ToTokens, format_ident, quote};
 use syn::parse_str;
 
 impl Builder {

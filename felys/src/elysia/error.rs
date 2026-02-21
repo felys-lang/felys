@@ -9,6 +9,7 @@ pub enum Error {
     IndexOutOfBounds(Object, i32),
     NotEnoughToUnpack(Object, u32),
     StackOverflow,
+    Any(String),
 }
 
 impl From<Error> for String {
@@ -43,6 +44,7 @@ impl From<Error> for String {
                 let s = format!("stack overflow, max depth set to {DEPTH}");
                 msg.push_str(&s);
             }
+            Error::Any(s) => msg.push_str(&s),
         }
         msg.push('\n');
         msg

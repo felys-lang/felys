@@ -171,6 +171,36 @@ people = [
 }
 
 #[test]
+fn tensor() -> Result<(), String> {
+    exec(
+        Object::List([].into()),
+        r#"
+fn softmax(x) {
+    exp = std::nn::exp(x);
+    lower = std::nn::sum(exp, [1], true);
+    exp / lower
+}
+"#,
+        r#"
+x = std::nn::tensor([
+    [0.4, 1.4],
+    [3.2, 2.3],
+    [2.6, 0.1],
+]);
+w = std::nn::tensor([
+    [1.9, 3.3],
+    [2.2, 3.7],
+]);
+b = std::nn::tensor([2.1, 0.2]);
+prob = softmax(x @ w + b);
+std::io::print(prob)
+"#,
+        Object::Int(1),
+        "[[0.31864622, 0.6813538], [0.0023997198, 0.99760026], [0.13124442, 0.8687555]]::<Detached>\n",
+    )
+}
+
+#[test]
 fn beloved() -> Result<(), String> {
     exec(
         Object::List([].into()),

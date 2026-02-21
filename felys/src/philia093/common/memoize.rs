@@ -14,7 +14,7 @@ pub struct Memo {
     pub comparison: HashMap<usize, (usize, Option<Expr>)>,
     pub term: HashMap<usize, (usize, Option<Expr>)>,
     pub factor: HashMap<usize, (usize, Option<Expr>)>,
-    pub dot: HashMap<usize, (usize, Option<Expr>)>,
+    pub at: HashMap<usize, (usize, Option<Expr>)>,
     pub call: HashMap<usize, (usize, Option<Expr>)>,
 }
 #[allow(unused)]
@@ -28,7 +28,7 @@ impl Memo {
         self.comparison.clear();
         self.term.clear();
         self.factor.clear();
-        self.dot.clear();
+        self.at.clear();
         self.call.clear();
     }
 }

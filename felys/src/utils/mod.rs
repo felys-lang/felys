@@ -5,3 +5,4 @@ pub mod group;
 pub mod namespace;
 mod recover;
 pub mod stages;
+pub mod stdlib;
