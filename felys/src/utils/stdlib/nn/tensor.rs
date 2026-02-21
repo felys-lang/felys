@@ -361,7 +361,7 @@ impl Tensor {
         let mut shape = self.shape.to_vec();
         let mut target = Vec::new();
 
-        for (i, length) in shape.iter_mut().enumerate() {
+        for (i, length) in shape.iter_mut().rev().enumerate() {
             if axes.contains(&i) {
                 *length = 1;
             } else {
