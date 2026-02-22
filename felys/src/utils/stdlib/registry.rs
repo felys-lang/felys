@@ -1,5 +1,5 @@
-use crate::utils::stdlib::nn::operator::Node;
 use crate::Object;
+use crate::utils::stdlib::nn::operator::Node;
 use std::collections::HashMap;
 use std::rc::Rc;
 

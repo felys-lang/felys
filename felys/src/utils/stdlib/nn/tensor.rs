@@ -1,5 +1,5 @@
-use crate::utils::stdlib::nn::random::Random;
 use crate::Object;
+use crate::utils::stdlib::nn::random::Random;
 use std::cell::RefCell;
 use std::cmp::max;
 use std::fmt::{Display, Formatter};

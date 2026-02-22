@@ -1,7 +1,7 @@
-use crate::utils::stdlib::nn::tensor::Tensor;
 use crate::Object;
-use std::collections::hash_map::Entry;
+use crate::utils::stdlib::nn::tensor::Tensor;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::fmt::Debug;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
