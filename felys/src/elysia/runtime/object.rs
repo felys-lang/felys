@@ -142,7 +142,7 @@ impl Object {
         }
     }
 
-    pub fn binary(self, op: BinOp, rhs: Object) -> Result<Object, Error> {
+    pub fn binary(&self, op: BinOp, rhs: &Object) -> Result<Object, Error> {
         match op {
             BinOp::Or => self.or(rhs),
             BinOp::And => self.and(rhs),
@@ -161,7 +161,7 @@ impl Object {
         }
     }
 
-    pub fn unary(self, op: UnaOp) -> Result<Object, Error> {
+    pub fn unary(&self, op: UnaOp) -> Result<Object, Error> {
         match op {
             UnaOp::Not => self.not(),
             UnaOp::Pos => self.pos(),
@@ -169,72 +169,72 @@ impl Object {
         }
     }
 
-    fn or(self, rhs: Object) -> Result<Object, Error> {
+    fn or(&self, rhs: &Object) -> Result<Object, Error> {
         let value = match (self, rhs) {
-            (Object::Bool(x), Object::Bool(y)) => x || y,
-            (lhs, rhs) => return Err(Error::BinaryOperation("or", lhs, rhs)),
+            (Object::Bool(x), Object::Bool(y)) => *x || *y,
+            _ => return Err(Error::BinaryOperation("or", self.clone(), rhs.clone())),
         };
         Ok(Object::Bool(value))
     }
 
-    fn and(self, rhs: Object) -> Result<Object, Error> {
+    fn and(&self, rhs: &Object) -> Result<Object, Error> {
         let value = match (self, rhs) {
-            (Object::Bool(x), Object::Bool(y)) => x && y,
-            (lhs, rhs) => return Err(Error::BinaryOperation("and", lhs, rhs)),
+            (Object::Bool(x), Object::Bool(y)) => *x && *y,
+            _ => return Err(Error::BinaryOperation("and", self.clone(), rhs.clone())),
         };
         Ok(Object::Bool(value))
     }
 
-    fn gt(self, rhs: Object) -> Result<Object, Error> {
+    fn gt(&self, rhs: &Object) -> Result<Object, Error> {
         let value = match (self, rhs) {
             (Object::Int(x), Object::Int(y)) => x > y,
             (Object::Float(x), Object::Float(y)) => x > y,
-            (lhs, rhs) => return Err(Error::BinaryOperation(">", lhs, rhs)),
+            _ => return Err(Error::BinaryOperation(">", self.clone(), rhs.clone())),
         };
         Ok(Object::Bool(value))
     }
 
-    fn ge(self, rhs: Object) -> Result<Object, Error> {
+    fn ge(&self, rhs: &Object) -> Result<Object, Error> {
         let value = match (self, rhs) {
             (Object::Int(x), Object::Int(y)) => x >= y,
             (Object::Float(x), Object::Float(y)) => x >= y,
-            (lhs, rhs) => return Err(Error::BinaryOperation(">=", lhs, rhs)),
+            _ => return Err(Error::BinaryOperation(">=", self.clone(), rhs.clone())),
         };
         Ok(Object::Bool(value))
     }
 
-    fn lt(self, rhs: Object) -> Result<Object, Error> {
+    fn lt(&self, rhs: &Object) -> Result<Object, Error> {
         let value = match (self, rhs) {
             (Object::Int(x), Object::Int(y)) => x < y,
             (Object::Float(x), Object::Float(y)) => x < y,
-            (lhs, rhs) => return Err(Error::BinaryOperation("<", lhs, rhs)),
+            _ => return Err(Error::BinaryOperation("<", self.clone(), rhs.clone())),
         };
         Ok(Object::Bool(value))
     }
 
-    fn le(self, rhs: Object) -> Result<Object, Error> {
+    fn le(&self, rhs: &Object) -> Result<Object, Error> {
         let value = match (self, rhs) {
             (Object::Int(x), Object::Int(y)) => x <= y,
             (Object::Float(x), Object::Float(y)) => x <= y,
-            (lhs, rhs) => return Err(Error::BinaryOperation("<=", lhs, rhs)),
+            _ => return Err(Error::BinaryOperation("<=", self.clone(), rhs.clone())),
         };
         Ok(Object::Bool(value))
     }
 
-    fn eq(self, rhs: Object) -> Result<Object, Error> {
+    fn eq(&self, rhs: &Object) -> Result<Object, Error> {
         let value = match (self, rhs) {
             (Object::Int(x), Object::Int(y)) => x == y,
             (Object::Float(x), Object::Float(y)) => x == y,
             (Object::Bool(x), Object::Bool(y)) => x == y,
             (Object::Str(x), Object::Str(y)) => x == y,
-            (Object::Pointer(xp, xi), Object::Pointer(yp, yi)) => xp == yp && xi == yi,
+            (Object::Pointer(x, lhs), Object::Pointer(y, rhs)) => x == y && lhs == rhs,
             (Object::Tuple(lhs), Object::Tuple(rhs)) => {
                 if lhs.len() != rhs.len() {
                     false
                 } else {
                     let mut res = true;
                     for (x, y) in lhs.iter().zip(rhs.iter()) {
-                        if !x.clone().eq(y.clone())?.bool()? {
+                        if !x.eq(y)?.bool()? {
                             res = false;
                             break;
                         }
@@ -248,7 +248,7 @@ impl Object {
                 } else {
                     let mut res = true;
                     for (x, y) in lhs.iter().zip(rhs.iter()) {
-                        if !x.clone().eq(y.clone())?.bool()? {
+                        if !x.eq(y)?.bool()? {
                             res = false;
                             break;
                         }
@@ -256,13 +256,13 @@ impl Object {
                     res
                 }
             }
-            (Object::Group(xi, lhs), Object::Group(yi, rhs)) => {
-                if xi != yi || lhs.len() != rhs.len() {
+            (Object::Group(x, lhs), Object::Group(y, rhs)) if x == y => {
+                if lhs.len() != rhs.len() {
                     false
                 } else {
                     let mut res = true;
                     for (x, y) in lhs.iter().zip(rhs.iter()) {
-                        if !x.clone().eq(y.clone())?.bool()? {
+                        if !x.eq(y)?.bool()? {
                             res = false;
                             break;
                         }
@@ -270,109 +270,147 @@ impl Object {
                     res
                 }
             }
-            (lhs, rhs) => return Err(Error::BinaryOperation("==", lhs, rhs)),
+            _ => return Err(Error::BinaryOperation("==", self.clone(), rhs.clone())),
         };
         Ok(Object::Bool(value))
     }
 
-    fn ne(self, rhs: Object) -> Result<Object, Error> {
-        let value = !self.eq(rhs)?.bool()?;
+    fn ne(&self, rhs: &Object) -> Result<Object, Error> {
+        let value = !self
+            .eq(rhs)
+            .map_err(|_| Error::BinaryOperation("!=", self.clone(), rhs.clone()))?
+            .bool()?;
         Ok(Object::Bool(value))
     }
 
-    fn add(self, rhs: Object) -> Result<Object, Error> {
+    fn add(&self, rhs: &Object) -> Result<Object, Error> {
         let value = match (self, rhs) {
-            (Object::Int(x), Object::Int(y)) => x
-                .checked_add(y)
-                .ok_or(Error::BinaryOperation("+", x.into(), y.into()))?
-                .into(),
-            (Object::Float(x), Object::Float(y)) => (x + y).into(),
+            (Object::Int(x), Object::Int(y)) => x.wrapping_add(*y).into(),
+            (Object::Float(x), Object::Float(y)) => (*x + *y).into(),
             (Object::Str(x), Object::Str(y)) => format!("{}{}", x, y).into(),
-            (Object::Node(x), Object::Node(y)) => Node::add(x, y).map_err(Error::Any)?.into(),
-            (lhs, rhs) => return Err(Error::BinaryOperation("+", lhs, rhs)),
-        };
-        Ok(value)
-    }
-
-    fn sub(self, rhs: Object) -> Result<Object, Error> {
-        let value = match (self, rhs) {
-            (Object::Int(x), Object::Int(y)) => x
-                .checked_sub(y)
-                .ok_or(Error::BinaryOperation("-", x.into(), y.into()))?
-                .into(),
-            (Object::Float(x), Object::Float(y)) => (x - y).into(),
-            (Object::Node(x), Object::Node(y)) => Node::sub(x, y).map_err(Error::Any)?.into(),
-            (lhs, rhs) => return Err(Error::BinaryOperation("-", lhs, rhs)),
-        };
-        Ok(value)
-    }
-
-    fn mul(self, rhs: Object) -> Result<Object, Error> {
-        let value = match (self, rhs) {
-            (Object::Int(x), Object::Int(y)) => x
-                .checked_mul(y)
-                .ok_or(Error::BinaryOperation("*", x.into(), y.into()))?
-                .into(),
-            (Object::Float(x), Object::Float(y)) => (x * y).into(),
-            (Object::Node(x), Object::Node(y)) => Node::mul(x, y).map_err(Error::Any)?.into(),
-            (lhs, rhs) => return Err(Error::BinaryOperation("*", lhs, rhs)),
-        };
-        Ok(value)
-    }
-
-    fn div(self, rhs: Object) -> Result<Object, Error> {
-        let value = match (self, rhs) {
-            (Object::Int(x), Object::Int(y)) => x
-                .checked_div(y)
-                .ok_or(Error::BinaryOperation("/", x.into(), y.into()))?
-                .into(),
-            (Object::Float(x), Object::Float(y)) => (x / y).into(),
-            (Object::Node(x), Object::Node(y)) => Node::div(x, y).map_err(Error::Any)?.into(),
-            (lhs, rhs) => return Err(Error::BinaryOperation("/", lhs, rhs)),
-        };
-        Ok(value)
-    }
-
-    fn rem(self, rhs: Object) -> Result<Object, Error> {
-        let value = match (self, rhs) {
-            (Object::Int(x), Object::Int(y)) => (x % y).into(),
-            (lhs, rhs) => return Err(Error::BinaryOperation("%", lhs, rhs)),
-        };
-        Ok(value)
-    }
-
-    fn matmul(self, rhs: Object) -> Result<Object, Error> {
-        let value = match (self, rhs) {
-            (Object::Node(lhs), Object::Node(rhs)) => {
-                Node::matmul(lhs, rhs).map_err(Error::Any)?.into()
+            (Object::Node(x), Object::Node(y)) => {
+                Node::add(x.clone(), y.clone()).map_err(Error::Any)?.into()
             }
-            (lhs, rhs) => return Err(Error::BinaryOperation("@", lhs, rhs)),
+            (Object::Group(x, lhs), Object::Group(y, rhs)) if x == y => {
+                let body = lhs
+                    .iter()
+                    .zip(rhs.iter())
+                    .map(|(x, y)| x.add(y))
+                    .collect::<Result<Vec<_>, _>>()?;
+                Object::Group(*x, body.into())
+            }
+            _ => return Err(Error::BinaryOperation("+", self.clone(), rhs.clone())),
         };
         Ok(value)
     }
 
-    fn not(self) -> Result<Object, Error> {
+    fn sub(&self, rhs: &Object) -> Result<Object, Error> {
+        let value = match (self, rhs) {
+            (Object::Int(x), Object::Int(y)) => x.wrapping_sub(*y).into(),
+            (Object::Float(x), Object::Float(y)) => (*x - *y).into(),
+            (Object::Node(x), Object::Node(y)) => {
+                Node::sub(x.clone(), y.clone()).map_err(Error::Any)?.into()
+            }
+            (Object::Group(x, lhs), Object::Group(y, rhs)) if x == y => {
+                let body = lhs
+                    .iter()
+                    .zip(rhs.iter())
+                    .map(|(x, y)| x.sub(y))
+                    .collect::<Result<Vec<_>, _>>()?;
+                Object::Group(*x, body.into())
+            }
+            _ => return Err(Error::BinaryOperation("-", self.clone(), rhs.clone())),
+        };
+        Ok(value)
+    }
+
+    fn mul(&self, rhs: &Object) -> Result<Object, Error> {
+        let value = match (self, rhs) {
+            (Object::Int(x), Object::Int(y)) => x.wrapping_mul(*y).into(),
+            (Object::Float(x), Object::Float(y)) => (*x * *y).into(),
+            (Object::Node(x), Object::Node(y)) => {
+                Node::mul(x.clone(), y.clone()).map_err(Error::Any)?.into()
+            }
+            (Object::Group(x, lhs), Object::Group(y, rhs)) if x == y => {
+                let body = lhs
+                    .iter()
+                    .zip(rhs.iter())
+                    .map(|(x, y)| x.mul(y))
+                    .collect::<Result<Vec<_>, _>>()?;
+                Object::Group(*x, body.into())
+            }
+            _ => return Err(Error::BinaryOperation("*", self.clone(), rhs.clone())),
+        };
+        Ok(value)
+    }
+
+    fn div(&self, rhs: &Object) -> Result<Object, Error> {
+        let value = match (self, rhs) {
+            (Object::Int(x), Object::Int(y)) => x.wrapping_div(*y).into(),
+            (Object::Float(x), Object::Float(y)) => (*x / *y).into(),
+            (Object::Node(x), Object::Node(y)) => {
+                Node::div(x.clone(), y.clone()).map_err(Error::Any)?.into()
+            }
+            (Object::Group(x, lhs), Object::Group(y, rhs)) if x == y => {
+                let body = lhs
+                    .iter()
+                    .zip(rhs.iter())
+                    .map(|(x, y)| x.div(y))
+                    .collect::<Result<Vec<_>, _>>()?;
+                Object::Group(*x, body.into())
+            }
+            _ => return Err(Error::BinaryOperation("/", self.clone(), rhs.clone())),
+        };
+        Ok(value)
+    }
+
+    fn rem(&self, rhs: &Object) -> Result<Object, Error> {
+        let value = match (self, rhs) {
+            (Object::Int(x), Object::Int(y)) => (*x % *y).into(),
+            _ => return Err(Error::BinaryOperation("%", self.clone(), rhs.clone())),
+        };
+        Ok(value)
+    }
+
+    fn matmul(&self, rhs: &Object) -> Result<Object, Error> {
+        let value = match (self, rhs) {
+            (Object::Node(lhs), Object::Node(rhs)) => Node::matmul(lhs.clone(), rhs.clone())
+                .map_err(Error::Any)?
+                .into(),
+            _ => return Err(Error::BinaryOperation("@", self.clone(), rhs.clone())),
+        };
+        Ok(value)
+    }
+
+    fn not(&self) -> Result<Object, Error> {
         let value = match self {
-            Object::Bool(x) => (!x).into(),
-            other => return Err(Error::UnaryOperation("not", other)),
+            Object::Bool(x) => (!*x).into(),
+            other => return Err(Error::UnaryOperation("not", other.clone())),
         };
         Ok(value)
     }
 
-    fn pos(self) -> Result<Object, Error> {
-        if matches!(self, Object::Int(_) | Object::Float(_) | Object::Node(_)) {
+    fn pos(&self) -> Result<Object, Error> {
+        if matches!(
+            self,
+            Object::Int(_) | Object::Float(_) | Object::Node(_) | Object::Group(_, _)
+        ) {
             Ok(self.clone())
         } else {
-            Err(Error::UnaryOperation("+", self))
+            Err(Error::UnaryOperation("+", self.clone()))
         }
     }
 
-    fn neg(self) -> Result<Object, Error> {
+    fn neg(&self) -> Result<Object, Error> {
         let value = match self {
-            Object::Int(x) => (-x).into(),
-            Object::Float(x) => (-x).into(),
-            Object::Node(x) => Node::neg(x).map_err(Error::Any)?.into(),
-            other => return Err(Error::UnaryOperation("-", other)),
+            Object::Int(x) => (-*x).into(),
+            Object::Float(x) => (-*x).into(),
+            Object::Node(x) => Node::neg(x.clone()).map_err(Error::Any)?.into(),
+            Object::Group(x, objs) => {
+                let body = objs.iter().map(Self::neg).collect::<Result<Vec<_>, _>>()?;
+                Object::Group(*x, body.into())
+            }
+            other => return Err(Error::UnaryOperation("-", other.clone())),
         };
         Ok(value)
     }

@@ -197,7 +197,7 @@ impl Bytecode {
                 let frame = rt.frame();
                 let l = frame.load(*lhs);
                 let r = frame.load(*rhs);
-                let obj = l.binary(*op, r)?;
+                let obj = l.binary(*op, &r)?;
                 frame.store(*dst, obj);
             }
             Bytecode::Unary(dst, op, src) => {
