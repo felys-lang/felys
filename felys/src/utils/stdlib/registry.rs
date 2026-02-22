@@ -17,11 +17,13 @@ pub const STDLIB: Stdlib = &[
     ("pink", "cyrene", CYRENE),
     ("pink", "elysia", ELYSIA),
     ("pink", "felysneko", FELYSNEKO),
+    ("utils", "range", RANGE),
     ("nn", "tensor", TENSOR),
     ("nn", "relu", RELU),
     ("nn", "ln", LN),
     ("nn", "exp", EXP),
     ("nn", "sum", SUM),
+    ("nn", "mean", MEAN),
     ("nn", "init", INIT),
     ("nn", "attach", ATTACH),
     ("nn", "backward", BACKWARD),
@@ -45,6 +47,12 @@ const CYRENE: Signature = |_, _| Ok(Object::Str("往昔的涟漪♪".into()));
 const ELYSIA: Signature = |_, _| Ok(Object::Str("粉色妖精小姐♪".into()));
 
 const FELYSNEKO: Signature = |_, _| Ok(Object::Str("银河猫猫侠♪".into()));
+
+const RANGE: Signature = |args, _| {
+    let [start, end] = extract(args)?;
+    let range = (start.int()?..end.int()?).map(Object::Int).collect();
+    Ok(Object::List(range))
+};
 
 const TENSOR: Signature = |args, _| {
     let [object] = extract(args)?;
@@ -80,7 +88,23 @@ const SUM: Signature = |args, _| {
             .map_err(|_| "invalid axis".to_string())?;
         indices.push(int);
     }
+    indices.dedup();
     let node = Node::sum(object.node()?, &indices, keepdim.bool()?)?;
+    Ok(Object::Node(node))
+};
+
+const MEAN: Signature = |args, _| {
+    let [object, axes, keepdim] = extract(args)?;
+    let mut indices = Vec::new();
+    for x in axes.list()?.iter() {
+        let int = x
+            .int()?
+            .try_into()
+            .map_err(|_| "invalid axis".to_string())?;
+        indices.push(int);
+    }
+    indices.dedup();
+    let node = Node::mean(object.node()?, &indices, keepdim.bool()?)?;
     Ok(Object::Node(node))
 };
 

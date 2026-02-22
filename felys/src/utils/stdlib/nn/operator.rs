@@ -208,6 +208,20 @@ impl Node {
         }))
     }
 
+    pub fn mean(src: Rc<Node>, axes: &[usize], keepdim: bool) -> Result<Rc<Node>, String> {
+        let sum = Self::sum(src.clone(), axes, keepdim)?;
+        let shape = src.tensor.shape.as_ref();
+        let mut n = 1;
+        for &axis in axes {
+            n *= shape[axis];
+        }
+        let denominator = Rc::new(Node {
+            tensor: Tensor::fill(n as f32, [].into()),
+            op: Operator::Detached,
+        });
+        Self::div(sum, denominator)
+    }
+
     pub fn backward(self: &Rc<Self>) -> Result<HashMap<i32, Rc<Node>>, String> {
         let mut gradients = HashMap::new();
         let ones = Tensor::fill(1.0, self.tensor.shape.clone());
