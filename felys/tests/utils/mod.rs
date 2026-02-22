@@ -13,7 +13,7 @@ pub fn exec(
             let mut out = String::new();
             let obj = iii.exec(args.clone(), &mut out)?;
 
-            if obj.clone().binary(BinOp::Ne, expect.clone())?.bool()? {
+            if obj.clone().binary(BinOp::Ne, &expect)?.bool()? {
                 return Err(format!("Expected {}, got {}", expect, obj));
             } else if out != stdout {
                 return Err(format!("Expected {}, got {}", stdout, out));

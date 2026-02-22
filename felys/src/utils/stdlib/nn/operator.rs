@@ -14,22 +14,26 @@ pub struct Node {
 
 impl Display for Node {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}::<", self.tensor)?;
-        match self.op {
-            Operator::Add(_, _) => write!(f, "Add")?,
-            Operator::Sub(_, _) => write!(f, "Sub")?,
-            Operator::Mul(_, _) => write!(f, "Mul")?,
-            Operator::Div(_, _) => write!(f, "Div")?,
-            Operator::MatMul(_, _) => write!(f, "MatMul")?,
-            Operator::Neg(_) => write!(f, "Neg")?,
-            Operator::Log(_) => write!(f, "Log")?,
-            Operator::Exp(_) => write!(f, "Exp")?,
-            Operator::ReLU(_) => write!(f, "ReLU")?,
-            Operator::Sum(_) => write!(f, "Sum")?,
-            Operator::Parameter(i, _) => write!(f, "Parameter<{i}>")?,
-            Operator::Detached => write!(f, "Detached")?,
-        };
-        write!(f, ">")
+        write!(f, "{}::{}", self.tensor, self.op)
+    }
+}
+
+impl Display for Operator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Operator::Add(_, _) => write!(f, "Add"),
+            Operator::Sub(_, _) => write!(f, "Sub"),
+            Operator::Mul(_, _) => write!(f, "Mul"),
+            Operator::Div(_, _) => write!(f, "Div"),
+            Operator::MatMul(_, _) => write!(f, "MatMul"),
+            Operator::Neg(_) => write!(f, "Neg"),
+            Operator::Log(_) => write!(f, "Log"),
+            Operator::Exp(_) => write!(f, "Exp"),
+            Operator::ReLU(_) => write!(f, "ReLU"),
+            Operator::Sum(_, _) => write!(f, "Sum"),
+            Operator::Parameter(i, _) => write!(f, "Parameter<{i}>"),
+            Operator::Detached => write!(f, "Detached"),
+        }
     }
 }
 
@@ -44,7 +48,7 @@ pub enum Operator {
     Log(Rc<Node>),
     Exp(Rc<Node>),
     ReLU(Rc<Node>),
-    Sum(Rc<Node>),
+    Sum(Rc<Node>, Rc<[usize]>),
     Parameter(i32, Rc<[usize]>),
     Detached,
 }
@@ -65,7 +69,7 @@ impl Operator {
             | Operator::Log(src)
             | Operator::Exp(src)
             | Operator::ReLU(src)
-            | Operator::Sum(src) => {
+            | Operator::Sum(src, _) => {
                 if src.fixed() {
                     return Operator::Detached;
                 }
@@ -87,12 +91,28 @@ impl TryFrom<Object> for Node {
     }
 }
 
+impl Default for Node {
+    fn default() -> Self {
+        Self {
+            tensor: Tensor::fill(0.0, [].into()),
+            op: Operator::Detached,
+        }
+    }
+}
+
 impl Node {
-    pub fn attach(self, i: i32) -> Result<Self, String> {
+    pub fn new(shape: Rc<[usize]>) -> Self {
+        Self {
+            tensor: Tensor::new(shape),
+            op: Operator::Detached,
+        }
+    }
+
+    pub fn attach(&self, i: i32) -> Result<Self, String> {
         if let Operator::Detached = self.op {
             let shape = self.tensor.shape.clone();
             Ok(Self {
-                tensor: self.tensor,
+                tensor: self.tensor.clone(),
                 op: Operator::Parameter(i, shape),
             })
         } else {
@@ -178,13 +198,31 @@ impl Node {
 
     pub fn sum(src: Rc<Node>, axes: &[usize], keepdim: bool) -> Result<Rc<Node>, String> {
         let tensor = src.tensor.sum(axes, keepdim)?;
+        let mut shape = src.tensor.shape.to_vec();
+        for &axis in axes {
+            shape[axis] = 1;
+        }
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Sum(src).pruned(),
+            op: Operator::Sum(src, shape.into()).pruned(),
         }))
     }
 
-    pub fn backward(self: &Rc<Self>) -> Result<HashMap<i32, Tensor>, String> {
+    pub fn mean(src: Rc<Node>, axes: &[usize], keepdim: bool) -> Result<Rc<Node>, String> {
+        let sum = Self::sum(src.clone(), axes, keepdim)?;
+        let shape = src.tensor.shape.as_ref();
+        let mut n = 1;
+        for &axis in axes {
+            n *= shape[axis];
+        }
+        let denominator = Rc::new(Node {
+            tensor: Tensor::fill(n as f32, [].into()),
+            op: Operator::Detached,
+        });
+        Self::div(sum, denominator)
+    }
+
+    pub fn backward(self: &Rc<Self>) -> Result<HashMap<i32, Rc<Node>>, String> {
         let mut gradients = HashMap::new();
         let ones = Tensor::fill(1.0, self.tensor.shape.clone());
         let mut todo = vec![(self.clone(), ones)];
@@ -235,8 +273,10 @@ impl Node {
                     let dx = grad.binary(&src.tensor, |g, i| if i > 0.0 { g } else { 0.0 })?;
                     push(src, dx)?;
                 }
-                Operator::Sum(src) => {
+                Operator::Sum(src, shape) => {
                     let ones = Tensor::fill(1.0, src.tensor.shape.clone());
+                    let mut grad = grad;
+                    grad.shape = shape.clone();
                     let broadcasted = ones.binary(&grad, Tensor::mul)?;
                     push(src, broadcasted)?;
                 }
@@ -253,6 +293,18 @@ impl Node {
             }
         }
 
-        Ok(gradients)
+        Ok(gradients
+            .into_iter()
+            .map(|(i, tensor)| {
+                (
+                    i,
+                    Node {
+                        tensor,
+                        op: Operator::Detached,
+                    }
+                    .into(),
+                )
+            })
+            .collect())
     }
 }
