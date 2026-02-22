@@ -25,7 +25,7 @@ impl Display for Tensor {
             indent: usize,
         ) -> std::fmt::Result {
             if shape.is_empty() {
-                write!(f, "{:.4e}", data[*offset])?;
+                write!(f, "{:?}", data[*offset])?;
                 *offset += 1;
                 return Ok(());
             }
