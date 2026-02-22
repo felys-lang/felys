@@ -1,7 +1,13 @@
+use crate::utils::stdlib::nn::random::Random;
 use crate::Object;
+use std::cell::RefCell;
 use std::cmp::max;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
+
+thread_local! {
+    static RANDOM: RefCell<Random> = RefCell::new(Random::new(42));
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Tensor {
@@ -16,22 +22,37 @@ impl Display for Tensor {
             data: &[f32],
             shape: &[usize],
             offset: &mut usize,
+            indent: usize,
         ) -> std::fmt::Result {
             if shape.is_empty() {
-                write!(f, "{:?}", data[*offset])?;
+                write!(f, "{:.4e}", data[*offset])?;
                 *offset += 1;
                 return Ok(());
             }
 
-            write!(f, "[")?;
             let len = shape[0];
             let rest = &shape[1..];
 
-            for i in 0..len {
-                if i > 0 {
-                    write!(f, ", ")?;
+            write!(f, "[")?;
+
+            if rest.is_empty() {
+                for i in 0..len {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    dfs(f, data, rest, offset, indent)?;
                 }
-                dfs(f, data, rest, offset)?;
+            } else {
+                for i in 0..len {
+                    if i > 0 {
+                        writeln!(f)?;
+                        for _ in 0..rest.len() - 1 {
+                            writeln!(f)?;
+                        }
+                        write!(f, "{}", " ".repeat(indent + 1))?;
+                    }
+                    dfs(f, data, rest, offset, indent + 1)?;
+                }
             }
             write!(f, "]")
         }
@@ -42,7 +63,7 @@ impl Display for Tensor {
             return write!(f, "{}", self.data[0]);
         }
 
-        dfs(f, &self.data, &self.shape, &mut offset)
+        dfs(f, &self.data, &self.shape, &mut offset, 0)
     }
 }
 
@@ -118,6 +139,28 @@ impl Tensor {
 }
 
 impl Tensor {
+    pub fn new(shape: Rc<[usize]>) -> Self {
+        if shape.len() < 2 {
+            return Self::fill(0.0, shape);
+        }
+
+        let input = shape[1..].iter().product();
+        let length = shape[0] * input;
+        let mut data = Vec::with_capacity(length);
+
+        RANDOM.with(|rand| {
+            let mut rng = rand.borrow_mut();
+            for _ in 0..length {
+                data.push(rng.f32(input))
+            }
+        });
+
+        Self {
+            data: Rc::from(data),
+            shape,
+        }
+    }
+
     pub fn fill(x: f32, shape: Rc<[usize]>) -> Self {
         let size = shape.iter().product();
         Self {

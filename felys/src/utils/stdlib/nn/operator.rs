@@ -1,7 +1,7 @@
-use crate::Object;
 use crate::utils::stdlib::nn::tensor::Tensor;
-use std::collections::HashMap;
+use crate::Object;
 use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
@@ -14,22 +14,26 @@ pub struct Node {
 
 impl Display for Node {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}::<", self.tensor)?;
-        match self.op {
-            Operator::Add(_, _) => write!(f, "Add")?,
-            Operator::Sub(_, _) => write!(f, "Sub")?,
-            Operator::Mul(_, _) => write!(f, "Mul")?,
-            Operator::Div(_, _) => write!(f, "Div")?,
-            Operator::MatMul(_, _) => write!(f, "MatMul")?,
-            Operator::Neg(_) => write!(f, "Neg")?,
-            Operator::Log(_) => write!(f, "Log")?,
-            Operator::Exp(_) => write!(f, "Exp")?,
-            Operator::ReLU(_) => write!(f, "ReLU")?,
-            Operator::Sum(_) => write!(f, "Sum")?,
-            Operator::Parameter(i, _) => write!(f, "Parameter<{i}>")?,
-            Operator::Detached => write!(f, "Detached")?,
-        };
-        write!(f, ">")
+        write!(f, "{}::{}", self.tensor, self.op)
+    }
+}
+
+impl Display for Operator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Operator::Add(_, _) => write!(f, "Add"),
+            Operator::Sub(_, _) => write!(f, "Sub"),
+            Operator::Mul(_, _) => write!(f, "Mul"),
+            Operator::Div(_, _) => write!(f, "Div"),
+            Operator::MatMul(_, _) => write!(f, "MatMul"),
+            Operator::Neg(_) => write!(f, "Neg"),
+            Operator::Log(_) => write!(f, "Log"),
+            Operator::Exp(_) => write!(f, "Exp"),
+            Operator::ReLU(_) => write!(f, "ReLU"),
+            Operator::Sum(_) => write!(f, "Sum"),
+            Operator::Parameter(i, _) => write!(f, "Parameter<{i}>"),
+            Operator::Detached => write!(f, "Detached"),
+        }
     }
 }
 
@@ -87,7 +91,23 @@ impl TryFrom<Object> for Node {
     }
 }
 
+impl Default for Node {
+    fn default() -> Self {
+        Self {
+            tensor: Tensor::fill(0.0, [].into()),
+            op: Operator::Detached,
+        }
+    }
+}
+
 impl Node {
+    pub fn new(shape: Rc<[usize]>) -> Self {
+        Self {
+            tensor: Tensor::new(shape),
+            op: Operator::Detached,
+        }
+    }
+
     pub fn attach(self, i: i32) -> Result<Self, String> {
         if let Operator::Detached = self.op {
             let shape = self.tensor.shape.clone();
