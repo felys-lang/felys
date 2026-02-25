@@ -37,7 +37,7 @@ impl Common {
         }
 
         write(&path, "mod.rs", &self.module);
-        write(&path, "intern.rs", &self.intern);
+        write(&path, "interner.rs", &self.interner);
         write(&path, "memoize.rs", &self.memoize);
         write(&path, "packrat.rs", &self.packrat);
         write(&path, "stream.rs", &self.stream);

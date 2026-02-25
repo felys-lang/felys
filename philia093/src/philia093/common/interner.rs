@@ -2,19 +2,19 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 #[allow(unused)]
-pub struct Intern {
+pub struct Interner {
     data: HashMap<Rc<str>, usize>,
     fast: Vec<Rc<str>>,
 }
 #[allow(unused)]
-impl Intern {
+impl Interner {
     pub fn new(capacity: usize) -> Self {
         Self {
             data: HashMap::with_capacity(capacity),
             fast: Vec::with_capacity(capacity),
         }
     }
-    pub fn id(&mut self, s: &str) -> usize {
+    pub fn intern(&mut self, s: &str) -> usize {
         if let Some(&id) = self.data.get(s) {
             id
         } else {
@@ -25,7 +25,7 @@ impl Intern {
             id
         }
     }
-    pub fn get(&self, id: &usize) -> Option<&str> {
+    pub fn resolve(&self, id: &usize) -> Option<&str> {
         let string = self.fast.get(*id)?;
         Some(&(**string))
     }
