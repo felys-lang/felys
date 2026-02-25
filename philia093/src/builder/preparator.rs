@@ -14,7 +14,7 @@ impl Tags {
 }
 
 impl Builder {
-    pub fn new(grammar: Grammar, intern: Interner) -> Self {
+    pub fn new(grammar: Grammar, interner: Interner) -> Self {
         let mut peg = HashMap::new();
         let mut rex = HashMap::new();
         let mut order = Vec::new();
@@ -28,7 +28,7 @@ impl Builder {
         for callable in grammar.callables {
             match callable.hierarchy {
                 Hierarchy::Peg(ty, rule) => {
-                    keywords.append(&mut rule.keywords(&intern));
+                    keywords.append(&mut rule.keywords(&interner));
                     peg.insert(callable.name, (ty, rule));
                     order.push((callable.name, Template::Rule));
                 }
@@ -76,16 +76,16 @@ impl Builder {
         let mut languages = HashMap::new();
         for (name, regex) in &rex {
             if !languages.contains_key(name) {
-                let language = regex.desugar(&rex, &mut languages, &intern);
+                let language = regex.desugar(&rex, &mut languages, &interner);
                 languages.insert(*name, language);
             }
         }
 
         Self {
-            interner: intern,
+            interner,
             tags,
             rules: peg,
-            langs: languages,
+            languages,
             order,
             keywords,
             import: grammar.import,

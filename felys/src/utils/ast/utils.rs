@@ -19,7 +19,7 @@ impl<T: Clone, const N: usize> BufVec<T, N> {
     }
 
     pub fn into_iter(self) -> impl Iterator<Item = T> {
-        self.buf.to_vec().into_iter().chain(self.vec.into_iter())
+        self.buf.to_vec().into_iter().chain(self.vec)
     }
 
     pub fn len(&self) -> usize {

@@ -113,7 +113,7 @@ impl Builder {
     }
 
     fn lang(&self, id: &usize) -> (TokenStream, TokenStream, TokenStream) {
-        let language = self.langs.get(id).unwrap();
+        let language = self.languages.get(id).unwrap();
         let name = format_ident!("{}", self.interner.resolve(id).unwrap());
         let mut ty = quote! { usize };
         let mut body = quote! {
