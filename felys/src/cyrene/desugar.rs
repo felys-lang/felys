@@ -1,5 +1,5 @@
 use crate::cyrene::error::Error;
-use crate::philia093::Intern;
+use crate::philia093::Interner;
 use crate::utils::ast::{Block, Impl, Item};
 use crate::utils::group::Group;
 use crate::utils::namespace::Namespace;
@@ -8,34 +8,34 @@ use std::collections::HashMap;
 
 impl I {
     pub fn desugar(self) -> Result<II, String> {
-        let mut intern = self.intern;
-        let mut namespace = Namespace::init(&mut intern);
+        let mut interner = self.interner;
+        let mut namespace = Namespace::init(&mut interner);
         let mut functions = HashMap::new();
         let mut groups = HashMap::new();
 
         for item in self.root.0.iter() {
             item.allocate(&mut namespace, &mut groups)
-                .map_err(|e| e.recover(&intern))?;
+                .map_err(|e| e.recover(&interner))?;
         }
 
         let mut main = Err(Error::MainNotFound);
         for item in self.root.0.into_iter() {
             item.attach(
-                &mut intern,
+                &mut interner,
                 &mut namespace,
                 &mut functions,
                 &mut groups,
                 &mut main,
             )
-            .map_err(|e| e.recover(&intern))?;
+            .map_err(|e| e.recover(&interner))?;
         }
 
         Ok(II {
             namespace,
             groups,
             functions,
-            main: main.map_err(|e| e.recover(&intern))?,
-            intern,
+            main: main.map_err(|e| e.recover(&interner))?,
+            interner,
         })
     }
 }
@@ -58,7 +58,7 @@ impl Item {
 
     fn attach(
         self,
-        intern: &mut Intern,
+        interner: &mut Interner,
         namespace: &mut Namespace,
         functions: &mut HashMap<usize, (Vec<usize>, Block)>,
         groups: &mut HashMap<usize, Group>,
@@ -69,7 +69,7 @@ impl Item {
             Item::Group(_, _) => {}
             Item::Impl(id, impls) => {
                 for implementation in impls.into_iter() {
-                    implementation.attach(id, intern, namespace, functions, groups)?;
+                    implementation.attach(id, interner, namespace, functions, groups)?;
                 }
             }
             Item::Fn(_, args, block) => {
@@ -107,7 +107,7 @@ impl Impl {
     fn attach(
         self,
         id: usize,
-        intern: &mut Intern,
+        interner: &mut Interner,
         namespace: &mut Namespace,
         functions: &mut HashMap<usize, (Vec<usize>, Block)>,
         groups: &mut HashMap<usize, Group>,
@@ -119,7 +119,7 @@ impl Impl {
                 functions.insert(ptr, (args, block));
             }
             Impl::Method(secondary, mut args, block) => {
-                args.insert(0, intern.id("self"));
+                args.insert(0, interner.intern("self"));
                 functions.insert(ptr, (args, block));
                 let (_, gp) = namespace.get([id].iter()).unwrap();
                 groups.get_mut(&gp).unwrap().attach(secondary, ptr);

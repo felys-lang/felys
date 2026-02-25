@@ -1,4 +1,4 @@
-use crate::philia093::Intern;
+use crate::philia093::Interner;
 use crate::utils::function::Pointer;
 use crate::utils::stdlib::registry::STDLIB;
 use std::collections::HashMap;
@@ -16,19 +16,19 @@ enum Node {
 }
 
 impl Namespace {
-    pub fn init(intern: &mut Intern) -> Self {
+    pub fn init(interner: &mut Interner) -> Self {
         let mut base = HashMap::new();
         for (i, (sub, inner, _)) in STDLIB.iter().enumerate() {
             if let Node::Redirect(x) = base
-                .entry(intern.id(sub))
+                .entry(interner.intern(sub))
                 .or_insert(Node::Redirect(HashMap::new()))
             {
-                x.insert(intern.id(inner), Node::Rust(i));
+                x.insert(interner.intern(inner), Node::Rust(i));
             }
         }
         Self {
             ids: 0,
-            tree: HashMap::from([(intern.id("std"), Node::Redirect(base))]),
+            tree: HashMap::from([(interner.intern("std"), Node::Redirect(base))]),
         }
     }
 
