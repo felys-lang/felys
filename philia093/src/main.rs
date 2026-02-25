@@ -22,11 +22,11 @@ fn main() {
     let args = Args::parse();
     let code = fs::read_to_string(&args.grammar).expect("file not found");
     let now = Instant::now();
-    let (grammar, intern) = match PhiLia093::from(code).parse() {
+    let (grammar, interner) = match PhiLia093::from(code).parse() {
         Ok(inner) => inner,
         Err(e) => return println!("{}", e),
     };
-    Builder::new(grammar, intern)
+    Builder::new(grammar, interner)
         .codegen()
         .write(&args.target, "philia093");
     println!("elapsed: {:?}", now.elapsed());
