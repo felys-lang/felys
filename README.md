@@ -23,40 +23,38 @@ The design is simple, but still, here's the high-level pipeline:
 
 ```mermaid
 flowchart TD
-    Src(Source Code) --> Parser
-
     subgraph FrontEnd [Front-end]
         direction LR
-        Parser(Syntactical Analysis) --> Sem(Semantical Analysis)
-        Sem --> IR[SSA IR Construction]
+        FA[Source File] --> FB(Syntactical Analysis)
+        FB --> FC(Semantical Analysis)
+        FC --> IR[SSA IR Construction]
     end
 
-    IR --> SCCP
+    FrontEnd --> MidEnd
 
     subgraph MidEnd [Mid-end]
         direction LR
-        SCCP(SCCP Analysis) --> CF(Constant Folding)
-        CF --> Phi(Trivial Phi Removal)
-        Phi --> DCE(Dead Code Elimination)
-        DCE --> JT(Jump Threading)
-        JT --> SCCP
+        MA(SCCP Analysis) --> MB(Constant Folding)
+        MB --> MC(Trivial Phi Removal)
+        MC --> MD(Dead Code Elimination)
+        MD --> ME(Jump Threading)
+        ME --> MA
     end
 
-    JT --> P2C
+    MidEnd --> BackEnd
 
     subgraph BackEnd [Back-end]
         direction LR
-        P2C(Phi to Copy) --> Reg(Register Allocation)
-        Reg --> Codegen(Code Generation)
+        BA(Phi to Copy) --> BB(Linear Scan Register Allocation)
+        BB --> BC(Code Generation)
     end
 
-    Codegen --> VM
-    Bin(Binary) --> Loader
-
-    subgraph RT [Runtime]
+    BackEnd --> Runtime
+    
+    subgraph Runtime [Runtime]
         direction LR
-        Loader --> VM
-        VM(Virtual Machine)
+        RA[Binary File] --> RB(Loader)
+        RB --> VM(Virtual Machine)
     end
 ```
 
