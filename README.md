@@ -64,7 +64,7 @@ flowchart TD
         direction LR
         RA{{Binary}} --> RB(Loader)
         RB --> RC{{Bytecode}}
-        RC --> VM(Virtual Machine)
+        RC --> RD(Virtual Machine)
     end
 ```
 
