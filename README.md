@@ -12,7 +12,7 @@
 
 Felys is a dependency-free interpreted programming language written in Rust, featuring its own compiler and runtime. Feel free to try it out in the online [playground](https://exec.felys.dev/). Please note, however, that the language is currently in a fragile state following a major reconstruction and requires project-level refactoring to improve code quality.
 
-## Components
+## Components and Pipeline
 
 I understand that the naming and code organization do not make sense, but I like it.
 
@@ -70,7 +70,7 @@ flowchart TD
 
 Hexagons represent the state of the program at a specific stage. Dotted lines means an optional path, but not configured in the [playground](https://exec.felys.dev/). Specifically, repeating optimization passes enables deeper optimization, though skipping them is also valid. However, a single pass is the most optimal configuration for most tasks. And yes, lexical analysis does not exist.
 
-## Don't know what I'm talking about?
+## Reading List
 
 The following papers, blogs, and books helped me a lot. Also, ask LLMs.
 
