@@ -22,10 +22,11 @@ Felys is a dependency-free interpreted programming language written in Rust, fea
 The design is simple, but still, here's the high-level pipeline:
 
 ```mermaid
-flowchart LR
+flowchart TD
     Src(Source Code) --> Parser
 
     subgraph FrontEnd [Front-end]
+        direction LR
         Parser(Syntactical Analysis) --> Sem(Semantical Analysis)
         Sem --> IR[SSA IR Construction]
     end
@@ -33,6 +34,7 @@ flowchart LR
     IR --> SCCP
 
     subgraph MidEnd [Mid-end]
+        direction LR
         SCCP(SCCP Analysis) --> CF(Constant Folding)
         CF --> Phi(Trivial Phi Removal)
         Phi --> DCE(Dead Code Elimination)
@@ -43,6 +45,7 @@ flowchart LR
     JT --> P2C
 
     subgraph BackEnd [Back-end]
+        direction LR
         P2C(Phi to Copy) --> Reg(Register Allocation)
         Reg --> Codegen(Code Generation)
     end
@@ -51,6 +54,7 @@ flowchart LR
     Bin(Binary) --> Loader
 
     subgraph RT [Runtime]
+        direction LR
         Loader --> VM
         VM(Virtual Machine)
     end
