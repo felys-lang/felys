@@ -1,7 +1,7 @@
 use crate::cyrene::cfg::context::{Context, Id};
 use crate::cyrene::error::Error;
 use crate::cyrene::resolver::Map;
-use crate::philia093::Intern;
+use crate::philia093::Interner;
 use crate::utils::ast::{AssOp, BinOp, Block, Bool, Chunk, Expr, Lit, Pat, Stmt};
 use crate::utils::function::{Const, Function, Instruction, Label, Var};
 
@@ -11,7 +11,7 @@ impl Block {
     pub fn function(
         &self,
         map: &Map,
-        intern: &Intern,
+        interner: &Interner,
         args: Vec<usize>,
     ) -> Result<Function, Error> {
         let mut stk = Vec::new();
@@ -23,7 +23,7 @@ impl Block {
             ctx.define(ctx.cursor, Id::Interned(*id), var);
         }
 
-        if let Some(var) = self.transform(map, intern, &mut ctx, &mut stk)? {
+        if let Some(var) = self.transform(map, interner, &mut ctx, &mut stk)? {
             ctx.define(ctx.cursor, Id::Ret, var);
         }
         ctx.jump(Label::Exit);
@@ -40,7 +40,7 @@ impl Block {
     fn transform(
         &self,
         map: &Map,
-        intern: &Intern,
+        interner: &Interner,
         ctx: &mut Context,
         stk: &mut Stack,
     ) -> Result<Option<Var>, Error> {
@@ -48,7 +48,7 @@ impl Block {
         let mut result = Ok(None);
         let mut i = 1;
         while let Some(stmt) = iter.next() {
-            let ret = stmt.transform(map, intern, ctx, stk)?;
+            let ret = stmt.transform(map, interner, ctx, stk)?;
             if ret.is_some() {
                 if iter.peek().is_none() {
                     result = Ok(ret);
@@ -67,14 +67,14 @@ impl Stmt {
     fn transform(
         &self,
         map: &Map,
-        intern: &Intern,
+        interner: &Interner,
         ctx: &mut Context,
         stk: &mut Stack,
     ) -> Result<Option<Var>, Error> {
         match self {
             Stmt::Empty => Ok(None),
-            Stmt::Expr(expr) => expr.transform(map, intern, ctx, stk).map(From::from),
-            Stmt::Semi(expr) => expr.transform(map, intern, ctx, stk).and(Ok(None)),
+            Stmt::Expr(expr) => expr.transform(map, interner, ctx, stk).map(From::from),
+            Stmt::Semi(expr) => expr.transform(map, interner, ctx, stk).and(Ok(None)),
             Stmt::Assign(pat, op, expr) => {
                 let op = match op {
                     AssOp::AddEq => Some(BinOp::Add),
@@ -84,7 +84,7 @@ impl Stmt {
                     AssOp::ModEq => Some(BinOp::Mod),
                     AssOp::Eq => None,
                 };
-                let var = expr.transform(map, intern, ctx, stk)?.var()?;
+                let var = expr.transform(map, interner, ctx, stk)?.var()?;
                 pat.transform(ctx, &op, var)?;
                 Ok(None)
             }
@@ -145,12 +145,12 @@ impl Expr {
     fn transform(
         &'_ self,
         map: &Map,
-        intern: &Intern,
+        interner: &Interner,
         ctx: &mut Context,
         stk: &mut Stack,
     ) -> Result<Tmp<'_>, Error> {
         match self {
-            Expr::Block(block) => block.transform(map, intern, ctx, stk).map(|x| match x {
+            Expr::Block(block) => block.transform(map, interner, ctx, stk).map(|x| match x {
                 Some(var) => Tmp::Var(var),
                 None => Tmp::Caller(self),
             }),
@@ -163,7 +163,7 @@ impl Expr {
                     && action.unwrap_or(true)
                 {
                     if let Some(x) = expr
-                        && let Tmp::Var(var) = x.transform(map, intern, ctx, stk)?
+                        && let Tmp::Var(var) = x.transform(map, interner, ctx, stk)?
                     {
                         stk.last_mut().unwrap().2.as_mut().unwrap().1 = Some(true);
                         ctx.define(ctx.cursor, id, var)
@@ -184,7 +184,7 @@ impl Expr {
                 let body = ctx.label();
                 let end = ctx.label();
 
-                let iterable = expr.transform(map, intern, ctx, stk)?.var()?;
+                let iterable = expr.transform(map, interner, ctx, stk)?.var()?;
 
                 let length = ctx.var();
                 ctx.push(Instruction::Unpack(length, iterable, 0));
@@ -227,7 +227,7 @@ impl Expr {
                 ctx.define(ctx.cursor, i, var);
 
                 pat.transform(ctx, &None, element)?;
-                block.transform(map, intern, ctx, stk)?;
+                block.transform(map, interner, ctx, stk)?;
 
                 stk.pop();
                 ctx.jump(header);
@@ -243,7 +243,7 @@ impl Expr {
                 let join = ctx.label();
                 let ret = ctx.id();
 
-                let cond = expr.transform(map, intern, ctx, stk)?.var()?;
+                let cond = expr.transform(map, interner, ctx, stk)?.var()?;
                 ctx.branch(cond, then, otherwise);
                 ctx.seal(then);
                 ctx.seal(otherwise);
@@ -252,7 +252,7 @@ impl Expr {
                 let mut joined = [false, false];
 
                 ctx.cursor = then;
-                if let Some(var) = block.transform(map, intern, ctx, stk)? {
+                if let Some(var) = block.transform(map, interner, ctx, stk)? {
                     ctx.define(ctx.cursor, ret, var);
                     returned[0] = true;
                 }
@@ -260,7 +260,7 @@ impl Expr {
 
                 ctx.cursor = otherwise;
                 if let Some(alt) = alter
-                    && let Tmp::Var(var) = alt.transform(map, intern, ctx, stk)?
+                    && let Tmp::Var(var) = alt.transform(map, interner, ctx, stk)?
                 {
                     ctx.define(ctx.cursor, ret, var);
                     returned[1] = true;
@@ -286,7 +286,7 @@ impl Expr {
 
                 ctx.cursor = body;
                 stk.push((body, end, Some((ret, None))));
-                block.transform(map, intern, ctx, stk)?;
+                block.transform(map, interner, ctx, stk)?;
                 let action = stk.pop().unwrap().2.unwrap().1;
 
                 ctx.jump(body);
@@ -302,7 +302,7 @@ impl Expr {
                 }
             }
             Expr::Return(expr) => {
-                let var = expr.transform(map, intern, ctx, stk)?.var()?;
+                let var = expr.transform(map, interner, ctx, stk)?.var()?;
                 ctx.define(ctx.cursor, Id::Ret, var);
                 ctx.jump(Label::Exit);
                 Ok(Tmp::Caller(self))
@@ -315,13 +315,13 @@ impl Expr {
                 ctx.jump(header);
 
                 ctx.cursor = header;
-                let cond = expr.transform(map, intern, ctx, stk)?.var()?;
+                let cond = expr.transform(map, interner, ctx, stk)?.var()?;
                 ctx.branch(cond, body, end);
                 ctx.seal(body);
 
                 ctx.cursor = body;
                 stk.push((header, end, None));
-                block.transform(map, intern, ctx, stk)?;
+                block.transform(map, interner, ctx, stk)?;
                 stk.pop();
                 ctx.jump(header);
                 ctx.seal(header);
@@ -331,18 +331,18 @@ impl Expr {
                 Ok(Tmp::Caller(self))
             }
             Expr::Binary(lhs, op, rhs) => {
-                let l = lhs.transform(map, intern, ctx, stk)?.var()?;
-                let r = rhs.transform(map, intern, ctx, stk)?.var()?;
+                let l = lhs.transform(map, interner, ctx, stk)?.var()?;
+                let r = rhs.transform(map, interner, ctx, stk)?.var()?;
                 let var = ctx.var();
                 ctx.push(Instruction::Binary(var, l, *op, r));
                 Ok(Tmp::Var(var))
             }
             Expr::Call(expr, args) => {
-                let callable = expr.transform(map, intern, ctx, stk)?.var()?;
+                let callable = expr.transform(map, interner, ctx, stk)?.var()?;
                 let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let param = arg.transform(map, intern, ctx, stk)?.var()?;
+                        let param = arg.transform(map, interner, ctx, stk)?.var()?;
                         params.push(param);
                     }
                 }
@@ -351,17 +351,17 @@ impl Expr {
                 Ok(Tmp::Var(var))
             }
             Expr::Field(expr, id) => {
-                let src = expr.transform(map, intern, ctx, stk)?.var()?;
+                let src = expr.transform(map, interner, ctx, stk)?.var()?;
                 let var = ctx.var();
                 ctx.push(Instruction::Field(var, src, *id));
                 Ok(Tmp::Var(var))
             }
             Expr::Method(expr, id, args) => {
-                let src = expr.transform(map, intern, ctx, stk)?.var()?;
+                let src = expr.transform(map, interner, ctx, stk)?.var()?;
                 let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let param = arg.transform(map, intern, ctx, stk)?.var()?;
+                        let param = arg.transform(map, interner, ctx, stk)?.var()?;
                         params.push(param);
                     }
                 }
@@ -370,8 +370,8 @@ impl Expr {
                 Ok(Tmp::Var(var))
             }
             Expr::Index(expr, index) => {
-                let src = expr.transform(map, intern, ctx, stk)?.var()?;
-                let idx = index.transform(map, intern, ctx, stk)?.var()?;
+                let src = expr.transform(map, interner, ctx, stk)?.var()?;
+                let idx = index.transform(map, interner, ctx, stk)?.var()?;
                 let var = ctx.var();
                 ctx.push(Instruction::Index(var, src, idx));
                 Ok(Tmp::Var(var))
@@ -379,7 +379,7 @@ impl Expr {
             Expr::Tuple(args) => {
                 let mut params = Vec::new();
                 for arg in args.iter() {
-                    let param = arg.transform(map, intern, ctx, stk)?.var()?;
+                    let param = arg.transform(map, interner, ctx, stk)?.var()?;
                     params.push(param);
                 }
                 let var = ctx.var();
@@ -390,7 +390,7 @@ impl Expr {
                 let mut params = Vec::new();
                 if let Some(args) = args {
                     for arg in args.iter() {
-                        let param = arg.transform(map, intern, ctx, stk)?.var()?;
+                        let param = arg.transform(map, interner, ctx, stk)?.var()?;
                         params.push(param);
                     }
                 }
@@ -398,13 +398,13 @@ impl Expr {
                 ctx.push(Instruction::List(var, params));
                 Ok(Tmp::Var(var))
             }
-            Expr::Lit(lit) => lit.transform(intern, ctx).map(|x| match x {
+            Expr::Lit(lit) => lit.transform(interner, ctx).map(|x| match x {
                 Some(var) => Tmp::Var(var),
                 None => Tmp::Caller(self),
             }),
-            Expr::Paren(expr) => expr.transform(map, intern, ctx, stk),
+            Expr::Paren(expr) => expr.transform(map, interner, ctx, stk),
             Expr::Unary(op, expr) => {
-                let i = expr.transform(map, intern, ctx, stk)?.var()?;
+                let i = expr.transform(map, interner, ctx, stk)?.var()?;
                 let var = ctx.var();
                 ctx.push(Instruction::Unary(var, *op, i));
                 Ok(Tmp::Var(var))
@@ -425,7 +425,7 @@ impl Expr {
 }
 
 impl Lit {
-    fn transform(&self, intern: &Intern, ctx: &mut Context) -> Result<Option<Var>, Error> {
+    fn transform(&self, interner: &Interner, ctx: &mut Context) -> Result<Option<Var>, Error> {
         let var = ctx.var();
         if let Some(c) = ctx.consts.get(self) {
             ctx.push(Instruction::Load(var, c.clone()));
@@ -433,16 +433,16 @@ impl Lit {
         }
         let c = match self {
             Lit::Int(x) => {
-                let value = intern
-                    .get(x)
+                let value = interner
+                    .resolve(x)
                     .unwrap()
                     .parse()
                     .map_err(|_| Error::InvalidInt(self.clone()))?;
                 Const::Int(value)
             }
             Lit::Float(x) => {
-                let value = intern
-                    .get(x)
+                let value = interner
+                    .resolve(x)
                     .unwrap()
                     .parse::<f32>()
                     .map_err(|_| Error::InvalidFloat(self.clone()))?
@@ -458,11 +458,11 @@ impl Lit {
                 for chunk in x {
                     match chunk {
                         Chunk::Slice(x) => {
-                            let s = intern.get(x).unwrap();
+                            let s = interner.resolve(x).unwrap();
                             value.push_str(s);
                         }
                         Chunk::Unicode(x) => {
-                            let hex = intern.get(x).unwrap();
+                            let hex = interner.resolve(x).unwrap();
                             let c = u32::from_str_radix(hex, 16)
                                 .ok()
                                 .and_then(char::from_u32)
@@ -470,7 +470,7 @@ impl Lit {
                             value.push(c)
                         }
                         Chunk::Escape(x) => {
-                            let str = intern.get(x).unwrap();
+                            let str = interner.resolve(x).unwrap();
                             let c = match str {
                                 "\'" => '\'',
                                 "\"" => '"',

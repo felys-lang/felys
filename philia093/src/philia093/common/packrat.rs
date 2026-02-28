@@ -2,7 +2,7 @@
 use std::cmp::min;
 #[allow(unused)]
 pub struct PhiLia093 {
-    pub __intern: super::Intern,
+    pub __interner: super::Interner,
     pub __memo: super::Memo,
     pub __stream: super::Stream,
     pub __keywords: fn(&str) -> bool,
@@ -15,7 +15,7 @@ impl From<String> for PhiLia093 {
         }
         let capacity = min(value.len() / 20, 512);
         Self {
-            __intern: super::Intern::new(capacity),
+            __interner: super::Interner::new(capacity),
             __memo: super::Memo::default(),
             __stream: super::Stream::from(value),
             __keywords,

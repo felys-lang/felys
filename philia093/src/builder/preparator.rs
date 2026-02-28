@@ -1,6 +1,6 @@
 use crate::ast::{Alter, Assignment, Atom, Expect, Grammar, Hierarchy, Item, Lookahead, Rule, Tag};
 use crate::builder::common::{Builder, Tags, Template};
-use crate::philia093::Intern;
+use crate::philia093::Interner;
 use std::collections::{HashMap, HashSet};
 
 impl Tags {
@@ -14,7 +14,7 @@ impl Tags {
 }
 
 impl Builder {
-    pub fn new(grammar: Grammar, intern: Intern) -> Self {
+    pub fn new(grammar: Grammar, interner: Interner) -> Self {
         let mut peg = HashMap::new();
         let mut rex = HashMap::new();
         let mut order = Vec::new();
@@ -28,7 +28,7 @@ impl Builder {
         for callable in grammar.callables {
             match callable.hierarchy {
                 Hierarchy::Peg(ty, rule) => {
-                    keywords.append(&mut rule.keywords(&intern));
+                    keywords.append(&mut rule.keywords(&interner));
                     peg.insert(callable.name, (ty, rule));
                     order.push((callable.name, Template::Rule));
                 }
@@ -76,16 +76,16 @@ impl Builder {
         let mut languages = HashMap::new();
         for (name, regex) in &rex {
             if !languages.contains_key(name) {
-                let language = regex.desugar(&rex, &mut languages, &intern);
+                let language = regex.desugar(&rex, &mut languages, &interner);
                 languages.insert(*name, language);
             }
         }
 
         Self {
-            intern,
+            interner,
             tags,
             rules: peg,
-            langs: languages,
+            languages,
             order,
             keywords,
             import: grammar.import,
@@ -102,7 +102,7 @@ impl Rule {
         left
     }
 
-    fn keywords(&self, intern: &Intern) -> Vec<String> {
+    fn keywords(&self, intern: &Interner) -> Vec<String> {
         let mut keywords = Vec::new();
         for alter in self.0.iter() {
             keywords.extend(alter.keywords(intern));
@@ -123,7 +123,7 @@ impl Alter {
         left
     }
 
-    fn keywords(&self, intern: &Intern) -> Vec<String> {
+    fn keywords(&self, intern: &Interner) -> Vec<String> {
         let mut keywords = Vec::new();
         for assignment in self.assignments.iter() {
             keywords.extend(assignment.keywords(intern));
@@ -153,7 +153,7 @@ impl Assignment {
         }
     }
 
-    fn keywords(&self, intern: &Intern) -> Vec<String> {
+    fn keywords(&self, intern: &Interner) -> Vec<String> {
         match self {
             Assignment::Named(_, x) => x.keywords(intern),
             Assignment::Lookahead(x) => x.keywords(intern),
@@ -172,7 +172,7 @@ impl Lookahead {
         }
     }
 
-    fn keywords(&self, intern: &Intern) -> Vec<String> {
+    fn keywords(&self, intern: &Interner) -> Vec<String> {
         match self {
             Lookahead::Positive(x) => x.keywords(intern),
             Lookahead::Negative(x) => x.keywords(intern),
@@ -199,7 +199,7 @@ impl Item {
         }
     }
 
-    fn keywords(&self, intern: &Intern) -> Vec<String> {
+    fn keywords(&self, intern: &Interner) -> Vec<String> {
         match self {
             Item::Eager(x, _) => x.keywords(intern),
             Item::Repetition(x) => x.keywords(intern),
@@ -218,7 +218,7 @@ impl Atom {
         }
     }
 
-    fn keywords(&self, intern: &Intern) -> Vec<String> {
+    fn keywords(&self, intern: &Interner) -> Vec<String> {
         match self {
             Atom::Name(_) => Vec::new(),
             Atom::Expect(expect) => expect.keywords(intern),
@@ -228,7 +228,7 @@ impl Atom {
 }
 
 impl Expect {
-    fn keywords(&self, intern: &Intern) -> Vec<String> {
+    fn keywords(&self, intern: &Interner) -> Vec<String> {
         match self {
             Expect::Once(_) => Vec::new(),
             Expect::Keyword(x) => vec![x.squeeze(intern)],

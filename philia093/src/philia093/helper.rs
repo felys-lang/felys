@@ -1,9 +1,9 @@
 use crate::ast::Grammar;
-use crate::philia093::{Intern, PhiLia093};
+use crate::philia093::{Interner, PhiLia093};
 use std::fmt::{Display, Formatter};
 
 impl PhiLia093 {
-    pub fn parse(mut self) -> Result<(Grammar, Intern), String> {
+    pub fn parse(mut self) -> Result<(Grammar, Interner), String> {
         let grammar = self.grammar();
         if let Some((cursor, msg)) = self.__snapshot {
             let data = self.__stream.data;
@@ -35,7 +35,7 @@ impl PhiLia093 {
             };
             Err(error.to_string())
         } else {
-            Ok((grammar.unwrap(), self.__intern))
+            Ok((grammar.unwrap(), self.__interner))
         }
     }
 }

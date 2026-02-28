@@ -1,14 +1,14 @@
 use crate::ast::{Action, Rule};
 use crate::builder::dfa::common::Language;
-use crate::philia093::Intern;
+use crate::philia093::Interner;
 use proc_macro2::TokenStream;
 use std::collections::{HashMap, HashSet};
 
 pub struct Builder {
-    pub intern: Intern,
+    pub interner: Interner,
     pub tags: Tags,
     pub rules: HashMap<usize, (Option<Action>, Rule)>,
-    pub langs: HashMap<usize, Language>,
+    pub languages: HashMap<usize, Language>,
     pub order: Vec<(usize, Template)>,
     pub keywords: Vec<String>,
     pub import: Option<Action>,
@@ -33,7 +33,7 @@ pub struct Root {
 
 pub struct Common {
     pub module: TokenStream,
-    pub intern: TokenStream,
+    pub interner: TokenStream,
     pub memoize: TokenStream,
     pub packrat: TokenStream,
     pub stream: TokenStream,

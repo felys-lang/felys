@@ -37,14 +37,14 @@ impl PhiLia093 {
         } else {
             Ok(I {
                 root: root.unwrap(),
-                intern: self.__intern,
+                interner: self.__interner,
             })
         }
     }
 
     pub fn n2i(&mut self) -> Option<usize> {
         let id = self.NAME()?;
-        let ident = self.__intern.get(&id).unwrap();
+        let ident = self.__interner.resolve(&id).unwrap();
         if (self.__keywords)(ident) {
             None
         } else {

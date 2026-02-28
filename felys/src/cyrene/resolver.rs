@@ -64,12 +64,12 @@ impl Block {
 }
 
 impl Pat {
-    fn resolve(&self, namespace: &Namespace, resolver: &mut Resolver) -> Result<(), Error> {
+    fn resolve(&self, resolver: &mut Resolver) -> Result<(), Error> {
         match self {
             Pat::Any => {}
             Pat::Tuple(tuple) => {
                 for pat in tuple.iter() {
-                    pat.resolve(namespace, resolver)?;
+                    pat.resolve(resolver)?;
                 }
             }
             Pat::Ident(id) => resolver.define(*id),
@@ -105,7 +105,7 @@ impl Stmt {
                 if !matches!(op, AssOp::Eq) {
                     pat.unpack(resolver)?
                 }
-                pat.resolve(namespace, resolver)?;
+                pat.resolve(resolver)?;
             }
         }
         Ok(())
@@ -129,7 +129,7 @@ impl Expr {
             Expr::For(pat, expr, block) => {
                 expr.resolve(namespace, resolver)?;
                 resolver.stack();
-                pat.resolve(namespace, resolver)?;
+                pat.resolve(resolver)?;
                 block.resolve(namespace, resolver)?;
                 resolver.unstack();
             }

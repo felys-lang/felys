@@ -1204,7 +1204,7 @@ impl super::PhiLia093 {
         const ACCEPTANCE: [bool; 2usize] = [false, true];
         self.__stream
             .dfa(transition, ACCEPTANCE)
-            .map(|s| self.__intern.id(s))
+            .map(|s| self.__interner.intern(s))
     }
     pub fn TAIL(&mut self) -> Option<()> {
         if self.__snapshot.is_some() {
@@ -1253,7 +1253,7 @@ impl super::PhiLia093 {
         const ACCEPTANCE: [bool; 5usize] = [false, true, false, false, false];
         self.__stream
             .dfa(transition, ACCEPTANCE)
-            .map(|s| self.__intern.id(s))
+            .map(|s| self.__interner.intern(s))
     }
     pub fn SQC(&mut self) -> Option<usize> {
         if self.__snapshot.is_some() {
@@ -1285,7 +1285,7 @@ impl super::PhiLia093 {
         const ACCEPTANCE: [bool; 5usize] = [false, true, false, false, false];
         self.__stream
             .dfa(transition, ACCEPTANCE)
-            .map(|s| self.__intern.id(s))
+            .map(|s| self.__interner.intern(s))
     }
     pub fn BC(&mut self) -> Option<usize> {
         if self.__snapshot.is_some() {
@@ -1316,7 +1316,7 @@ impl super::PhiLia093 {
         const ACCEPTANCE: [bool; 5usize] = [false, true, false, false, false];
         self.__stream
             .dfa(transition, ACCEPTANCE)
-            .map(|s| self.__intern.id(s))
+            .map(|s| self.__interner.intern(s))
     }
     pub fn UNICODE(&mut self) -> Option<usize> {
         if self.__snapshot.is_some() {
@@ -1337,7 +1337,7 @@ impl super::PhiLia093 {
         const ACCEPTANCE: [bool; 5usize] = [false, false, false, false, true];
         self.__stream
             .dfa(transition, ACCEPTANCE)
-            .map(|s| self.__intern.id(s))
+            .map(|s| self.__interner.intern(s))
     }
     pub fn ESCAPE(&mut self) -> Option<usize> {
         if self.__snapshot.is_some() {
@@ -1361,7 +1361,7 @@ impl super::PhiLia093 {
         const ACCEPTANCE: [bool; 3usize] = [false, false, true];
         self.__stream
             .dfa(transition, ACCEPTANCE)
-            .map(|s| self.__intern.id(s))
+            .map(|s| self.__interner.intern(s))
     }
     pub fn PS(&mut self) -> Option<usize> {
         if self.__snapshot.is_some() {
@@ -1380,7 +1380,7 @@ impl super::PhiLia093 {
         const ACCEPTANCE: [bool; 2usize] = [false, true];
         self.__stream
             .dfa(transition, ACCEPTANCE)
-            .map(|s| self.__intern.id(s))
+            .map(|s| self.__interner.intern(s))
     }
     pub fn BS(&mut self) -> Option<usize> {
         if self.__snapshot.is_some() {
@@ -1401,7 +1401,7 @@ impl super::PhiLia093 {
         const ACCEPTANCE: [bool; 2usize] = [false, true];
         self.__stream
             .dfa(transition, ACCEPTANCE)
-            .map(|s| self.__intern.id(s))
+            .map(|s| self.__interner.intern(s))
     }
     pub fn T(&mut self) -> Option<()> {
         if self.__snapshot.is_some() {
@@ -1449,7 +1449,7 @@ impl super::PhiLia093 {
         const ACCEPTANCE: [bool; 2usize] = [false, true];
         self.__stream
             .dfa(transition, ACCEPTANCE)
-            .map(|s| self.__intern.id(s))
+            .map(|s| self.__interner.intern(s))
     }
     pub fn COMMENT(&mut self) -> Option<usize> {
         if self.__snapshot.is_some() {
@@ -1468,6 +1468,6 @@ impl super::PhiLia093 {
         const ACCEPTANCE: [bool; 3usize] = [false, false, true];
         self.__stream
             .dfa(transition, ACCEPTANCE)
-            .map(|s| self.__intern.id(s))
+            .map(|s| self.__interner.intern(s))
     }
 }

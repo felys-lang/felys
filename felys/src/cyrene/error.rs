@@ -1,4 +1,4 @@
-use crate::philia093::Intern;
+use crate::philia093::Interner;
 use crate::utils::ast::{Block, Chunk, Expr, Impl, Item, Lit};
 
 pub enum Error {
@@ -17,7 +17,7 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn recover(self, intern: &Intern) -> String {
+    pub fn recover(self, interner: &Interner) -> String {
         const OK: &str = "--- | ";
         const ERROR: &str = ">>> | ";
         let mut tailing = true;
@@ -32,58 +32,60 @@ impl Error {
                 msg.push_str("the node below appears after the block is returned\n");
                 msg.push_str(OK);
                 block
-                    .recover(&mut msg, OK, 0, Some((i, ERROR)), intern)
+                    .recover(&mut msg, OK, 0, Some((i, ERROR)), interner)
                     .unwrap();
             }
             Error::OutsideLoop(expr) => {
                 msg.push_str("`break` or `continue` below must stay inside a loop\n");
                 msg.push_str(ERROR);
-                expr.recover(&mut msg, ERROR, 0, intern).unwrap();
+                expr.recover(&mut msg, ERROR, 0, interner).unwrap();
             }
             Error::FunctionNoReturn(block) => {
                 msg.push_str("function body does not have return value\n");
                 msg.push_str(ERROR);
-                block.recover(&mut msg, ERROR, 0, None, intern).unwrap();
+                block.recover(&mut msg, ERROR, 0, None, interner).unwrap();
             }
             Error::InvalidInt(lit) => {
                 msg.push_str("this integer cannot be stored as `isize`\n");
                 msg.push_str(ERROR);
-                lit.recover(&mut msg, intern).unwrap();
+                lit.recover(&mut msg, interner).unwrap();
             }
             Error::InvalidFloat(lit) => {
                 msg.push_str("this decimal cannot be stored as `f64`\n");
                 msg.push_str(ERROR);
-                lit.recover(&mut msg, intern).unwrap();
+                lit.recover(&mut msg, interner).unwrap();
             }
             Error::InvalidStrChunk(chunk) => {
                 msg.push_str("this escaped character is invalid\n");
                 msg.push_str(ERROR);
-                chunk.recover(&mut msg, intern).unwrap();
+                chunk.recover(&mut msg, interner).unwrap();
             }
             Error::NoReturnValue(expr) => {
                 msg.push_str("this expression does not have a return value\n");
                 msg.push_str(ERROR);
-                expr.recover(&mut msg, ERROR, 0, intern).unwrap();
+                expr.recover(&mut msg, ERROR, 0, interner).unwrap();
             }
             Error::RedeclaredItem(item) => {
                 msg.push_str("this item is redeclared\n");
                 msg.push_str(ERROR);
-                item.recover(&mut msg, ERROR, 0, intern).unwrap();
+                item.recover(&mut msg, ERROR, 0, interner).unwrap();
             }
             Error::RedeclaredImpl(implementation) => {
                 msg.push_str("this function is redeclared\n");
                 msg.push_str(ERROR);
-                implementation.recover(&mut msg, ERROR, 0, intern).unwrap();
+                implementation
+                    .recover(&mut msg, ERROR, 0, interner)
+                    .unwrap();
             }
             Error::VariableNotDefined(id) => {
                 msg.push_str("this variable is not defined\n");
                 msg.push_str(ERROR);
-                msg.push_str(intern.get(&id).unwrap())
+                msg.push_str(interner.resolve(&id).unwrap())
             }
             Error::InvalidPath(path) => {
                 msg.push_str("this path does not lead to anywhere\n");
                 msg.push_str(ERROR);
-                path.recover(&mut msg, ERROR, 0, intern).unwrap();
+                path.recover(&mut msg, ERROR, 0, interner).unwrap();
             }
         }
         if tailing {

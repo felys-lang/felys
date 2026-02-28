@@ -7,21 +7,10 @@ impl Function {
             let mut changed = false;
             let meta = self.analyze()?;
 
-            if self.rewrite(&meta) {
-                changed = true;
-            }
-
-            if self.rename() {
-                changed = true;
-            }
-
-            if self.sweep() {
-                changed = true;
-            }
-
-            if self.compact() {
-                changed = true;
-            }
+            changed |= self.rewrite(&meta);
+            changed |= self.rename();
+            changed |= self.sweep();
+            changed |= self.compact();
 
             if !changed {
                 break;
