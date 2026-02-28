@@ -21,8 +21,6 @@ I understand that the naming and code organization do not make sense, but I like
 - [Demiurge](felys/src/demiurge): Dead code elimination, register allocation, and code generation
 - [Elysia](felys/src/elysia): Execution runtime, featuring a neural network library and bytecode loader/dumper
 
-## Pipeline
-
 The design is simple, but still, here's the high-level pipeline:
 
 ```mermaid
