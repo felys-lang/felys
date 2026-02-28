@@ -25,36 +25,43 @@ The design is simple, but still, here's the high-level pipeline:
 flowchart TD
     subgraph FrontEnd [Front-end]
         direction LR
-        FA[Source File] --> FB(Syntactical Analysis)
-        FB --> FC(Semantical Analysis)
-        FC --> IR[SSA IR Construction]
+        FA{{Source}} --> FB(Syntactical Analysis)
+        FB --> FC{{AST}}
+        FC --> FD(Semantical Analysis)
+        FD --> FE[SSA IR Construction]
+        FE --> FF{{CFG}}
     end
 
     FrontEnd --> MidEnd
 
     subgraph MidEnd [Mid-end]
         direction LR
-        MA(SCCP Analysis) --> MB(Constant Folding)
-        MB --> MC(Trivial Phi Removal)
-        MC --> MD(Dead Code Elimination)
-        MD --> ME(Jump Threading)
-        ME --> MA
+        MA{{CFG}} --> MB(SCCP Analysis)
+        MB --> MC(Constant Folding)
+        MC --> MD(Trivial Phi Removal)
+        MD --> ME(Dead Code Elimination)
+        ME --> MF(Jump Threading)
+        MF -.-> MB
+        MF --> MG{{CFG}}
     end
 
     MidEnd --> BackEnd
 
     subgraph BackEnd [Back-end]
         direction LR
-        BA(Phi to Copy) --> BB(Linear Scan Register Allocation)
-        BB --> BC(Code Generation)
+        BA{{CFG}} --> BB(Phi to Copy)
+        BB --> BC(Register Allocation)
+        BC --> BD(Code Generation)
+        BD --> BE{{Bytecode}}
     end
 
     BackEnd --> Runtime
     
     subgraph Runtime [Runtime]
         direction LR
-        RA[Binary File] --> RB(Loader)
-        RB --> VM(Virtual Machine)
+        RA{{Binary}} --> RB(Loader)
+        RB --> RC{{Bytecode}}
+        RC --> VM(Virtual Machine)
     end
 ```
 
