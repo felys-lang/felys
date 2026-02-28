@@ -72,6 +72,16 @@ flowchart TD
 
 Hexagons represent the state of the program at a specific stage. Dotted lines means an optional path, but not configured in the [playground](https://exec.felys.dev/). Specifically, repeating optimization passes enables deeper optimization, though skipping them is also valid. However, a single pass is the most optimal configuration for most tasks. And yes, lexical analysis does not exist.
 
+## Don't know what I'm talking about?
+
+The following papers, blogs, and books helped me a lot. Also, ask LLMs.
+
+- [Packrat Parsing: Simple, Powerful, Lazy, Linear Time](https://arxiv.org/abs/cs/0603077)
+- [PEG Parsing Series Overview](https://medium.com/@gvanrossum_83706/peg-parsing-series-de5d41b2ed60)
+- [Simple and Eﬃcient Construction of Static Single
+  Assignment Form](https://c9x.me/compile/bib/braun13cc.pdf)
+- [Compilers: Principles, Techniques, and Tools](https://en.wikipedia.org/wiki/Compilers:_Principles,_Techniques,_and_Tools)
+
 ## License
 
 Distributed under the terms of the [LICENSE](LICENSE).
