@@ -121,15 +121,15 @@ impl Block {
             if let Some((ptr, replace)) = pointer
                 && ptr == i
             {
-                write!(f, "{}{}", replace, "    ".repeat(indent + 1))?;
+                write!(f, "{replace}{}", "    ".repeat(indent + 1))?;
                 stmt.recover(f, replace, indent + 1, interner)?;
             } else {
-                write!(f, "{}{}", start, "    ".repeat(indent + 1))?;
+                write!(f, "{start}{}", "    ".repeat(indent + 1))?;
                 stmt.recover(f, start, indent + 1, interner)?;
             }
             writeln!(f)?;
         }
-        write!(f, "{}{}}}", start, "    ".repeat(indent))
+        write!(f, "{start}{}}}", "    ".repeat(indent))
     }
 }
 
