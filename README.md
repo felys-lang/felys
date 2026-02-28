@@ -48,7 +48,6 @@ flowchart LR
     end
 
     Codegen --> VM
-    
     Bin(Binary) --> Loader
 
     subgraph RT [Runtime]
