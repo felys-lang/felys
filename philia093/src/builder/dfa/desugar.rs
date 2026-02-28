@@ -1,7 +1,7 @@
 use crate::ast::{Primary, Regex};
 use crate::builder::common::s2c;
 use crate::builder::dfa::common::{Language, Terminal};
-use crate::philia093::Intern;
+use crate::philia093::Interner;
 use std::collections::HashMap;
 
 impl Regex {
@@ -9,7 +9,7 @@ impl Regex {
         &self,
         regexes: &HashMap<usize, Regex>,
         languages: &mut HashMap<usize, Language>,
-        intern: &Intern,
+        intern: &Interner,
     ) -> Language {
         match self {
             Regex::Union(c1, c2) => Language::Union(
@@ -35,7 +35,7 @@ impl Primary {
         &self,
         regexes: &HashMap<usize, Regex>,
         languages: &mut HashMap<usize, Language>,
-        intern: &Intern,
+        intern: &Interner,
     ) -> Language {
         match self {
             Primary::Parentheses(c) => c.desugar(regexes, languages, intern),
@@ -43,8 +43,8 @@ impl Primary {
                 let mut set = set
                     .iter()
                     .map(|(s, e)| {
-                        let s = s2c(intern.get(s).unwrap()) as usize;
-                        let e = s2c(intern.get(e).unwrap()) as usize;
+                        let s = s2c(intern.resolve(s).unwrap()) as usize;
+                        let e = s2c(intern.resolve(e).unwrap()) as usize;
                         if s < e { (s, e) } else { (e, s) }
                     })
                     .collect::<Vec<_>>();
@@ -78,15 +78,15 @@ impl Primary {
                 let set = set
                     .iter()
                     .map(|(s, e)| {
-                        let s = s2c(intern.get(s).unwrap()) as usize;
-                        let e = s2c(intern.get(e).unwrap()) as usize;
+                        let s = s2c(intern.resolve(s).unwrap()) as usize;
+                        let e = s2c(intern.resolve(e).unwrap()) as usize;
                         if s < e { (s, e) } else { (e, s) }
                     })
                     .collect();
                 Language::Terminal(Terminal::Set(set), 0)
             }
             Primary::Literal(literal) => {
-                let mut chars = literal.iter().map(|x| s2c(intern.get(x).unwrap()));
+                let mut chars = literal.iter().map(|x| s2c(intern.resolve(x).unwrap()));
                 let first = chars.next().unwrap() as usize;
                 let mut node = Language::Terminal(Terminal::Set(vec![(first, first)]), 0);
                 for c in chars {

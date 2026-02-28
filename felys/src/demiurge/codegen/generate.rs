@@ -1,5 +1,5 @@
 use crate::demiurge::codegen::copies::Copy;
-use crate::philia093::Intern;
+use crate::philia093::Interner;
 use crate::utils::ast::Block;
 use crate::utils::bytecode::{Bytecode, Id, Index, Reg};
 use crate::utils::function::{Const, Function, Instruction, Label, Pointer, Terminator, Var};
@@ -89,7 +89,7 @@ impl II {
             vec![self.main.0],
             self.main.1,
             limit,
-            &self.intern,
+            &self.interner,
             &self.namespace,
             &mut context,
         )?;
@@ -107,7 +107,7 @@ impl II {
                     args,
                     block,
                     limit,
-                    &self.intern,
+                    &self.interner,
                     &self.namespace,
                     &mut context,
                 )?;
@@ -128,17 +128,17 @@ fn compile(
     args: Vec<usize>,
     block: Block,
     limit: usize,
-    intern: &Intern,
+    interner: &Interner,
     namespace: &Namespace,
     ctx: &mut Context,
 ) -> Result<Callable, String> {
     let length = Reg::try_from(args.len()).unwrap();
     let map = block
         .semantic(args.iter(), namespace)
-        .map_err(|e| e.recover(intern))?;
+        .map_err(|e| e.recover(interner))?;
     let mut function = block
-        .function(&map, intern, args)
-        .map_err(|e| e.recover(intern))?;
+        .function(&map, interner, args)
+        .map_err(|e| e.recover(interner))?;
     function.optimize(limit)?;
     let copies = function.copies();
     let rpo = function.rpo();

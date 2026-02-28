@@ -7,20 +7,20 @@ impl Builder {
         let import = self
             .import
             .as_ref()
-            .map(|x| x.parse(&self.intern))
+            .map(|x| x.parse(&self.interner))
             .unwrap_or_default();
         let keywords = self.keywords.iter().map(|x| x.to_token_stream()).collect();
 
         Root {
             common: Common {
                 module: quote! {
-                    mod intern;
+                    mod interner;
                     mod memoize;
                     mod packrat;
                     mod stream;
 
                     #[allow(unused)]
-                    pub use intern::*;
+                    pub use interner::*;
 
                     #[allow(unused)]
                     pub use memoize::*;
@@ -31,7 +31,7 @@ impl Builder {
                     #[allow(unused)]
                     pub use stream::*;
                 },
-                intern: intern(),
+                interner: interner(),
                 memoize: memoize(import, memo),
                 packrat: packrat(keywords),
                 stream: stream(),
@@ -52,19 +52,19 @@ impl Builder {
     }
 }
 
-fn intern() -> TokenStream {
+fn interner() -> TokenStream {
     quote! {
         use std::collections::HashMap;
         use std::rc::Rc;
 
         #[allow(unused)]
-        pub struct Intern {
+        pub struct Interner {
             data: HashMap<Rc<str>, usize>,
             fast: Vec<Rc<str>>,
         }
 
         #[allow(unused)]
-        impl Intern {
+        impl Interner {
             pub fn new(capacity: usize) -> Self {
                 Self {
                     data: HashMap::with_capacity(capacity),
@@ -72,7 +72,7 @@ fn intern() -> TokenStream {
                 }
             }
 
-            pub fn id(&mut self, s: &str) -> usize {
+            pub fn intern(&mut self, s: &str) -> usize {
                 if let Some(&id) = self.data.get(s) {
                     id
                 } else {
@@ -84,7 +84,7 @@ fn intern() -> TokenStream {
                 }
             }
 
-            pub fn get(&self, id: &usize) -> Option<&str> {
+            pub fn resolve(&self, id: &usize) -> Option<&str> {
                 let string = self.fast.get(*id)?;
                 Some(&(**string))
             }
@@ -142,7 +142,7 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
 
         #[allow(unused)]
         pub struct PhiLia093 {
-            pub __intern: super::Intern,
+            pub __interner: super::Interner,
             pub __memo: super::Memo,
             pub __stream: super::Stream,
             pub __keywords: fn(&str) -> bool,
@@ -154,7 +154,7 @@ fn packrat(keywords: Vec<TokenStream>) -> TokenStream {
                 #__keywords
                 let capacity = min(value.len() / 20, 512);
                 Self {
-                    __intern: super::Intern::new(capacity),
+                    __interner: super::Interner::new(capacity),
                     __memo: super::Memo::default(),
                     __stream: super::Stream::from(value),
                     __keywords,

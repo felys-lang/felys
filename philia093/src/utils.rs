@@ -1,5 +1,5 @@
 use crate::builder::common::s2c;
-use crate::philia093::Intern;
+use crate::philia093::Interner;
 use std::rc::Rc;
 
 #[derive(Clone, Debug)]
@@ -26,9 +26,9 @@ impl<T, const N: usize> BufVec<T, N> {
 }
 
 impl<const N: usize> BufVec<usize, N> {
-    pub fn squeeze(&self, intern: &Intern) -> String {
+    pub fn squeeze(&self, intern: &Interner) -> String {
         self.iter()
-            .map(|c| s2c(intern.get(c).unwrap()))
+            .map(|c| s2c(intern.resolve(c).unwrap()))
             .collect::<String>()
     }
 }
