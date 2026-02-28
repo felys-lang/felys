@@ -14,10 +14,48 @@ Felys is a dependency-free interpreted programming language written in Rust, fea
 
 ## Components
 
-- [PhiLia093](felys/src/philia093): Parser and general-purpose [generator](philia093) with self-bootstrapping capabilities
+- [PhiLia093](felys/src/philia093): Parser and a general-purpose [generator](philia093) with self-bootstrapping capabilities
 - [Cyrene](felys/src/cyrene): Control-flow graph builder and transformer for intermediate representation
-- [Demiurge](felys/src/demiurge): Dead code elimination, register allocation, and code generation passes
+- [Demiurge](felys/src/demiurge): Dead code elimination, register allocation, and code generation
 - [Elysia](felys/src/elysia): Execution runtime, featuring a neural network library and bytecode loader/dumper
+
+The design is simple, but still, here's the high-level pipeline:
+
+```mermaid
+flowchart LR
+    Src(Source Code) --> Parser
+
+    subgraph FrontEnd [Front-end]
+        Parser(Syntactical Analysis) --> Sem(Semantical Analysis)
+        Sem --> IR[SSA IR Construction]
+    end
+
+    IR --> SCCP
+
+    subgraph MidEnd [Mid-end]
+        SCCP(SCCP Analysis) --> CF(Constant Folding)
+        CF --> Phi(Trivial Phi Removal)
+        Phi --> DCE(Dead Code Elimination)
+        DCE --> JT(Jump Threading)
+        JT --> SCCP
+    end
+
+    JT --> P2C
+
+    subgraph BackEnd [Back-end]
+        P2C(Phi to Copy) --> Reg(Register Allocation)
+        Reg --> Codegen(Code Generation)
+    end
+
+    Codegen --> VM
+    
+    Bin(Binary) --> Loader
+
+    subgraph RT [Runtime]
+        Loader --> VM
+        VM(Virtual Machine)
+    end
+```
 
 ## License
 
