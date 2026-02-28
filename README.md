@@ -14,10 +14,14 @@ Felys is a dependency-free interpreted programming language written in Rust, fea
 
 ## Components
 
+I understand that the naming and code organization do not make sense, but I like it.
+
 - [PhiLia093](felys/src/philia093): Parser and a general-purpose [generator](philia093) with self-bootstrapping capabilities
 - [Cyrene](felys/src/cyrene): Control-flow graph builder and transformer for intermediate representation
 - [Demiurge](felys/src/demiurge): Dead code elimination, register allocation, and code generation
 - [Elysia](felys/src/elysia): Execution runtime, featuring a neural network library and bytecode loader/dumper
+
+## Pipeline
 
 The design is simple, but still, here's the high-level pipeline:
 
@@ -42,6 +46,7 @@ flowchart TD
         MD --> ME(Dead Code Elimination)
         ME --> MF(Jump Threading)
         MF -.-> MB
+        MA -.-> MG
         MF --> MG{{CFG}}
     end
 
@@ -56,7 +61,7 @@ flowchart TD
     end
 
     BackEnd --> Runtime
-    
+
     subgraph Runtime [Runtime]
         direction LR
         RA{{Binary}} --> RB(Loader)
@@ -64,6 +69,8 @@ flowchart TD
         RC --> VM(Virtual Machine)
     end
 ```
+
+Hexagons represent the state of the program at a specific stage. Dotted lines means an optional path, but not configured in the [playground](https://exec.felys.dev/). Specifically, repeating optimization passes enables deeper optimization, though skipping them is also valid. However, a single pass is the most optimal configuration for most tasks. And yes, lexical analysis does not exist.
 
 ## License
 
