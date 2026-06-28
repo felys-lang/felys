@@ -1,11 +1,11 @@
-mod cyrene;
-mod demiurge;
-mod elysia;
+mod ast;
+mod frontend;
+mod optimizer;
+mod runtime;
 mod philia093;
-mod utils;
+mod stdlib;
 
-pub use elysia::runtime::object::Object;
+pub use ast::{BinOp, UnaOp};
+pub use optimizer::stage::III;
+pub use runtime::object::Object;
 pub use philia093::PhiLia093;
-pub use utils::ast::BinOp;
-pub use utils::ast::UnaOp;
-pub use utils::stages::III;
