@@ -93,14 +93,32 @@ fn arithmetic() -> Result<(), String> {
     exec(args.clone(), "", "-(1 + 2)", Object::Int(-3), "")?;
     exec(args.clone(), "", "-2 * 3", Object::Int(-6), "")?;
     exec(args.clone(), "", "1 + 2 + 3 + 4 + 5", Object::Int(15), "")?;
-    exec(args.clone(), "", "1.0 + 2.0 + 3.0 + 4.0 + 5.0", Object::Float(15.0), "")?;
-    exec(args.clone(), "", "1 + 2 * 3 - 4 / 2 + 5", Object::Int(10), "")?;
+    exec(
+        args.clone(),
+        "",
+        "1.0 + 2.0 + 3.0 + 4.0 + 5.0",
+        Object::Float(15.0),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "1 + 2 * 3 - 4 / 2 + 5",
+        Object::Int(10),
+        "",
+    )?;
     exec(args.clone(), "", "x = 5; x += 3; x", Object::Int(8), "")?;
     exec(args.clone(), "", "x = 10; x -= 4; x", Object::Int(6), "")?;
     exec(args.clone(), "", "x = 3; x *= 4; x", Object::Int(12), "")?;
     exec(args.clone(), "", "x = 20; x /= 4; x", Object::Int(5), "")?;
     exec(args.clone(), "", "x = 17; x %= 5; x", Object::Int(2), "")?;
-    exec(args.clone(), "", "x = 2.0; x += 3.0; x", Object::Float(5.0), "")?;
+    exec(
+        args.clone(),
+        "",
+        "x = 2.0; x += 3.0; x",
+        Object::Float(5.0),
+        "",
+    )?;
     exec(args.clone(), "", "x = 5; x += 0; x", Object::Int(5), "")?;
     exec(args.clone(), "", "x = 5; x *= 0; x", Object::Int(0), "")?;
 
@@ -202,20 +220,86 @@ fn logical() -> Result<(), String> {
     exec(args.clone(), "", "false or false", Object::Bool(false), "")?;
     exec(args.clone(), "", "not true", Object::Bool(false), "")?;
     exec(args.clone(), "", "not false", Object::Bool(true), "")?;
-    exec(args.clone(), "", "true or true or false", Object::Bool(true), "")?;
-    exec(args.clone(), "", "false or false or false", Object::Bool(false), "")?;
-    exec(args.clone(), "", "true and true and true", Object::Bool(true), "")?;
-    exec(args.clone(), "", "true and true and false", Object::Bool(false), "")?;
+    exec(
+        args.clone(),
+        "",
+        "true or true or false",
+        Object::Bool(true),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "false or false or false",
+        Object::Bool(false),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "true and true and true",
+        Object::Bool(true),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "true and true and false",
+        Object::Bool(false),
+        "",
+    )?;
     exec(args.clone(), "", "not not true", Object::Bool(true), "")?;
-    exec(args.clone(), "", "not not not true", Object::Bool(false), "")?;
-    exec(args.clone(), "", "(true or false) and (true or false)", Object::Bool(true), "")?;
-    exec(args.clone(), "", "(true and false) or (true and true)", Object::Bool(true), "")?;
-    exec(args.clone(), "", "true and false or true", Object::Bool(true), "")?;
-    exec(args.clone(), "", "true and (false or true)", Object::Bool(true), "")?;
+    exec(
+        args.clone(),
+        "",
+        "not not not true",
+        Object::Bool(false),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "(true or false) and (true or false)",
+        Object::Bool(true),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "(true and false) or (true and true)",
+        Object::Bool(true),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "true and false or true",
+        Object::Bool(true),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "true and (false or true)",
+        Object::Bool(true),
+        "",
+    )?;
     exec(args.clone(), "", "1 < 2 and 3 > 2", Object::Bool(true), "")?;
     exec(args.clone(), "", "1 + 2 < 4", Object::Bool(true), "")?;
-    exec(args.clone(), "", "not true and false", Object::Bool(false), "")?;
-    exec(args.clone(), "", "not (true and false)", Object::Bool(true), "")?;
+    exec(
+        args.clone(),
+        "",
+        "not true and false",
+        Object::Bool(false),
+        "",
+    )?;
+    exec(
+        args.clone(),
+        "",
+        "not (true and false)",
+        Object::Bool(true),
+        "",
+    )?;
 
     Ok(())
 }
