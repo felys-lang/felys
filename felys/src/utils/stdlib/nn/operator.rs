@@ -31,7 +31,7 @@ impl Display for Operator {
             Operator::Exp(_) => write!(f, "Exp"),
             Operator::ReLU(_) => write!(f, "ReLU"),
             Operator::Sum(_, _) => write!(f, "Sum"),
-            Operator::Parameter(i, _) => write!(f, "Parameter<{i}>"),
+            Operator::Parameter(parameter_id, _) => write!(f, "Parameter<{parameter_id}>"),
             Operator::Detached => write!(f, "Detached"),
         }
     }
@@ -56,21 +56,21 @@ pub enum Operator {
 impl Operator {
     fn pruned(self) -> Self {
         match &self {
-            Operator::Add(lhs, rhs)
-            | Operator::Sub(lhs, rhs)
-            | Operator::Mul(lhs, rhs)
-            | Operator::Div(lhs, rhs)
-            | Operator::MatMul(lhs, rhs) => {
-                if lhs.fixed() && rhs.fixed() {
+            Operator::Add(left_operand, right_operand)
+            | Operator::Sub(left_operand, right_operand)
+            | Operator::Mul(left_operand, right_operand)
+            | Operator::Div(left_operand, right_operand)
+            | Operator::MatMul(left_operand, right_operand) => {
+                if left_operand.fixed() && right_operand.fixed() {
                     return Operator::Detached;
                 }
             }
-            Operator::Neg(src)
-            | Operator::Log(src)
-            | Operator::Exp(src)
-            | Operator::ReLU(src)
-            | Operator::Sum(src, _) => {
-                if src.fixed() {
+            Operator::Neg(input_node)
+            | Operator::Log(input_node)
+            | Operator::Exp(input_node)
+            | Operator::ReLU(input_node)
+            | Operator::Sum(input_node, _) => {
+                if input_node.fixed() {
                     return Operator::Detached;
                 }
             }
@@ -124,182 +124,192 @@ impl Node {
         matches!(self.op, Operator::Detached)
     }
 
-    pub fn add(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
-        let tensor = lhs.tensor.binary(&rhs.tensor, Tensor::add)?;
+    pub fn add(left_operand: Rc<Node>, right_operand: Rc<Node>) -> Result<Rc<Node>, String> {
+        let tensor = left_operand
+            .tensor
+            .binary(&right_operand.tensor, Tensor::add)?;
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Add(lhs, rhs).pruned(),
+            op: Operator::Add(left_operand, right_operand).pruned(),
         }))
     }
 
-    pub fn sub(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
-        let tensor = lhs.tensor.binary(&rhs.tensor, Tensor::sub)?;
+    pub fn sub(left_operand: Rc<Node>, right_operand: Rc<Node>) -> Result<Rc<Node>, String> {
+        let tensor = left_operand
+            .tensor
+            .binary(&right_operand.tensor, Tensor::sub)?;
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Sub(lhs, rhs).pruned(),
+            op: Operator::Sub(left_operand, right_operand).pruned(),
         }))
     }
 
-    pub fn mul(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
-        let tensor = lhs.tensor.binary(&rhs.tensor, Tensor::mul)?;
+    pub fn mul(left_operand: Rc<Node>, right_operand: Rc<Node>) -> Result<Rc<Node>, String> {
+        let tensor = left_operand
+            .tensor
+            .binary(&right_operand.tensor, Tensor::mul)?;
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Mul(lhs, rhs).pruned(),
+            op: Operator::Mul(left_operand, right_operand).pruned(),
         }))
     }
 
-    pub fn div(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
-        let tensor = lhs.tensor.binary(&rhs.tensor, Tensor::div)?;
+    pub fn div(left_operand: Rc<Node>, right_operand: Rc<Node>) -> Result<Rc<Node>, String> {
+        let tensor = left_operand
+            .tensor
+            .binary(&right_operand.tensor, Tensor::div)?;
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Div(lhs, rhs).pruned(),
+            op: Operator::Div(left_operand, right_operand).pruned(),
         }))
     }
 
-    pub fn matmul(lhs: Rc<Node>, rhs: Rc<Node>) -> Result<Rc<Node>, String> {
-        let tensor = lhs.tensor.matmul(&rhs.tensor)?;
+    pub fn matmul(left_operand: Rc<Node>, right_operand: Rc<Node>) -> Result<Rc<Node>, String> {
+        let tensor = left_operand.tensor.matmul(&right_operand.tensor)?;
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::MatMul(lhs, rhs).pruned(),
+            op: Operator::MatMul(left_operand, right_operand).pruned(),
         }))
     }
 
-    pub fn neg(src: Rc<Node>) -> Result<Rc<Node>, String> {
-        let tensor = src.tensor.unary(Tensor::neg);
+    pub fn neg(input_node: Rc<Node>) -> Result<Rc<Node>, String> {
+        let tensor = input_node.tensor.unary(Tensor::neg);
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Neg(src).pruned(),
+            op: Operator::Neg(input_node).pruned(),
         }))
     }
 
-    pub fn relu(src: Rc<Node>) -> Result<Rc<Node>, String> {
-        let tensor = src.tensor.unary(|i| if i > 0.0 { i } else { 0.0 });
+    pub fn relu(input_node: Rc<Node>) -> Result<Rc<Node>, String> {
+        let tensor = input_node.tensor.unary(|i| if i > 0.0 { i } else { 0.0 });
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::ReLU(src).pruned(),
+            op: Operator::ReLU(input_node).pruned(),
         }))
     }
 
-    pub fn ln(src: Rc<Node>) -> Result<Rc<Node>, String> {
-        let tensor = src.tensor.unary(Tensor::ln);
+    pub fn ln(input_node: Rc<Node>) -> Result<Rc<Node>, String> {
+        let tensor = input_node.tensor.unary(Tensor::ln);
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Log(src).pruned(),
+            op: Operator::Log(input_node).pruned(),
         }))
     }
 
-    pub fn exp(src: Rc<Node>) -> Result<Rc<Node>, String> {
-        let tensor = src.tensor.unary(Tensor::exp);
+    pub fn exp(input_node: Rc<Node>) -> Result<Rc<Node>, String> {
+        let tensor = input_node.tensor.unary(Tensor::exp);
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Exp(src).pruned(),
+            op: Operator::Exp(input_node).pruned(),
         }))
     }
 
-    pub fn sum(src: Rc<Node>, axes: &[usize], keepdim: bool) -> Result<Rc<Node>, String> {
-        let tensor = src.tensor.sum(axes, keepdim)?;
-        let mut shape = src.tensor.shape.to_vec();
+    pub fn sum(input_node: Rc<Node>, axes: &[usize], keepdim: bool) -> Result<Rc<Node>, String> {
+        let tensor = input_node.tensor.sum(axes, keepdim)?;
+        let mut shape = input_node.tensor.shape.to_vec();
         for &axis in axes {
             shape[axis] = 1;
         }
         Ok(Rc::new(Node {
             tensor,
-            op: Operator::Sum(src, shape.into()).pruned(),
+            op: Operator::Sum(input_node, shape.into()).pruned(),
         }))
     }
 
-    pub fn mean(src: Rc<Node>, axes: &[usize], keepdim: bool) -> Result<Rc<Node>, String> {
-        let sum = Self::sum(src.clone(), axes, keepdim)?;
-        let shape = src.tensor.shape.as_ref();
-        let mut n = 1;
+    pub fn mean(input_node: Rc<Node>, axes: &[usize], keepdim: bool) -> Result<Rc<Node>, String> {
+        let sum = Self::sum(input_node.clone(), axes, keepdim)?;
+        let shape = input_node.tensor.shape.as_ref();
+        let mut element_count = 1;
         for &axis in axes {
-            n *= shape[axis];
+            element_count *= shape[axis];
         }
         let denominator = Rc::new(Node {
-            tensor: Tensor::fill(n as f32, [].into()),
+            tensor: Tensor::fill(element_count as f32, [].into()),
             op: Operator::Detached,
         });
         Self::div(sum, denominator)
     }
 
     pub fn backward(self: &Rc<Self>) -> Result<HashMap<i32, Rc<Node>>, String> {
-        let mut gradients = HashMap::new();
+        let mut grads = HashMap::new();
         let ones = Tensor::fill(1.0, self.tensor.shape.clone());
-        let mut todo = vec![(self.clone(), ones)];
+        let mut work_queue = vec![(self.clone(), ones)];
 
-        while let Some((node, grad)) = todo.pop() {
-            let mut push = |child: &Rc<Node>, g: Tensor| -> Result<(), String> {
-                let unbroadcasted = g.unbroadcast(child.tensor.shape.clone())?;
-                todo.push((child.clone(), unbroadcasted));
-                Ok(())
-            };
+        while let Some((node, grad)) = work_queue.pop() {
+            let mut push_child_grad =
+                |child: &Rc<Node>, child_grad: Tensor| -> Result<(), String> {
+                    let unbroadcasted = child_grad.unbroadcast(child.tensor.shape.clone())?;
+                    work_queue.push((child.clone(), unbroadcasted));
+                    Ok(())
+                };
 
             match &node.op {
-                Operator::Add(lhs, rhs) => {
-                    push(lhs, grad.clone())?;
-                    push(rhs, grad)?;
+                Operator::Add(left, right) => {
+                    push_child_grad(left, grad.clone())?;
+                    push_child_grad(right, grad)?;
                 }
-                Operator::Sub(lhs, rhs) => {
-                    push(lhs, grad.clone())?;
-                    push(rhs, grad.unary(Tensor::neg))?;
+                Operator::Sub(left, right) => {
+                    push_child_grad(left, grad.clone())?;
+                    push_child_grad(right, grad.unary(Tensor::neg))?;
                 }
-                Operator::Mul(lhs, rhs) => {
-                    push(lhs, grad.binary(&rhs.tensor, Tensor::mul)?)?;
-                    push(rhs, grad.binary(&lhs.tensor, Tensor::mul)?)?;
+                Operator::Mul(left, right) => {
+                    push_child_grad(left, grad.binary(&right.tensor, Tensor::mul)?)?;
+                    push_child_grad(right, grad.binary(&left.tensor, Tensor::mul)?)?;
                 }
-                Operator::Div(lhs, rhs) => {
-                    let dx = grad.binary(&rhs.tensor, Tensor::div)?;
-                    let dy = dx
-                        .binary(&lhs.tensor, Tensor::mul)?
-                        .binary(&rhs.tensor, |a, b| -a / b)?;
-                    push(lhs, dx)?;
-                    push(rhs, dy)?;
+                Operator::Div(left, right) => {
+                    let left_grad = grad.binary(&right.tensor, Tensor::div)?;
+                    let right_grad = left_grad
+                        .binary(&left.tensor, Tensor::mul)?
+                        .binary(&right.tensor, |a, b| -a / b)?;
+                    push_child_grad(left, left_grad)?;
+                    push_child_grad(right, right_grad)?;
                 }
-                Operator::MatMul(lhs, rhs) => {
-                    push(lhs, grad.matmul(&rhs.tensor.t())?)?;
-                    push(rhs, lhs.tensor.t().matmul(&grad)?)?;
+                Operator::MatMul(left, right) => {
+                    push_child_grad(left, grad.matmul(&right.tensor.t())?)?;
+                    push_child_grad(right, left.tensor.t().matmul(&grad)?)?;
                 }
                 Operator::Neg(src) => {
-                    push(src, grad.unary(Tensor::neg))?;
+                    push_child_grad(src, grad.unary(Tensor::neg))?;
                 }
                 Operator::Log(src) => {
-                    push(src, grad.binary(&src.tensor, Tensor::div)?)?;
+                    push_child_grad(src, grad.binary(&src.tensor, Tensor::div)?)?;
                 }
                 Operator::Exp(src) => {
-                    let dx = node.tensor.binary(&grad, Tensor::mul)?;
-                    push(src, dx)?;
+                    let src_grad = node.tensor.binary(&grad, Tensor::mul)?;
+                    push_child_grad(src, src_grad)?;
                 }
                 Operator::ReLU(src) => {
-                    let dx = grad.binary(&src.tensor, |g, i| if i > 0.0 { g } else { 0.0 })?;
-                    push(src, dx)?;
+                    let src_grad =
+                        grad.binary(&src.tensor, |g, i| if i > 0.0 { g } else { 0.0 })?;
+                    push_child_grad(src, src_grad)?;
                 }
                 Operator::Sum(src, shape) => {
                     let ones = Tensor::fill(1.0, src.tensor.shape.clone());
                     let mut grad = grad;
                     grad.shape = shape.clone();
                     let broadcasted = ones.binary(&grad, Tensor::mul)?;
-                    push(src, broadcasted)?;
+                    push_child_grad(src, broadcasted)?;
                 }
-                Operator::Parameter(i, _shape) => match gradients.entry(*i) {
+                Operator::Parameter(param_id, _shape) => match grads.entry(*param_id) {
                     Entry::Vacant(entry) => {
                         entry.insert(grad);
                     }
                     Entry::Occupied(mut entry) => {
-                        let new = entry.get().binary(&grad, Tensor::add)?;
-                        entry.insert(new);
+                        let new_grad = entry.get().binary(&grad, Tensor::add)?;
+                        entry.insert(new_grad);
                     }
                 },
                 Operator::Detached => {}
             }
         }
 
-        Ok(gradients
+        Ok(grads
             .into_iter()
-            .map(|(i, tensor)| {
+            .map(|(param_id, grad_tensor)| {
                 (
-                    i,
+                    param_id,
                     Node {
-                        tensor,
+                        tensor: grad_tensor,
                         op: Operator::Detached,
                     }
                     .into(),

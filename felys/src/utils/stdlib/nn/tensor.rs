@@ -75,23 +75,23 @@ impl TryFrom<Object> for Tensor {
         }
 
         let mut shape = Vec::new();
-        let mut cursor = &value;
-        while let Object::List(list) = cursor
+        let mut current = &value;
+        while let Object::List(list) = current
             && !list.is_empty()
         {
             shape.push(list.len());
-            cursor = &list[0];
+            current = &list[0];
         }
 
         let size = shape.iter().product();
         let mut data = Vec::with_capacity(size);
 
-        let mut todo = vec![(0, &value)];
-        while let Some((depth, object)) = todo.pop() {
+        let mut work_queue = vec![(0, &value)];
+        while let Some((depth, object)) = work_queue.pop() {
             match object {
                 Object::List(list) if depth < shape.len() && shape[depth] == list.len() => {
                     for obj in list.iter().rev() {
-                        todo.push((depth + 1, obj));
+                        work_queue.push((depth + 1, obj));
                     }
                 }
                 Object::Float(x) if depth == shape.len() => {
@@ -144,14 +144,14 @@ impl Tensor {
             return Self::fill(0.0, shape);
         }
 
-        let input = shape[1..].iter().product();
-        let length = shape[0] * input;
+        let fan_in = shape[1..].iter().product();
+        let length = shape[0] * fan_in;
         let mut data = Vec::with_capacity(length);
 
         RANDOM.with(|rand| {
             let mut rng = rand.borrow_mut();
             for _ in 0..length {
-                data.push(rng.f32(input))
+                data.push(rng.f32(fan_in))
             }
         });
 
@@ -189,44 +189,44 @@ impl Tensor {
         let shape = broadcast(&self.shape, &other.shape)?;
         let rank = shape.len();
 
-        let lhs = strides(&self.shape, rank);
-        let rhs = strides(&other.shape, rank);
-        let steps = (lhs[rank - 1], rhs[rank - 1]);
+        let left_strides = strides(&self.shape, rank);
+        let right_strides = strides(&other.shape, rank);
+        let steps = (left_strides[rank - 1], right_strides[rank - 1]);
 
         let size = shape.iter().product();
-        let inner = shape[rank - 1];
+        let inner_size = shape[rank - 1];
 
         let mut indices = vec![0; rank.saturating_sub(1)];
-        let mut li = 0;
-        let mut ri = 0;
+        let mut left_idx = 0;
+        let mut right_idx = 0;
         let mut data = Vec::with_capacity(size);
 
-        for _ in 0..size / inner {
+        for _ in 0..size / inner_size {
             match steps {
                 (1, 1) => {
-                    for (&l, &r) in self.data[li..li + inner]
+                    for (&left_val, &right_val) in self.data[left_idx..left_idx + inner_size]
                         .iter()
-                        .zip(other.data[ri..ri + inner].iter())
+                        .zip(other.data[right_idx..right_idx + inner_size].iter())
                     {
-                        data.push(op(l, r));
+                        data.push(op(left_val, right_val));
                     }
                 }
                 (1, 0) => {
-                    let r = other.data[ri];
-                    for &l in self.data[li..li + inner].iter() {
-                        data.push(op(l, r))
+                    let right_val = other.data[right_idx];
+                    for &left_val in self.data[left_idx..left_idx + inner_size].iter() {
+                        data.push(op(left_val, right_val))
                     }
                 }
                 (0, 1) => {
-                    let l = self.data[li];
-                    for &r in other.data[ri..ri + inner].iter() {
-                        data.push(op(l, r))
+                    let left_val = self.data[left_idx];
+                    for &right_val in other.data[right_idx..right_idx + inner_size].iter() {
+                        data.push(op(left_val, right_val))
                     }
                 }
                 (0, 0) => {
-                    let l = self.data[li];
-                    let r = other.data[ri];
-                    data.push(op(l, r))
+                    let left_val = self.data[left_idx];
+                    let right_val = other.data[right_idx];
+                    data.push(op(left_val, right_val))
                 }
                 _ => return Err("binary error".to_string()),
             }
@@ -235,13 +235,13 @@ impl Tensor {
                 for j in (0..rank - 1).rev() {
                     indices[j] += 1;
                     if indices[j] < shape[j] {
-                        li += lhs[j];
-                        ri += rhs[j];
+                        left_idx += left_strides[j];
+                        right_idx += right_strides[j];
                         break;
                     }
                     indices[j] = 0;
-                    li -= lhs[j] * (shape[j] - 1);
-                    ri -= rhs[j] * (shape[j] - 1);
+                    left_idx -= left_strides[j] * (shape[j] - 1);
+                    right_idx -= right_strides[j] * (shape[j] - 1);
                 }
             }
         }
@@ -298,56 +298,57 @@ impl Tensor {
             return Err("matmul requires at least 2 dimensions".to_string());
         }
 
-        let ls = self.shape.as_ref();
-        let rs = other.shape.as_ref();
+        let left_shape = self.shape.as_ref();
+        let right_shape = other.shape.as_ref();
 
-        let m = ls[ls.len() - 2];
-        let k = ls[ls.len() - 1];
-        let n = rs[rs.len() - 1];
+        let m = left_shape[left_shape.len() - 2];
+        let k = left_shape[left_shape.len() - 1];
+        let n = right_shape[right_shape.len() - 1];
 
-        if k != rs[rs.len() - 2] {
+        if k != right_shape[right_shape.len() - 2] {
             return Err("matmul dimension mismatch".to_string());
         }
 
-        let lb = &ls[..ls.len() - 2];
-        let rb = &rs[..rs.len() - 2];
+        let left_batch_shape = &left_shape[..left_shape.len() - 2];
+        let right_batch_shape = &right_shape[..right_shape.len() - 2];
 
-        let mut shape = broadcast(lb, rb)?;
+        let mut shape = broadcast(left_batch_shape, right_batch_shape)?;
         let rank = shape.len();
         let size = shape.iter().product();
 
-        let lhs = strides(lb, rank);
-        let rhs = strides(rb, rank);
+        let left_strides = strides(left_batch_shape, rank);
+        let right_strides = strides(right_batch_shape, rank);
 
         let mut indices = vec![0; rank];
-        let mut li = 0;
-        let mut ri = 0;
+        let mut left_idx = 0;
+        let mut right_idx = 0;
         let mut data = Vec::with_capacity(size * m * n);
 
         for _ in 0..size {
-            let lbi = li * m * k;
-            let rbi = ri * k * n;
+            let left_batch_idx = left_idx * m * k;
+            let right_batch_idx = right_idx * k * n;
 
             for i in 0..m {
                 for j in 0..n {
-                    let mut sum = 0.0;
+                    let mut sum_val = 0.0;
                     for l in 0..k {
-                        sum += self.data[lbi + i * k + l] * other.data[rbi + l * n + j];
+                        sum_val += self.data[left_batch_idx + i * k + l]
+                            * other.data[right_batch_idx + l * n + j];
                     }
-                    data.push(sum);
+                    data.push(sum_val);
                 }
             }
 
             for j in (0..rank).rev() {
                 indices[j] += 1;
                 if indices[j] < shape[j] {
-                    li += lhs[j];
-                    ri += rhs[j];
+                    left_idx += left_strides[j];
+                    right_idx += right_strides[j];
                     break;
                 }
                 indices[j] = 0;
-                li -= lhs[j] * (shape[j] - 1);
-                ri -= rhs[j] * (shape[j] - 1);
+                left_idx -= left_strides[j] * (shape[j] - 1);
+                right_idx -= right_strides[j] * (shape[j] - 1);
             }
         }
 
@@ -371,7 +372,7 @@ impl Tensor {
 
         let rank = self.shape.len();
         let size = target.iter().product();
-        let strides = strides(target.as_ref(), rank);
+        let stride_values = strides(target.as_ref(), rank);
 
         let mut indices = vec![0; rank];
         let mut data = vec![0.0; size];
@@ -379,7 +380,7 @@ impl Tensor {
         for x in self.data.iter() {
             let mut index = 0;
             for i in 0..rank {
-                index += indices[i] * strides[i];
+                index += indices[i] * stride_values[i];
             }
             data[index] += x;
 

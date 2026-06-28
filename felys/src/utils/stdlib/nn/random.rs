@@ -24,8 +24,8 @@ impl Random {
         x as f32 / u32::MAX as f32
     }
 
-    pub fn f32(&mut self, input: usize) -> f32 {
-        let std = (2.0 / input as f32).sqrt();
+    pub fn f32(&mut self, fan_in: usize) -> f32 {
+        let std = (2.0 / fan_in as f32).sqrt();
 
         let u1 = self.raw().max(f32::EPSILON);
         let u2 = self.raw();
